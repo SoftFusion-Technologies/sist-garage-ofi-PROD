@@ -26,9 +26,9 @@ import { AuthProvider } from './AuthContext';
 import ProtectedRoute from './ProtectedRoute';
 import useLayoutVisibility from './Hooks/useLayoutVisibility';
 
-
 // LOGIN
 import LoginForm from './Components/login/LoginForm';
+import AdminPage from './Pages/Dash/AdminPage';
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
 
@@ -39,6 +39,15 @@ function AppContent() {
         {/* <Ruta path="/" element={<Home />} /> */}
         {/* componentes del staff y login INICIO */}
         <Ruta path="/login" element={<LoginForm />} />
+        <Ruta
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              {' '}
+              <AdminPage />{' '}
+            </ProtectedRoute>
+          }
+        />
         {/* componentes del staff y login FINAL */}
         {/* <Ruta path="/*" element={<NotFound />} /> */}
       </Rutas>
