@@ -32,6 +32,8 @@ import AdminPage from './Pages/Dash/AdminPage';
 import AdminPageStock from './Pages/Stock/AdminPageStock';
 import LocalesGet from './Pages/MetodosGets/LocalesGet';
 import TallesGet from './Pages/MetodosGets/TallesGet';
+import ProductosGet from './Pages/MetodosGets/ProductosGet';
+import StockGet from './Pages/MetodosGets/StockGet';
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
 
@@ -75,6 +77,24 @@ function AppContent() {
             <ProtectedRoute>
               {' '}
               <TallesGet />{' '}
+            </ProtectedRoute>
+          }
+        />
+        <Ruta
+          path="/dashboard/stock/productos"
+          element={
+            <ProtectedRoute>
+              {' '}
+              <ProductosGet />{' '}
+            </ProtectedRoute>
+          }
+        />
+        <Ruta
+          path="/dashboard/stock/stock"
+          element={
+            <ProtectedRoute>
+              {' '}
+              <StockGet />{' '}
             </ProtectedRoute>
           }
         />

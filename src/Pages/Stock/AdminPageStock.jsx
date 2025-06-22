@@ -53,8 +53,8 @@ const AdminPageStock = () => {
               className="bg-white font-bignoodle w-[250px] h-[100px] text-[20px] lg:w-[400px] lg:h-[150px] lg:text-[30px] mx-auto flex justify-center items-center rounded-tr-xl rounded-bl-xl"
             >
               {' '}
-              <Link to="/dashboard/recaptacion">
-                <button className="btnstaff">Recaptación</button>
+              <Link to="/dashboard/stock/productos">
+                <button className="btnstaff">Productos</button>
               </Link>
             </motion.div>
 
@@ -65,8 +65,8 @@ const AdminPageStock = () => {
               className="bg-white font-bignoodle w-[250px] h-[100px] text-[20px] lg:w-[400px] lg:h-[150px] lg:text-[30px] mx-auto flex justify-center items-center rounded-tr-xl rounded-bl-xl"
             >
               {' '}
-              <Link to="/dashboard/recaptacion">
-                <button className="btnstaff">Vendedores</button>
+              <Link to="/dashboard/stock/stock">
+                <button className="btnstaff">stock</button>
               </Link>
             </motion.div>
           </div>
