@@ -29,6 +29,8 @@ import useLayoutVisibility from './Hooks/useLayoutVisibility';
 // LOGIN
 import LoginForm from './Components/login/LoginForm';
 import AdminPage from './Pages/Dash/AdminPage';
+import AdminPageStock from './Pages/Stock/AdminPageStock';
+import LocalesGet from './Pages/MetodosGets/LocalesGet';
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
 
@@ -45,6 +47,24 @@ function AppContent() {
             <ProtectedRoute>
               {' '}
               <AdminPage />{' '}
+            </ProtectedRoute>
+          }
+        />
+        <Ruta
+          path="/dashboard/stock"
+          element={
+            <ProtectedRoute>
+              {' '}
+              <AdminPageStock />{' '}
+            </ProtectedRoute>
+          }
+        />
+        <Ruta
+          path="/dashboard/stock/locales"
+          element={
+            <ProtectedRoute>
+              {' '}
+              <LocalesGet />{' '}
             </ProtectedRoute>
           }
         />
