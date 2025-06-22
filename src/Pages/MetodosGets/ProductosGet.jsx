@@ -97,9 +97,10 @@ const ProductosGet = () => {
         descripcion: '',
         categoria: '',
         codigo_sku: '',
-        precio: producto?.precio?.toString() ?? '0',
+        precio: '0',
         imagen_url: '',
-        estado: 'activo'
+        estado: 'activo',
+        talle_id: ''
       });
     }
     setModalOpen(true);
@@ -108,7 +109,7 @@ const ProductosGet = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const parsedPrecio = parseFloat(formValues.precio || '0');
+    const parsedPrecio = parseFloat(formValues.precio);
     if (isNaN(parsedPrecio) || parsedPrecio < 0) {
       alert('Por favor ingrese un precio válido');
       return;
@@ -117,8 +118,10 @@ const ProductosGet = () => {
     try {
       const dataToSend = {
         ...formValues,
-        precio: isNaN(parsedPrecio) ? 0 : parsedPrecio
+        precio: parsedPrecio.toFixed(2) // asegura formato DECIMAL(10,2)
       };
+
+      console.log(formValues);
 
       if (editId) {
         await axios.put(
@@ -285,7 +288,7 @@ const ProductosGet = () => {
               onChange={(e) =>
                 setFormValues({
                   ...formValues,
-                  precio: e.target.value // NO uses parseFloat aquí
+                  precio: e.target.value
                 })
               }
               min="0"
