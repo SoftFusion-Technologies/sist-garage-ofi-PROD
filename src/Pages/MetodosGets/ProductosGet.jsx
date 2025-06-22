@@ -9,7 +9,6 @@ import ParticlesBackground from '../../Components/ParticlesBackground';
 Modal.setAppElement('#root');
 
 const ProductosGet = () => {
-  const [talles, setTalles] = useState([]);
   const [productos, setProductos] = useState([]);
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -18,7 +17,6 @@ const ProductosGet = () => {
     nombre: '',
     descripcion: '',
     categoria: '',
-    codigo_sku: '',
     precio: '',
     imagen_url: '',
     estado: 'activo'
@@ -26,18 +24,6 @@ const ProductosGet = () => {
   const [confirmDelete, setConfirmDelete] = useState(null); // objeto con ID a eliminar
   const [warningMessage, setWarningMessage] = useState('');
 
-  useEffect(() => {
-    const fetchTalles = async () => {
-      try {
-        const res = await axios.get('http://localhost:8080/talles');
-        setTalles(res.data);
-      } catch (err) {
-        console.error('Error al obtener talles:', err);
-      }
-    };
-
-    fetchTalles();
-  }, []);
   const fetchProductos = async () => {
     try {
       const res = await axios.get('http://localhost:8080/productos');
@@ -51,36 +37,8 @@ const ProductosGet = () => {
     fetchProductos();
   }, []);
 
-  useEffect(() => {
-    const talleSeleccionado = talles.find(
-      (t) => t.id === parseInt(formValues.talle_id)
-    );
-
-    if (formValues.nombre && talleSeleccionado) {
-      // Limpiar nombre: quitar acentos, convertir a minúsculas y quitar caracteres especiales
-      const nombreClean = formValues.nombre
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // quita acentos
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, '-') // reemplaza caracteres no alfanuméricos
-        .slice(0, 10)
-        .replace(/-+$/, ''); // elimina guiones al final
-
-      const talleClean = talleSeleccionado.nombre.toUpperCase();
-      const nuevoSKU = `${nombreClean}-${talleClean}`;
-
-      // Solo actualizar si el SKU está vacío o coincide con la lógica previa
-      if (
-        !formValues.codigo_sku ||
-        formValues.codigo_sku.startsWith(nombreClean)
-      ) {
-        setFormValues((prev) => ({ ...prev, codigo_sku: nuevoSKU }));
-      }
-    }
-  }, [formValues.nombre, formValues.talle_id, talles]);
-
   const filtered = productos.filter((p) =>
-    [p.nombre, p.descripcion, p.categoria, p.codigo_sku].some((field) =>
+    [p.nombre, p.descripcion, p.categoria].some((field) =>
       field?.toLowerCase().includes(search.toLowerCase())
     )
   );
@@ -98,11 +56,9 @@ const ProductosGet = () => {
         nombre: '',
         descripcion: '',
         categoria: '',
-        codigo_sku: '',
         precio: '0',
         imagen_url: '',
         estado: 'activo',
-        talle_id: ''
       });
     }
     setModalOpen(true);
@@ -194,7 +150,6 @@ const ProductosGet = () => {
               <p className="text-sm text-gray-300 mb-1">
                 Categoría: {p.categoria}
               </p>
-              <p className="text-sm text-gray-300 mb-1">SKU: {p.codigo_sku}</p>
               <p className="text-sm text-green-300 font-semibold">
                 ${p.precio ? parseFloat(p.precio).toFixed(2) : '0.00'}
               </p>
@@ -255,38 +210,6 @@ const ProductosGet = () => {
               }
               className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
             />
-            <div>
-              <label className="block text-sm font-semibold text-gray-600 mb-1">
-                Talle
-              </label>
-              <select
-                value={formValues.talle_id || ''}
-                onChange={(e) =>
-                  setFormValues({ ...formValues, talle_id: e.target.value })
-                }
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
-                required
-              >
-                <option value="">Seleccione un talle</option>
-                {talles.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-600">
-                Código SKU (Generado automáticamente)
-              </label>
-              <input
-                type="text"
-                value={formValues.codigo_sku}
-                readOnly
-                className="w-full px-4 py-2 rounded-lg bg-gray-100 border border-gray-300 text-gray-600 cursor-not-allowed"
-              />
-            </div>
             <input
               type="number"
               placeholder="Precio"

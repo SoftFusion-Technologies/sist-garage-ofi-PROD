@@ -17,7 +17,8 @@ const StockGet = () => {
     lugar_id: '',
     estado_id: '',
     cantidad: 0,
-    en_perchero: true
+    en_perchero: true,
+    codigo_sku: ''
   });
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -55,6 +56,45 @@ const StockGet = () => {
     fetchAll();
   }, []);
 
+  useEffect(() => {
+    const producto = productos.find(
+      (p) => p.id === parseInt(formData.producto_id)
+    );
+    const talle = talles.find((t) => t.id === parseInt(formData.talle_id));
+    const local = locales.find((l) => l.id === parseInt(formData.local_id)); // Opcional
+
+    if (producto && talle && local) {
+      const clean = (str) =>
+        str
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '-')
+          .slice(0, 10)
+          .replace(/-+$/, '');
+
+      const productoClean = clean(producto.nombre);
+      const talleClean = talle.nombre.toUpperCase();
+      const localClean = clean(local.nombre);
+
+      const nuevoSKU = `${productoClean}-${talleClean}-${localClean}`; // o sin local si querés
+
+      if (
+        !formData.codigo_sku ||
+        formData.codigo_sku.startsWith(productoClean)
+      ) {
+        setFormData((prev) => ({ ...prev, codigo_sku: nuevoSKU }));
+      }
+    }
+  }, [
+    formData.producto_id,
+    formData.talle_id,
+    formData.local_id,
+    productos,
+    talles,
+    locales
+  ]);
+
   const openModal = (item = null) => {
     if (item) {
       setEditId(item.id);
@@ -68,7 +108,8 @@ const StockGet = () => {
         lugar_id: '',
         estado_id: '',
         cantidad: 0,
-        en_perchero: true
+        en_perchero: true,
+        codigo_sku: ''
       });
     }
     setModalOpen(true);
@@ -158,6 +199,8 @@ const StockGet = () => {
                 <p className="text-sm">
                   En perchero: {item.en_perchero ? 'Sí' : 'No'}
                 </p>
+                <p className="text-sm ">SKU: {item.codigo_sku}</p>
+
                 <div className="mt-4 flex justify-end gap-4">
                   <button
                     onClick={() => openModal(item)}
@@ -186,6 +229,7 @@ const StockGet = () => {
           <h2 className="text-2xl font-bold mb-4 text-cyan-600">
             {editId ? 'Editar Stock' : 'Nuevo Stock'}
           </h2>
+
           <form onSubmit={handleSubmit} className="space-y-4 text-gray-800">
             {[
               { label: 'Producto', name: 'producto_id', options: productos },
@@ -213,6 +257,18 @@ const StockGet = () => {
                 </select>
               </div>
             ))}
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-600">
+                Código SKU (Generado automáticamente)
+              </label>
+              <input
+                type="text"
+                value={formData.codigo_sku}
+                readOnly
+                className="w-full px-4 py-2 rounded-lg bg-gray-100 border border-gray-300 text-gray-600 cursor-not-allowed"
+              />
+            </div>
 
             <div>
               <label className="block font-semibold mb-1">Cantidad</label>
