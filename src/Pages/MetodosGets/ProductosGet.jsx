@@ -23,6 +23,8 @@ const ProductosGet = () => {
     imagen_url: '',
     estado: 'activo'
   });
+  const [confirmDelete, setConfirmDelete] = useState(null); // objeto con ID a eliminar
+  const [warningMessage, setWarningMessage] = useState('');
 
   useEffect(() => {
     const fetchTalles = async () => {
@@ -138,13 +140,17 @@ const ProductosGet = () => {
       console.error('Error al guardar producto:', err);
     }
   };
-
   const handleDelete = async (id) => {
     try {
       await axios.delete(`http://localhost:8080/productos/${id}`);
       fetchProductos();
     } catch (err) {
-      console.error('Error al eliminar producto:', err);
+      if (err.response?.status === 409) {
+        setConfirmDelete(id);
+        setWarningMessage(err.response.data.mensajeError);
+      } else {
+        console.error('Error al eliminar producto:', err);
+      }
     }
   };
 
@@ -324,6 +330,46 @@ const ProductosGet = () => {
               </button>
             </div>
           </form>
+        </Modal>
+        <Modal
+          isOpen={!!confirmDelete}
+          onRequestClose={() => setConfirmDelete(null)}
+          overlayClassName="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50"
+          className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl border-l-4 border-yellow-500"
+        >
+          <h2 className="text-xl font-bold text-yellow-600 mb-4">
+            Advertencia
+          </h2>
+          <p className="mb-6 text-gray-800">{warningMessage}</p>
+          <div className="flex justify-end gap-4">
+            <button
+              onClick={() => setConfirmDelete(null)}
+              className="px-4 py-2 rounded-lg bg-gray-300 hover:bg-gray-400"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  // Eliminar stock primero
+                  await axios.delete(
+                    `http://localhost:8080/stock/producto/${confirmDelete}`
+                  );
+                  // Luego eliminar producto
+                  await axios.delete(
+                    `http://localhost:8080/productos/${confirmDelete}`
+                  );
+                  setConfirmDelete(null);
+                  fetchProductos();
+                } catch (error) {
+                  console.error('Error al eliminar con forzado:', error);
+                }
+              }}
+              className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white"
+            >
+              Eliminar
+            </button>
+          </div>
         </Modal>
       </div>
     </div>
