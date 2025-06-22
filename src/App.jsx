@@ -31,6 +31,7 @@ import LoginForm from './Components/login/LoginForm';
 import AdminPage from './Pages/Dash/AdminPage';
 import AdminPageStock from './Pages/Stock/AdminPageStock';
 import LocalesGet from './Pages/MetodosGets/LocalesGet';
+import TallesGet from './Pages/MetodosGets/TallesGet';
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
 
@@ -65,6 +66,15 @@ function AppContent() {
             <ProtectedRoute>
               {' '}
               <LocalesGet />{' '}
+            </ProtectedRoute>
+          }
+        />
+        <Ruta
+          path="/dashboard/stock/talles"
+          element={
+            <ProtectedRoute>
+              {' '}
+              <TallesGet />{' '}
             </ProtectedRoute>
           }
         />
