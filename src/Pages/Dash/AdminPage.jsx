@@ -16,8 +16,8 @@ const AdminPage = () => {
       {/* Navbar section */}
       <NavbarStaff />
       {/* Hero section*/}
-      <section className="relative w-full h-contain mx-auto bg-white">
-        <div className="bg-gradient-to-b from-[#0a0a0f] via-[#12121b] to-[#1a1a2e]">
+      <section className="relative w-full min-h-screen mx-auto bg-white">
+        <div className="min-h-screen bg-gradient-to-b from-[#0a0a0f] via-[#12121b] to-[#1a1a2e]">
           <ParticlesBackground></ParticlesBackground>
           <div className="titulo xl:px-0 sm:px-16 px-6 max-w-7xl mx-auto grid grid-cols-2 max-sm:grid-cols-1 max-md:gap-y-10 md:gap-10 py-28 sm:pt-44 lg:pt-28 md:w-5/6 ">
             {(userLevel === 'admin' || userLevel === '') && (

@@ -108,7 +108,7 @@ const LoginForm = () => {
         }}
         className="bg-white shadow-2xl rounded-2xl p-8 w-[95%] max-w-md mx-auto"
       >
-        <h1 className="text-5xl titulo uppercase font-bold text-center text-blue-600 mb-2">
+        <h1 className="text-5xl titulo uppercase font-bold text-center text-pink-600 mb-2">
           Bienvenido
         </h1>
         <motion.p
@@ -135,7 +135,7 @@ const LoginForm = () => {
               type="email"
               name="email"
               placeholder="ejemplo@correo.com"
-              className="w-full mt-1 p-3 bg-blue-50 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all"
+              className="w-full mt-1 p-3 bg-pink-50 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-all"
               onChange={handleInput}
             />
             {errors.email && <Alerta>{errors.email}</Alerta>}
@@ -156,13 +156,13 @@ const LoginForm = () => {
                 type={showPassword ? 'text' : 'password'}
                 name="password"
                 placeholder="••••••••"
-                className="w-full mt-1 p-3 bg-blue-50 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all pr-10"
+                className="w-full mt-1 p-3 bg-pink-50 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 transition-all pr-10"
                 onChange={handleInput}
               />
               <button
                 type="button"
                 onClick={toggleShowPassword}
-                className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-500 hover:text-blue-500"
+                className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-500 hover:text-pink-500"
               >
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
@@ -177,7 +177,7 @@ const LoginForm = () => {
               whileTap={{ scale: 0.95 }}
               type="submit"
               disabled={loading}
-              className="bg-blue-500 text-white w-full py-3 rounded-lg font-semibold text-lg shadow-md hover:bg-blue-600 transition-all"
+              className="bg-pink-500 text-white w-full py-3 rounded-lg font-semibold text-lg shadow-md hover:bg-pink-600 transition-all"
             >
               {loading ? 'Cargando...' : 'Iniciar Sesión'}
             </motion.button>
