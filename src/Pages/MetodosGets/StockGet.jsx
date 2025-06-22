@@ -193,7 +193,7 @@ const StockGet = () => {
                   {producto?.nombre} - {talle?.nombre}
                 </h2>
                 <p className="text-sm">Local: {local?.nombre}</p>
-                <p className="text-sm">Lugar: {lugar?.nombre}</p>
+                <p className="text-sm">Lugar: {lugar?.nombre || 'Sin lugar'}</p>
                 <p className="text-sm">Estado: {estado?.nombre}</p>
                 <p className="text-sm">Cantidad: {item.cantidad}</p>
                 <p className="text-sm">

@@ -114,18 +114,19 @@ const ProductosGet = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-10 px-6 text-white relative">
       <ParticlesBackground />
       <ButtonBack />
-
       <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-rose-400 flex items-center gap-3 uppercase drop-shadow">
-            <FaBox /> Productos
-          </h1>
-          <button
-            onClick={() => openModal()}
-            className="bg-rose-500 hover:bg-rose-600 transition px-5 py-2 rounded-xl font-semibold flex items-center gap-2 shadow-lg"
-          >
-            <FaPlus /> Nuevo Producto
-          </button>
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+            <h1 className="text-4xl font-bold titulo text-rose-400 flex items-center gap-3 uppercase drop-shadow">
+              <FaBox /> Productos
+            </h1>
+            <button
+              onClick={() => openModal()}
+              className="bg-rose-500 hover:bg-rose-600 transition px-5 py-2 rounded-xl font-semibold flex items-center gap-2 shadow-lg"
+            >
+              <FaPlus /> Nuevo Producto
+            </button>
+          </div>
         </div>
 
         <input
