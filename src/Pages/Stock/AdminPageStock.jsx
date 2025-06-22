@@ -1,74 +1,67 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import NavbarStaff from '../Dash/NavbarStaff';
 import '../../Styles/staff/dashboard.css';
 import '../../Styles/staff/background.css';
-// import Footer from '../../components/footer/Footer';
 import { useAuth } from '../../AuthContext';
 import ParticlesBackground from '../../Components/ParticlesBackground';
 import { motion } from 'framer-motion';
 import ButtonBack from '../../Components/ButtonBack';
+import {
+  FaWarehouse,
+  FaTags,
+  FaRulerCombined,
+  FaBoxes,
+  FaStore
+} from 'react-icons/fa';
+
+const stockLinks = [
+  { to: '/dashboard/stock/lugares', label: 'Lugares', icon: <FaWarehouse /> },
+  { to: '/dashboard/stock/estados', label: 'Estados', icon: <FaTags /> },
+  { to: '/dashboard/stock/talles', label: 'Talles', icon: <FaRulerCombined /> },
+  { to: '/dashboard/stock/productos', label: 'Productos', icon: <FaBoxes /> },
+  { to: '/dashboard/stock/stock', label: 'Stock', icon: <FaStore /> }
+];
+
 const AdminPageStock = () => {
   const { userLevel } = useAuth();
 
   return (
     <>
-      {/* Navbar section */}
       <NavbarStaff />
-      {/* Hero section*/}
-      <section className="relative w-full min-h-screen mx-auto bg-white">
+      <section className="relative w-full min-h-screen bg-white">
         <div className="min-h-screen bg-gradient-to-b from-[#0a0a0f] via-[#12121b] to-[#1a1a2e]">
-          <ButtonBack></ButtonBack>
-          <ParticlesBackground></ParticlesBackground>
-          <div className="xl:px-0 titulo sm:px-16 px-6 max-w-7xl mx-auto grid grid-cols-2 max-sm:grid-cols-1 max-md:gap-y-10 md:gap-10 py-28 sm:pt-44 lg:pt-28 md:w-5/6 ">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
+          <ParticlesBackground />
+          <ButtonBack />
+          <div className="text-center pt-24">
+            <motion.h1
+              initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-white font-bignoodle w-[250px] h-[100px] text-[20px] lg:w-[400px] lg:h-[150px] lg:text-[30px] mx-auto flex justify-center items-center rounded-tr-xl rounded-bl-xl"
+              transition={{ duration: 0.6 }}
+              className="text-4xl titulo uppercase font-bold text-white mb-8 drop-shadow-md"
             >
-              {' '}
-              <Link to="/dashboard/stock/locales">
-                <button className="btnstaff">locales</button>
-              </Link>
-            </motion.div>
+              Gestión de Stock
+            </motion.h1>
+          </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="bg-white font-bignoodle w-[250px] h-[100px] text-[20px] lg:w-[400px] lg:h-[150px] lg:text-[30px] mx-auto flex justify-center items-center rounded-tr-xl rounded-bl-xl"
-            >
-              {' '}
-              <Link to="/dashboard/stock/talles">
-                <button className="btnstaff">Talles </button>
-              </Link>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-              className="bg-white font-bignoodle w-[250px] h-[100px] text-[20px] lg:w-[400px] lg:h-[150px] lg:text-[30px] mx-auto flex justify-center items-center rounded-tr-xl rounded-bl-xl"
-            >
-              {' '}
-              <Link to="/dashboard/stock/productos">
-                <button className="btnstaff">Productos</button>
-              </Link>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-              className="bg-white font-bignoodle w-[250px] h-[100px] text-[20px] lg:w-[400px] lg:h-[150px] lg:text-[30px] mx-auto flex justify-center items-center rounded-tr-xl rounded-bl-xl"
-            >
-              {' '}
-              <Link to="/dashboard/stock/stock">
-                <button className="btnstaff">stock</button>
-              </Link>
-            </motion.div>
+          <div className="xl:px-0 sm:px-16 px-6 max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-8 py-12">
+            {stockLinks.map(({ to, label, icon }, index) => (
+              <motion.div
+                key={label}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: index * 0.2 }}
+                className="bg-white shadow-xl hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:border-pink-400 transition-all duration-300 font-semibold text-lg lg:text-xl text-gray-800 rounded-2xl flex justify-center items-center h-40 cursor-pointer border border-white/20 hover:scale-[1.02]"
+              >
+                <Link
+                  to={to}
+                  className="flex flex-col justify-center items-center gap-2"
+                >
+                  <span className="text-4xl text-pink-500">{icon}</span>
+                  <span>{label}</span>
+                </Link>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>

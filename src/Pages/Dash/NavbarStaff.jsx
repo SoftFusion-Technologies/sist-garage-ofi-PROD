@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import logoGarage from '../../Images/staff/imgLogo.png';
 import menu from '../../Images/staff/menu.png';
 import close from '../../Images/staff/close.png';
@@ -51,20 +51,23 @@ const NavbarStaff = () => {
       id: 1,
       href: 'dashboard',
       title: 'Dashboard',
-      roles: ['admin', 'instructor'] // Benjamin Orellana INI / 12/06/2024 /nueva forma de gestionar los accesos
+      roles: ['admin', 'empleado'] // Benjamin Orellana INI / 12/06/2024 /nueva forma de gestionar los accesos
     },
     {
       id: 2,
       href: 'dashboard/usuarios',
       title: 'Usuarios',
       roles: ['admin', 'administrador']
+    },
+    {
+      id: 3,
+      href: 'dashboard/locales',
+      title: 'Locales',
+      roles: ['admin', 'administrador']
     }
   ];
 
-  const filteredLinks =
-    userLevel === 'alumno'
-      ? []
-      : Links.filter((link) => link.roles.includes(userLevel));
+  const filteredLinks = Links.filter((link) => link.roles.includes(userLevel));
 
   return (
     <>

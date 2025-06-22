@@ -76,7 +76,7 @@ function AppContent() {
           }
         />
         <Ruta
-          path="/dashboard/stock/locales"
+          path="/dashboard/locales"
           element={
             <ProtectedRoute>
               {' '}
