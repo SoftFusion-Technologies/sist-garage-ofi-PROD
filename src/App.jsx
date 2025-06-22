@@ -34,12 +34,16 @@ import LocalesGet from './Pages/MetodosGets/LocalesGet';
 import TallesGet from './Pages/MetodosGets/TallesGet';
 import ProductosGet from './Pages/MetodosGets/ProductosGet';
 import StockGet from './Pages/MetodosGets/StockGet';
+
+import { Navigate } from 'react-router-dom';
+import UsuariosGet from './Pages/UsuariosGet';
+
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
 
   return (
     <>
-      {!hideLayoutNav && <NavBar />}
+      {/* {!hideLayoutNav && <NavBar />} */}
       <Rutas>
         {/* <Ruta path="/" element={<Home />} /> */}
         {/* componentes del staff y login INICIO */}
@@ -50,6 +54,15 @@ function AppContent() {
             <ProtectedRoute>
               {' '}
               <AdminPage />{' '}
+            </ProtectedRoute>
+          }
+        />
+        <Ruta
+          path="/dashboard/usuarios"
+          element={
+            <ProtectedRoute>
+              {' '}
+              <UsuariosGet />{' '}
             </ProtectedRoute>
           }
         />
@@ -100,6 +113,11 @@ function AppContent() {
         />
         {/* componentes del staff y login FINAL */}
         {/* <Ruta path="/*" element={<NotFound />} /> */}
+        {/* 🔁 Redirección automática al login si se accede a "/" */}
+        <Ruta path="/" element={<Navigate to="/login" replace />} />
+
+        {/* 🔁 Ruta no encontrada */}
+        <Ruta path="*" element={<Navigate to="/login" replace />} />
       </Rutas>
       {/* {!hideLayoutFooter && <Footer />} */}
     </>

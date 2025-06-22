@@ -1,0 +1,251 @@
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import Modal from 'react-modal';
+import { FaUser, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
+import { motion } from 'framer-motion';
+import ParticlesBackground from '../Components/ParticlesBackground';
+import ButtonBack from '../Components/ButtonBack';
+
+Modal.setAppElement('#root');
+
+export default function UsuariosGet() {
+  const [usuarios, setUsuarios] = useState([]);
+  const [locales, setLocales] = useState([]);
+  const [search, setSearch] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [formData, setFormData] = useState({
+    nombre: '',
+    email: '',
+    password: '',
+    rol: 'empleado',
+    local_id: ''
+  });
+
+  const fetchUsuarios = async () => {
+    try {
+      const res = await axios.get('http://localhost:8080/usuarios');
+      setUsuarios(res.data);
+    } catch (error) {
+      console.error('Error al obtener usuarios:', error);
+    }
+  };
+
+  const fetchLocales = async () => {
+    try {
+      const res = await axios.get('http://localhost:8080/locales');
+      setLocales(res.data);
+    } catch (error) {
+      console.error('Error al obtener locales:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsuarios();
+    fetchLocales();
+  }, []);
+
+  const openModal = (usuario = null) => {
+    if (usuario) {
+      setEditId(usuario.id);
+      setFormData({
+        nombre: usuario.nombre,
+        email: usuario.email,
+        password: '',
+        rol: usuario.rol,
+        local_id: usuario.local_id || ''
+      });
+    } else {
+      setEditId(null);
+      setFormData({
+        nombre: '',
+        email: '',
+        password: '',
+        rol: 'empleado',
+        local_id: ''
+      });
+    }
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editId) {
+        await axios.put(`http://localhost:8080/usuarios/${editId}`, formData);
+      } else {
+        await axios.post('http://localhost:8080/usuarios', formData);
+      }
+      fetchUsuarios();
+      setModalOpen(false);
+    } catch (err) {
+      console.error('Error al guardar usuario:', err);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`http://localhost:8080/usuarios/${id}`);
+      fetchUsuarios();
+    } catch (err) {
+      console.error('Error al eliminar usuario:', err);
+    }
+  };
+
+  const filtered = usuarios.filter((u) =>
+    [u.nombre, u.email, u.rol].some((f) =>
+      f?.toLowerCase().includes(search.toLowerCase())
+    )
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-10 px-6 text-white relative">
+      <ParticlesBackground />
+      <ButtonBack />
+
+      <div className="max-w-6xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold text-indigo-400 flex items-center gap-3 uppercase drop-shadow">
+            <FaUser /> Usuarios
+          </h1>
+          <button
+            onClick={() => openModal()}
+            className="bg-indigo-500 hover:bg-indigo-600 transition px-5 py-2 rounded-xl font-semibold flex items-center gap-2 shadow-lg"
+          >
+            <FaPlus /> Nuevo Usuario
+          </button>
+        </div>
+
+        <input
+          type="text"
+          placeholder="Buscar usuario..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full mb-8 px-4 py-3 rounded-xl border border-gray-600 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+
+        <div className="overflow-auto rounded-xl shadow-lg">
+          <table className="w-full text-sm text-left text-white">
+            <thead className="bg-indigo-700 text-white">
+              <tr>
+                <th className="px-4 py-3">Nombre</th>
+                <th className="px-4 py-3">Email</th>
+                <th className="px-4 py-3">Rol</th>
+                <th className="px-4 py-3">Local</th>
+                <th className="px-4 py-3 text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((u) => (
+                <tr
+                  key={u.id}
+                  className="border-b border-white/10 hover:bg-white/10 transition"
+                >
+                  <td className="px-4 py-2 font-semibold">{u.nombre}</td>
+                  <td className="px-4 py-2">{u.email}</td>
+                  <td className="px-4 py-2 capitalize">{u.rol}</td>
+                  <td className="px-4 py-2">
+                    {locales.find((l) => l.id === u.local_id)?.nombre || '-'}
+                  </td>
+                  <td className="px-4 py-2 text-center flex justify-center gap-4">
+                    <button
+                      onClick={() => openModal(u)}
+                      className="text-yellow-400 hover:text-yellow-300"
+                    >
+                      <FaEdit />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(u.id)}
+                      className="text-red-500 hover:text-red-400"
+                    >
+                      <FaTrash />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <Modal
+          isOpen={modalOpen}
+          onRequestClose={() => setModalOpen(false)}
+          overlayClassName="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50"
+          className="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl border-l-4 border-indigo-500"
+        >
+          <h2 className="text-2xl font-bold mb-4 text-indigo-600">
+            {editId ? 'Editar Usuario' : 'Nuevo Usuario'}
+          </h2>
+          <form onSubmit={handleSubmit} className="space-y-4 text-gray-800">
+            <input
+              type="text"
+              placeholder="Nombre"
+              value={formData.nombre}
+              onChange={(e) =>
+                setFormData({ ...formData, nombre: e.target.value })
+              }
+              required
+              className="w-full px-4 py-2 rounded-lg border border-gray-300"
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+              required
+              className="w-full px-4 py-2 rounded-lg border border-gray-300"
+            />
+            {!editId && (
+              <input
+                type="password"
+                placeholder="Contraseña"
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                required
+                className="w-full px-4 py-2 rounded-lg border border-gray-300"
+              />
+            )}
+            <select
+              value={formData.rol}
+              onChange={(e) =>
+                setFormData({ ...formData, rol: e.target.value })
+              }
+              className="w-full px-4 py-2 rounded-lg border border-gray-300"
+              required
+            >
+              <option value="empleado">Empleado</option>
+              <option value="admin">Admin</option>
+            </select>
+            <select
+              value={formData.local_id || ''}
+              onChange={(e) =>
+                setFormData({ ...formData, local_id: e.target.value })
+              }
+              className="w-full px-4 py-2 rounded-lg border border-gray-300"
+              required
+            >
+              <option value="">Seleccione Local</option>
+              {locales.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.nombre}
+                </option>
+              ))}
+            </select>
+            <div className="text-right">
+              <button
+                type="submit"
+                className="bg-indigo-500 hover:bg-indigo-600 transition px-6 py-2 text-white font-medium rounded-lg"
+              >
+                {editId ? 'Actualizar' : 'Guardar'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      </div>
+    </div>
+  );
+}

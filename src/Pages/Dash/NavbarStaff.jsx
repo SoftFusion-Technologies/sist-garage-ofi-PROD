@@ -55,7 +55,7 @@ const NavbarStaff = () => {
     },
     {
       id: 2,
-      href: 'dashboard/users',
+      href: 'dashboard/usuarios',
       title: 'Usuarios',
       roles: ['admin', 'administrador']
     }
