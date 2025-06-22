@@ -30,13 +30,15 @@ import useLayoutVisibility from './Hooks/useLayoutVisibility';
 import LoginForm from './Components/login/LoginForm';
 import AdminPage from './Pages/Dash/AdminPage';
 import AdminPageStock from './Pages/Stock/AdminPageStock';
-import LocalesGet from './Pages/MetodosGets/LocalesGet';
+import LocalesGet from './Pages/LocalesGet';
 import TallesGet from './Pages/MetodosGets/TallesGet';
 import ProductosGet from './Pages/MetodosGets/ProductosGet';
 import StockGet from './Pages/MetodosGets/StockGet';
 
 import { Navigate } from 'react-router-dom';
 import UsuariosGet from './Pages/UsuariosGet';
+import LugaresGet from './Pages/MetodosGets/LugaresGet';
+import EstadosGet from './Pages/MetodosGets/Estados';
 
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
@@ -84,6 +86,7 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        {/* MODULO DENTRO DE STOCK INICIO BENJAMIN ORELLANA 22 06 25 */}
         <Ruta
           path="/dashboard/stock/talles"
           element={
@@ -111,11 +114,29 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        <Ruta
+          path="/dashboard/stock/lugares"
+          element={
+            <ProtectedRoute>
+              {' '}
+              <LugaresGet />{' '}
+            </ProtectedRoute>
+          }
+        />{' '}
+        <Ruta
+          path="/dashboard/stock/estados"
+          element={
+            <ProtectedRoute>
+              {' '}
+              <EstadosGet />{' '}
+            </ProtectedRoute>
+          }
+        />
+        {/* MODULO DENTRO DE STOCK INICIO BENJAMIN ORELLANA 22 06 25 */}
         {/* componentes del staff y login FINAL */}
         {/* <Ruta path="/*" element={<NotFound />} /> */}
         {/* 🔁 Redirección automática al login si se accede a "/" */}
         <Ruta path="/" element={<Navigate to="/login" replace />} />
-
         {/* 🔁 Ruta no encontrada */}
         <Ruta path="*" element={<Navigate to="/login" replace />} />
       </Rutas>

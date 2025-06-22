@@ -46,21 +46,17 @@ const AdminPageStock = () => {
 
           <div className="xl:px-0 sm:px-16 px-6 max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-8 py-12">
             {stockLinks.map(({ to, label, icon }, index) => (
-              <motion.div
-                key={label}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: index * 0.2 }}
-                className="bg-white shadow-xl hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:border-pink-400 transition-all duration-300 font-semibold text-lg lg:text-xl text-gray-800 rounded-2xl flex justify-center items-center h-40 cursor-pointer border border-white/20 hover:scale-[1.02]"
-              >
-                <Link
-                  to={to}
-                  className="flex flex-col justify-center items-center gap-2"
+              <Link to={to} key={label}>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: index * 0.2 }}
+                  className="bg-white shadow-xl hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:border-pink-400 transition-all duration-300 font-semibold text-lg lg:text-xl text-gray-800 rounded-2xl flex justify-center items-center h-40 cursor-pointer border border-white/20 hover:scale-[1.02] flex-col gap-2"
                 >
                   <span className="text-4xl text-pink-500">{icon}</span>
                   <span>{label}</span>
-                </Link>
-              </motion.div>
+                </motion.div>
+              </Link>
             ))}
           </div>
         </div>
