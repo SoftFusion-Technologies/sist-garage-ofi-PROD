@@ -19,6 +19,8 @@ const TallesGet = () => {
     tipo_categoria: 'ropa'
   });
 
+  const [categoriaFiltro, setCategoriaFiltro] = useState('todos');
+
   const fetchTalles = async () => {
     try {
       const res = await axios.get('http://localhost:8080/talles');
@@ -32,10 +34,18 @@ const TallesGet = () => {
     fetchTalles();
   }, []);
 
-  const filteredTalles = talles.filter((t) =>
-    t.nombre.toLowerCase().includes(search.toLowerCase())
-  );
-
+  const filteredTalles = talles
+    .filter(
+      (t) =>
+        t.nombre.toLowerCase().includes(search.toLowerCase()) &&
+        (categoriaFiltro === 'todos' || t.tipo_categoria === categoriaFiltro)
+    )
+    .sort((a, b) => {
+      const ordenCategoria = { ropa: 1, calzado: 2, accesorio: 3 };
+      return (
+        ordenCategoria[a.tipo_categoria] - ordenCategoria[b.tipo_categoria]
+      );
+    });
   const openModal = (talle = null) => {
     setEditId(talle ? talle.id : null);
     setFormValues(
@@ -98,6 +108,17 @@ const TallesGet = () => {
           onChange={(e) => setSearch(e.target.value)}
           className="w-full mb-6 px-4 py-2 rounded-lg border border-gray-600 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
         />
+
+        <select
+          value={categoriaFiltro}
+          onChange={(e) => setCategoriaFiltro(e.target.value)}
+          className="mb-6 px-4 py-2 rounded-lg border border-gray-600 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-pink-500"
+        >
+          <option value="todos">Todos</option>
+          <option value="ropa">Ropa</option>
+          <option value="calzado">Calzado</option>
+          <option value="accesorio">Accesorio</option>
+        </select>
 
         <motion.div layout className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredTalles.map((talle) => (

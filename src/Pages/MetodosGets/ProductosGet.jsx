@@ -24,6 +24,14 @@ const ProductosGet = () => {
   const [confirmDelete, setConfirmDelete] = useState(null); // objeto con ID a eliminar
   const [warningMessage, setWarningMessage] = useState('');
 
+  // RELACION AL FILTRADO BENJAMIN ORELLANA 23-04-25
+  const [estadoFiltro, setEstadoFiltro] = useState('todos');
+  const [categoriaFiltro, setCategoriaFiltro] = useState('todas');
+  const [precioMin, setPrecioMin] = useState('');
+  const [precioMax, setPrecioMax] = useState('');
+  const [ordenCampo, setOrdenCampo] = useState('nombre');
+  // RELACION AL FILTRADO BENJAMIN ORELLANA 23-04-25
+
   const fetchProductos = async () => {
     try {
       const res = await axios.get('http://localhost:8080/productos');
@@ -37,11 +45,30 @@ const ProductosGet = () => {
     fetchProductos();
   }, []);
 
-  const filtered = productos.filter((p) =>
-    [p.nombre, p.descripcion, p.categoria].some((field) =>
-      field?.toLowerCase().includes(search.toLowerCase())
+  const categoriasUnicas = [...new Set(productos.map((p) => p.categoria))];
+
+  const filtered = productos
+    .filter((p) =>
+      [p.nombre, p.descripcion, p.categoria].some((field) =>
+        field?.toLowerCase().includes(search.toLowerCase())
+      )
     )
-  );
+    .filter((p) =>
+      estadoFiltro === 'todos' ? true : p.estado === estadoFiltro
+    )
+    .filter((p) =>
+      categoriaFiltro === 'todas' ? true : p.categoria === categoriaFiltro
+    )
+    .filter((p) => {
+      const precio = parseFloat(p.precio);
+      const min = parseFloat(precioMin) || 0;
+      const max = parseFloat(precioMax) || Infinity;
+      return precio >= min && precio <= max;
+    })
+    .sort((a, b) => {
+      if (ordenCampo === 'precio') return a.precio - b.precio;
+      return a.nombre.localeCompare(b.nombre);
+    });
 
   const openModal = (producto = null) => {
     if (producto) {
@@ -58,7 +85,7 @@ const ProductosGet = () => {
         categoria: '',
         precio: '0',
         imagen_url: '',
-        estado: 'activo',
+        estado: 'activo'
       });
     }
     setModalOpen(true);
@@ -137,6 +164,61 @@ const ProductosGet = () => {
           className="w-full mb-8 px-4 py-3 rounded-xl border border-gray-600 bg-slate-800 text-white focus:outline-none focus:ring-2 focus:ring-rose-500"
         />
 
+        {/* Filtros */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          {/* Estado */}
+          <select
+            value={estadoFiltro}
+            onChange={(e) => setEstadoFiltro(e.target.value)}
+            className="px-4 py-2 rounded-lg border bg-gray-800 border-gray-600 text-white"
+          >
+            <option value="todos">Todos los estados</option>
+            <option value="activo">Activo</option>
+            <option value="inactivo">Inactivo</option>
+          </select>
+
+          {/* Categoría */}
+          <select
+            value={categoriaFiltro}
+            onChange={(e) => setCategoriaFiltro(e.target.value)}
+            className="px-4 py-2 rounded-lg border bg-gray-800 border-gray-600 text-white"
+          >
+            <option value="todas">Todas las categorías</option>
+            {categoriasUnicas.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+
+          {/* Orden */}
+          <select
+            value={ordenCampo}
+            onChange={(e) => setOrdenCampo(e.target.value)}
+            className="px-4 py-2 rounded-lg border bg-gray-800 border-gray-600 text-white"
+          >
+            <option value="nombre">Ordenar por nombre</option>
+            <option value="precio">Ordenar por precio</option>
+          </select>
+
+          {/* Precio mínimo */}
+          <input
+            type="number"
+            placeholder="Precio mínimo"
+            value={precioMin}
+            onChange={(e) => setPrecioMin(e.target.value)}
+            className="px-4 py-2 rounded-lg border bg-gray-800 border-gray-600 text-white"
+          />
+
+          {/* Precio máximo */}
+          <input
+            type="number"
+            placeholder="Precio máximo"
+            value={precioMax}
+            onChange={(e) => setPrecioMax(e.target.value)}
+            className="px-4 py-2 rounded-lg border bg-gray-800 border-gray-600 text-white"
+          />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filtered.map((p) => (
             <motion.div
@@ -147,14 +229,37 @@ const ProductosGet = () => {
               <h2 className="text-xl font-bold text-rose-300 mb-1">
                 {p.nombre}
               </h2>
-              <p className="text-sm text-gray-200 mb-2">{p.descripcion}</p>
-              <p className="text-sm text-gray-300 mb-1">
-                Categoría: {p.categoria}
+              <p className="text-sm text-gray-200 mb-2">
+                Descripción: {p.descripcion || 'Sin Descripción'}
               </p>
+              <p className="text-sm text-gray-300 mb-1">
+                Categoría: {p.categoria || 'Sin Categoría'}
+              </p>
+
               <p className="text-sm text-green-300 font-semibold">
                 ${p.precio ? parseFloat(p.precio).toFixed(2) : '0.00'}
               </p>
 
+              <p
+                className={`mt-2 uppercase text-sm font-semibold mb-1 ${
+                  p.estado === 'activo' ? 'text-green-400' : 'text-red-400'
+                }`}
+              >
+                {p.estado}
+              </p>
+
+              <p className="text-sm text-gray-400">
+                Creado el:{' '}
+                {new Date(p.created_at).toLocaleString('es-AR', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                  hour12: false
+                })}
+              </p>
               <div className="mt-4 flex justify-end gap-4">
                 <button
                   onClick={() => openModal(p)}
