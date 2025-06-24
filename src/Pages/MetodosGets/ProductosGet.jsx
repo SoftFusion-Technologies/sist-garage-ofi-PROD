@@ -5,7 +5,7 @@ import { FaBox, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import ButtonBack from '../../Components/ButtonBack';
 import ParticlesBackground from '../../Components/ParticlesBackground';
-
+import DropdownCategoriasConFiltro from '../../Components/DropdownCategoriasConFiltro';
 Modal.setAppElement('#root');
 
 const ProductosGet = () => {
@@ -26,11 +26,13 @@ const ProductosGet = () => {
 
   // RELACION AL FILTRADO BENJAMIN ORELLANA 23-04-25
   const [estadoFiltro, setEstadoFiltro] = useState('todos');
+  const [estadoCategoriaFiltro, setEstadoCategoriaFiltro] = useState('todas');
+
   const [categorias, setCategorias] = useState([]);
   const [precioMin, setPrecioMin] = useState('');
   const [precioMax, setPrecioMax] = useState('');
   const [ordenCampo, setOrdenCampo] = useState('nombre');
-  const [categoriaFiltro, setCategoriaFiltro] = useState('todas');
+  const [categoriaFiltro, setCategoriaFiltro] = useState(null);
   // RELACION AL FILTRADO BENJAMIN ORELLANA 23-04-25
 
   const fetchData = async () => {
@@ -60,9 +62,9 @@ const ProductosGet = () => {
       estadoFiltro === 'todos' ? true : p.estado === estadoFiltro
     )
     .filter((p) =>
-      categoriaFiltro === 'todas'
+      categoriaFiltro === null
         ? true
-        : p.categoria?.id === parseInt(categoriaFiltro)
+        : p.categoria_id === parseInt(categoriaFiltro)
     )
 
     .filter((p) => {
@@ -76,31 +78,30 @@ const ProductosGet = () => {
       return a.nombre.localeCompare(b.nombre);
     });
 
-    const openModal = (producto = null) => {
-      if (producto) {
-        setEditId(producto.id);
-        setFormValues({
-          nombre: producto.nombre || '',
-          descripcion: producto.descripcion || '',
-          categoria_id: producto.categoria_id || producto.categoria?.id || '',
-          precio: producto.precio?.toString() ?? '',
-          imagen_url: producto.imagen_url || '',
-          estado: producto.estado || 'activo'
-        });
-      } else {
-        setEditId(null);
-        setFormValues({
-          nombre: '',
-          descripcion: '',
-          categoria_id: '',
-          precio: '0',
-          imagen_url: '',
-          estado: 'activo'
-        });
-      }
-      setModalOpen(true);
-    };
-    
+  const openModal = (producto = null) => {
+    if (producto) {
+      setEditId(producto.id);
+      setFormValues({
+        nombre: producto.nombre || '',
+        descripcion: producto.descripcion || '',
+        categoria_id: producto.categoria_id || producto.categoria?.id || '',
+        precio: producto.precio?.toString() ?? '',
+        imagen_url: producto.imagen_url || '',
+        estado: producto.estado || 'activo'
+      });
+    } else {
+      setEditId(null);
+      setFormValues({
+        nombre: '',
+        descripcion: '',
+        categoria_id: '',
+        precio: '0',
+        imagen_url: '',
+        estado: 'activo'
+      });
+    }
+    setModalOpen(true);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -189,18 +190,11 @@ const ProductosGet = () => {
           </select>
 
           {/* Categoría */}
-          <select
-            value={categoriaFiltro}
-            onChange={(e) => setCategoriaFiltro(e.target.value)}
-            className="px-4 py-2 rounded-lg border bg-gray-800 border-gray-600 text-white"
-          >
-            <option value="todas">Todas las categorías</option>
-            {categorias.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.nombre}
-              </option>
-            ))}
-          </select>
+          <DropdownCategoriasConFiltro
+            categorias={categorias}
+            selected={categoriaFiltro}
+            onChange={setCategoriaFiltro}
+          />
 
           {/* Orden */}
           <select
