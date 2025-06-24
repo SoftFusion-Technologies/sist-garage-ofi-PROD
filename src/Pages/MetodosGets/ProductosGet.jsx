@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Modal from 'react-modal';
-import { FaBox, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
+import { FaBox, FaPlus, FaEdit, FaTrash, FaDownload } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import ButtonBack from '../../Components/ButtonBack';
 import ParticlesBackground from '../../Components/ParticlesBackground';
 import DropdownCategoriasConFiltro from '../../Components/DropdownCategoriasConFiltro';
 import BulkUploadButton from '../../Components/BulkUploadButton.jsx';
+import * as XLSX from 'xlsx';
+
 Modal.setAppElement('#root');
 
 const ProductosGet = () => {
@@ -150,6 +152,39 @@ const ProductosGet = () => {
     }
   };
 
+  const exportarProductosAExcel = (productos) => {
+    const data = productos.map((p) => ({
+      ID: p.id,
+      Nombre: p.nombre,
+      Descripción: p.descripcion || '',
+      Precio: `$${parseFloat(p.precio).toFixed(2)}`,
+      Estado: p.estado === 'inactivo' ? 'Inactivo' : 'Activo',
+      Categoría: p.categoria?.nombre || 'Sin categoría',
+      SKU: p.codigo_sku || '',
+      'Creado el': new Date(p.created_at).toLocaleString('es-AR'),
+      'Actualizado el': new Date(p.updated_at).toLocaleString('es-AR')
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
+
+    // 🕒 Nombre de archivo dinámico con fecha
+    const fecha = new Date();
+    const timestamp = fecha
+      .toLocaleString('es-AR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+      .replace(/[/:]/g, '-');
+
+    const nombreArchivo = `productos-exportados-${timestamp}.xlsx`;
+    XLSX.writeFile(workbook, nombreArchivo);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-10 px-6 text-white relative">
       <ParticlesBackground />
@@ -169,6 +204,13 @@ const ProductosGet = () => {
                 onSuccess={() => fetchData()} // refrescar lista si lo necesitas
                 className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white"
               />
+
+              <button
+                onClick={() => exportarProductosAExcel(filtered)}
+                className="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-700 px-4 py-2 rounded-xl font-semibold flex items-center gap-2 text-white"
+              >
+                <FaDownload /> Exportar Excel
+              </button>
 
               <button
                 onClick={() => openModal()}
@@ -243,9 +285,7 @@ const ProductosGet = () => {
               layout
               className="bg-white/10 p-6 rounded-2xl shadow-xl backdrop-blur-md border border-white/10 hover:scale-[1.02] transition-all"
             >
-              <h2 className="text-xl font-bold text-rose-300 mb-1">
-                {p.id}
-              </h2>
+              <h2 className="text-xl font-bold text-rose-300 mb-1">{p.id}</h2>
               <h2 className="text-xl font-bold text-rose-300 mb-1">
                 {p.nombre}
               </h2>

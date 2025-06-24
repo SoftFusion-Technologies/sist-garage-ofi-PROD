@@ -9,11 +9,14 @@ import {
   FaTrash,
   FaExclamationTriangle,
   FaCheckCircle,
-  FaTimesCircle
+  FaTimesCircle,
+  FaDownload
 } from 'react-icons/fa';
 import ButtonBack from '../../Components/ButtonBack';
 import ParticlesBackground from '../../Components/ParticlesBackground';
 import BulkUploadButton from '../../Components/BulkUploadButton.jsx';
+import * as XLSX from 'xlsx';
+
 Modal.setAppElement('#root');
 
 const StockGet = () => {
@@ -200,6 +203,42 @@ const StockGet = () => {
       verSoloStockBajo ? item.cantidad <= UMBRAL_STOCK_BAJO : true
     );
 
+  const exportarStockAExcel = (datos) => {
+    // Mapeamos los datos que querés exportar (puede incluir joins)
+    const exportData = datos.map((item) => ({
+      Producto:
+        productos.find((p) => p.id === item.producto_id)?.nombre ||
+        'Sin nombre',
+      Talle: item.talle_id || '-',
+      Local: item.local_id || '-',
+      Lugar: item.lugar_id || '-',
+      Estado: item.estado_id || '-',
+      Cantidad: item.cantidad,
+      'En Perchero': item.en_perchero ? 'Sí' : 'No',
+      SKU: item.codigo_sku || '',
+      'Última actualización': new Date(item.updated_at).toLocaleString('es-AR')
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Stock');
+
+    const fecha = new Date();
+    const timestamp = fecha
+      .toLocaleString('es-AR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+      .replace(/[/:]/g, '-'); // Reemplaza / y : para que sea válido en nombre de archivo
+
+    const nombreArchivo = `stock-exportado-${timestamp}.xlsx`;
+
+    XLSX.writeFile(workbook, nombreArchivo);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-10 px-6 text-white">
       <ParticlesBackground />
@@ -217,6 +256,12 @@ const StockGet = () => {
               onSuccess={() => fetchAll()} // función para recargar stock después de importar
               className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white"
             />
+            <button
+              onClick={() => exportarStockAExcel(filtered)}
+              className="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-700 px-4 py-2 rounded-lg font-semibold flex items-center gap-2 text-white"
+            >
+              <FaDownload /> Exportar Excel
+            </button>
 
             <button
               onClick={() => openModal()}
