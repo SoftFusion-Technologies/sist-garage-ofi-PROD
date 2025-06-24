@@ -244,6 +244,9 @@ const ProductosGet = () => {
               className="bg-white/10 p-6 rounded-2xl shadow-xl backdrop-blur-md border border-white/10 hover:scale-[1.02] transition-all"
             >
               <h2 className="text-xl font-bold text-rose-300 mb-1">
+                {p.id}
+              </h2>
+              <h2 className="text-xl font-bold text-rose-300 mb-1">
                 {p.nombre}
               </h2>
               <p className="text-sm text-gray-200 mb-2">

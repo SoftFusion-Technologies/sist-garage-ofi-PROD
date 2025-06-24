@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { FaWarehouse, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import ButtonBack from '../../Components/ButtonBack';
 import ParticlesBackground from '../../Components/ParticlesBackground';
-
+import BulkUploadButton from '../../Components/BulkUploadButton.jsx';
 Modal.setAppElement('#root');
 
 const StockGet = () => {
@@ -190,16 +190,25 @@ const StockGet = () => {
       <ButtonBack />
 
       <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <h1 className="text-3xl font-bold text-cyan-300 flex items-center gap-2 uppercase">
             <FaWarehouse /> Stock
           </h1>
-          <button
-            onClick={() => openModal()}
-            className="bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-lg font-semibold flex items-center gap-2"
-          >
-            <FaPlus /> Nuevo
-          </button>
+
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <BulkUploadButton
+              tabla="stock"
+              onSuccess={() => fetchAll()} // función para recargar stock después de importar
+              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white"
+            />
+
+            <button
+              onClick={() => openModal()}
+              className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-lg font-semibold flex items-center gap-2"
+            >
+              <FaPlus /> Nuevo
+            </button>
+          </div>
         </div>
 
         <input

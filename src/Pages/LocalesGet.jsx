@@ -106,6 +106,9 @@ const LocalesGet = () => {
               <p className="text-sm text-gray-400 font-light">
                 📞 {local.telefono}
               </p>
+              <h2 className="mt-2 text-xl font-bold text-pink-300 tracking-wide">
+                ID: {local.id}
+              </h2>
               <div className="mt-4 flex justify-end gap-4">
                 <button
                   onClick={() => openModal(local)}

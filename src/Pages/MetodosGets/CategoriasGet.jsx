@@ -120,6 +120,7 @@ const CategoriasGet = () => {
               layout
               className="bg-white/10 p-6 rounded-2xl shadow-md backdrop-blur-md border border-white/10 hover:scale-[1.02] transition-all"
             >
+              <h2 className="text-xl font-bold text-blue-300">{cat.id}</h2>
               <h2 className="text-xl font-bold text-blue-300">{cat.nombre}</h2>
               {cat.descripcion && (
                 <p className="text-sm text-gray-300 mt-1">{cat.descripcion}</p>

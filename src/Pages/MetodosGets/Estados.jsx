@@ -107,6 +107,9 @@ const EstadosGet = () => {
               className="bg-white/10 p-6 rounded-2xl shadow-md backdrop-blur-md border border-white/10 hover:scale-[1.02] transition-all"
             >
               <h2 className="text-xl font-bold text-pink-300">
+                {estado.id}
+              </h2>
+              <h2 className="text-xl font-bold text-pink-300">
                 {estado.nombre}
               </h2>
               <div className="mt-4 flex justify-end gap-4">
