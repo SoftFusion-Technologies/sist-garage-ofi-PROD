@@ -12,13 +12,19 @@ import {
   FaTags,
   FaRulerCombined,
   FaBoxes,
-  FaStore
+  FaStore,
+  FaFolderOpen
 } from 'react-icons/fa';
 
 const stockLinks = [
   { to: '/dashboard/stock/lugares', label: 'Lugares', icon: <FaWarehouse /> },
   { to: '/dashboard/stock/estados', label: 'Estados', icon: <FaTags /> },
   { to: '/dashboard/stock/talles', label: 'Talles', icon: <FaRulerCombined /> },
+  {
+    to: '/dashboard/stock/categorias',
+    label: 'Categoría',
+    icon: <FaFolderOpen />
+  },
   { to: '/dashboard/stock/productos', label: 'Productos', icon: <FaBoxes /> },
   { to: '/dashboard/stock/stock', label: 'Stock', icon: <FaStore /> }
 ];

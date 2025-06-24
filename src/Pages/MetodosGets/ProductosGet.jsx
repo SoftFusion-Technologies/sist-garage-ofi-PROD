@@ -16,7 +16,7 @@ const ProductosGet = () => {
   const [formValues, setFormValues] = useState({
     nombre: '',
     descripcion: '',
-    categoria: '',
+    categoria_id: '',
     precio: '',
     imagen_url: '',
     estado: 'activo'
@@ -26,26 +26,29 @@ const ProductosGet = () => {
 
   // RELACION AL FILTRADO BENJAMIN ORELLANA 23-04-25
   const [estadoFiltro, setEstadoFiltro] = useState('todos');
-  const [categoriaFiltro, setCategoriaFiltro] = useState('todas');
+  const [categorias, setCategorias] = useState([]);
   const [precioMin, setPrecioMin] = useState('');
   const [precioMax, setPrecioMax] = useState('');
   const [ordenCampo, setOrdenCampo] = useState('nombre');
+  const [categoriaFiltro, setCategoriaFiltro] = useState('todas');
   // RELACION AL FILTRADO BENJAMIN ORELLANA 23-04-25
 
-  const fetchProductos = async () => {
+  const fetchData = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/productos');
-      setProductos(res.data);
-    } catch (err) {
-      console.error('Error al obtener productos:', err);
+      const [resProd, resCat] = await Promise.all([
+        axios.get('http://localhost:8080/productos'),
+        axios.get('http://localhost:8080/categorias')
+      ]);
+      setProductos(resProd.data);
+      setCategorias(resCat.data);
+    } catch (error) {
+      console.error('Error al cargar productos o categorías:', error);
     }
   };
 
   useEffect(() => {
-    fetchProductos();
+    fetchData();
   }, []);
-
-  const categoriasUnicas = [...new Set(productos.map((p) => p.categoria))];
 
   const filtered = productos
     .filter((p) =>
@@ -57,8 +60,11 @@ const ProductosGet = () => {
       estadoFiltro === 'todos' ? true : p.estado === estadoFiltro
     )
     .filter((p) =>
-      categoriaFiltro === 'todas' ? true : p.categoria === categoriaFiltro
+      categoriaFiltro === 'todas'
+        ? true
+        : p.categoria?.id === parseInt(categoriaFiltro)
     )
+
     .filter((p) => {
       const precio = parseFloat(p.precio);
       const min = parseFloat(precioMin) || 0;
@@ -70,26 +76,31 @@ const ProductosGet = () => {
       return a.nombre.localeCompare(b.nombre);
     });
 
-  const openModal = (producto = null) => {
-    if (producto) {
-      setEditId(producto.id);
-      setFormValues({
-        ...producto,
-        precio: producto.precio?.toString() ?? '' // 👈 Asegura que sea string
-      });
-    } else {
-      setEditId(null);
-      setFormValues({
-        nombre: '',
-        descripcion: '',
-        categoria: '',
-        precio: '0',
-        imagen_url: '',
-        estado: 'activo'
-      });
-    }
-    setModalOpen(true);
-  };
+    const openModal = (producto = null) => {
+      if (producto) {
+        setEditId(producto.id);
+        setFormValues({
+          nombre: producto.nombre || '',
+          descripcion: producto.descripcion || '',
+          categoria_id: producto.categoria_id || producto.categoria?.id || '',
+          precio: producto.precio?.toString() ?? '',
+          imagen_url: producto.imagen_url || '',
+          estado: producto.estado || 'activo'
+        });
+      } else {
+        setEditId(null);
+        setFormValues({
+          nombre: '',
+          descripcion: '',
+          categoria_id: '',
+          precio: '0',
+          imagen_url: '',
+          estado: 'activo'
+        });
+      }
+      setModalOpen(true);
+    };
+    
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -117,7 +128,7 @@ const ProductosGet = () => {
         await axios.post('http://localhost:8080/productos', dataToSend);
       }
 
-      fetchProductos();
+      fetchData();
       setModalOpen(false);
     } catch (err) {
       console.error('Error al guardar producto:', err);
@@ -126,7 +137,7 @@ const ProductosGet = () => {
   const handleDelete = async (id) => {
     try {
       await axios.delete(`http://localhost:8080/productos/${id}`);
-      fetchProductos();
+      fetchData();
     } catch (err) {
       if (err.response?.status === 409) {
         setConfirmDelete(id);
@@ -184,9 +195,9 @@ const ProductosGet = () => {
             className="px-4 py-2 rounded-lg border bg-gray-800 border-gray-600 text-white"
           >
             <option value="todas">Todas las categorías</option>
-            {categoriasUnicas.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
+            {categorias.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.nombre}
               </option>
             ))}
           </select>
@@ -232,8 +243,9 @@ const ProductosGet = () => {
               <p className="text-sm text-gray-200 mb-2">
                 Descripción: {p.descripcion || 'Sin Descripción'}
               </p>
-              <p className="text-sm text-gray-300 mb-1">
-                Categoría: {p.categoria || 'Sin Categoría'}
+
+              <p className="text-sm text-gray-400">
+                Categoría: {p.categoria?.nombre || 'Sin categoría'}
               </p>
 
               <p className="text-sm text-green-300 font-semibold">
@@ -307,15 +319,21 @@ const ProductosGet = () => {
               className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
               rows="3"
             />
-            <input
-              type="text"
-              placeholder="Categoría"
-              value={formValues.categoria}
+            <select
+              value={formValues.categoria_id}
               onChange={(e) =>
-                setFormValues({ ...formValues, categoria: e.target.value })
+                setFormValues({ ...formValues, categoria_id: e.target.value })
               }
               className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
-            />
+            >
+              <option value="">Seleccionar categoría</option>
+              {categorias.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.nombre}
+                </option>
+              ))}
+            </select>
+
             <input
               type="number"
               placeholder="Precio"
@@ -389,7 +407,7 @@ const ProductosGet = () => {
                     `http://localhost:8080/productos/${confirmDelete}`
                   );
                   setConfirmDelete(null);
-                  fetchProductos();
+                  fetchData();
                 } catch (error) {
                   console.error('Error al eliminar con forzado:', error);
                 }

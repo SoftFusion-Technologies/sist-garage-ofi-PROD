@@ -39,6 +39,7 @@ import { Navigate } from 'react-router-dom';
 import UsuariosGet from './Pages/UsuariosGet';
 import LugaresGet from './Pages/MetodosGets/LugaresGet';
 import EstadosGet from './Pages/MetodosGets/Estados';
+import CategoriasGet from './Pages/MetodosGets/CategoriasGet';
 
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
@@ -93,6 +94,15 @@ function AppContent() {
             <ProtectedRoute>
               {' '}
               <TallesGet />{' '}
+            </ProtectedRoute>
+          }
+        />
+        <Ruta
+          path="/dashboard/stock/categorias"
+          element={
+            <ProtectedRoute>
+              {' '}
+              <CategoriasGet />{' '}
             </ProtectedRoute>
           }
         />

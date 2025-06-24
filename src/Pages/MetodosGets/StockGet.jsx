@@ -30,6 +30,17 @@ const StockGet = () => {
   const [lugares, setLugares] = useState([]);
   const [estados, setEstados] = useState([]);
 
+  // RELACION AL FILTRADO BENJAMIN ORELLANA 23-04-25
+  const [talleFiltro, setTalleFiltro] = useState('todos');
+  const [localFiltro, setLocalFiltro] = useState('todos');
+  const [lugarFiltro, setLugarFiltro] = useState('todos');
+  const [estadoFiltro, setEstadoFiltro] = useState('todos');
+  const [enPercheroFiltro, setEnPercheroFiltro] = useState('todos');
+  const [cantidadMin, setCantidadMin] = useState('');
+  const [cantidadMax, setCantidadMax] = useState('');
+  const [skuFiltro, setSkuFiltro] = useState('');
+  // RELACION AL FILTRADO BENJAMIN ORELLANA 23-04-25
+
   const fetchAll = async () => {
     try {
       const [resStock, resProd, resTalles, resLocales, resLugares, resEstados] =
@@ -139,12 +150,39 @@ const StockGet = () => {
     }
   };
 
-  const filtered = stock.filter((item) => {
-    return productos
-      .find((p) => p.id === item.producto_id)
-      ?.nombre?.toLowerCase()
-      .includes(search.toLowerCase());
-  });
+  const filtered = stock
+    .filter((item) => {
+      const producto = productos.find((p) => p.id === item.producto_id);
+      return producto?.nombre?.toLowerCase().includes(search.toLowerCase());
+    })
+    .filter(
+      (item) =>
+        talleFiltro === 'todos' || item.talle_id === parseInt(talleFiltro)
+    )
+    .filter(
+      (item) =>
+        localFiltro === 'todos' || item.local_id === parseInt(localFiltro)
+    )
+    .filter(
+      (item) =>
+        lugarFiltro === 'todos' || item.lugar_id === parseInt(lugarFiltro)
+    )
+    .filter(
+      (item) =>
+        estadoFiltro === 'todos' || item.estado_id === parseInt(estadoFiltro)
+    )
+    .filter((item) => {
+      if (enPercheroFiltro === 'todos') return true;
+      return item.en_perchero === (enPercheroFiltro === 'true');
+    })
+    .filter((item) => {
+      const min = parseInt(cantidadMin) || 0;
+      const max = parseInt(cantidadMax) || Infinity;
+      return item.cantidad >= min && item.cantidad <= max;
+    })
+    .filter((item) =>
+      item.codigo_sku?.toLowerCase().includes(skuFiltro.toLowerCase())
+    );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-10 px-6 text-white">
@@ -171,6 +209,100 @@ const StockGet = () => {
           onChange={(e) => setSearch(e.target.value)}
           className="w-full mb-6 px-4 py-2 rounded-lg border border-gray-600 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
         />
+
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
+          {/* Filtro por Talle */}
+          <select
+            value={talleFiltro}
+            onChange={(e) => setTalleFiltro(e.target.value)}
+            className="p-2 rounded bg-gray-800 text-white"
+          >
+            <option value="todos">Todos los talles</option>
+            {talles.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.nombre}
+              </option>
+            ))}
+          </select>
+
+          {/* Filtro por Local */}
+          <select
+            value={localFiltro}
+            onChange={(e) => setLocalFiltro(e.target.value)}
+            className="p-2 rounded bg-gray-800 text-white"
+          >
+            <option value="todos">Todos los locales</option>
+            {locales.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.nombre}
+              </option>
+            ))}
+          </select>
+
+          {/* Filtro por Lugar */}
+          <select
+            value={lugarFiltro}
+            onChange={(e) => setLugarFiltro(e.target.value)}
+            className="p-2 rounded bg-gray-800 text-white"
+          >
+            <option value="todos">Todos los lugares</option>
+            {lugares.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.nombre}
+              </option>
+            ))}
+          </select>
+
+          {/* Filtro por Estado */}
+          <select
+            value={estadoFiltro}
+            onChange={(e) => setEstadoFiltro(e.target.value)}
+            className="p-2 rounded bg-gray-800 text-white"
+          >
+            <option value="todos">Todos los estados</option>
+            {estados.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.nombre}
+              </option>
+            ))}
+          </select>
+
+          {/* Filtro por perchero */}
+          <select
+            value={enPercheroFiltro}
+            onChange={(e) => setEnPercheroFiltro(e.target.value)}
+            className="p-2 rounded bg-gray-800 text-white"
+          >
+            <option value="todos">Todos</option>
+            <option value="true">En perchero</option>
+            <option value="false">No en perchero</option>
+          </select>
+
+          {/* Filtro por cantidad */}
+          <input
+            type="number"
+            placeholder="Cantidad mínima"
+            value={cantidadMin}
+            onChange={(e) => setCantidadMin(e.target.value)}
+            className="p-2 rounded bg-gray-800 text-white"
+          />
+          <input
+            type="number"
+            placeholder="Cantidad máxima"
+            value={cantidadMax}
+            onChange={(e) => setCantidadMax(e.target.value)}
+            className="p-2 rounded bg-gray-800 text-white"
+          />
+
+          {/* Filtro por SKU */}
+          <input
+            type="text"
+            placeholder="Buscar por SKU"
+            value={skuFiltro}
+            onChange={(e) => setSkuFiltro(e.target.value)}
+            className="p-2 rounded bg-gray-800 text-white"
+          />
+        </div>
 
         <motion.div
           layout
