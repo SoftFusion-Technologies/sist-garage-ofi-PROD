@@ -30,13 +30,13 @@ import useLayoutVisibility from './Hooks/useLayoutVisibility';
 import LoginForm from './Components/login/LoginForm';
 import AdminPage from './Pages/Dash/AdminPage';
 import AdminPageStock from './Pages/Stock/AdminPageStock';
-import LocalesGet from './Pages/LocalesGet';
+import LocalesGet from './Pages/MetodosGets/LocalesGet';
 import TallesGet from './Pages/Stock/TallesGet';
 import ProductosGet from './Pages/Stock/ProductosGet';
 import StockGet from './Pages/Stock/StockGet';
 
 import { Navigate } from 'react-router-dom';
-import UsuariosGet from './Pages/UsuariosGet';
+import UsuariosGet from './Pages/MetodosGets/UsuariosGet';
 import LugaresGet from './Pages/Stock/LugaresGet';
 import EstadosGet from './Pages/Stock/Estados';
 import CategoriasGet from './Pages/Stock/CategoriasGet';

@@ -3,8 +3,8 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import { FaPlus, FaEdit, FaTrash, FaSearchLocation } from 'react-icons/fa';
 import Modal from 'react-modal';
-import ParticlesBackground from '../Components/ParticlesBackground';
-import ButtonBack from '../Components/ButtonBack';
+import ParticlesBackground from '../../Components/ParticlesBackground';
+import ButtonBack from '../../Components/ButtonBack';
 Modal.setAppElement('#root');
 
 const LocalesGet = () => {

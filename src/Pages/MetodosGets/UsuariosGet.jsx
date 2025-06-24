@@ -3,8 +3,8 @@ import axios from 'axios';
 import Modal from 'react-modal';
 import { FaUser, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import ParticlesBackground from '../Components/ParticlesBackground';
-import ButtonBack from '../Components/ButtonBack';
+import ParticlesBackground from '../../Components/ParticlesBackground';
+import ButtonBack from '../../Components/ButtonBack';
 
 Modal.setAppElement('#root');
 
