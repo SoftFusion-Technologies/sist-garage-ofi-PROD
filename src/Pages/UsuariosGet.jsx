@@ -22,6 +22,11 @@ export default function UsuariosGet() {
     local_id: ''
   });
 
+  // RELACION AL FILTRADO BENJAMIN ORELLANA 24-04-25
+  const [rolFiltro, setRolFiltro] = useState('todos');
+  const [localFiltro, setLocalFiltro] = useState('todos');
+  // RELACION AL FILTRADO BENJAMIN ORELLANA 24-04-25
+
   const fetchUsuarios = async () => {
     try {
       const res = await axios.get('http://localhost:8080/usuarios');
@@ -92,11 +97,17 @@ export default function UsuariosGet() {
     }
   };
 
-  const filtered = usuarios.filter((u) =>
-    [u.nombre, u.email, u.rol].some((f) =>
+  const filtered = usuarios.filter((u) => {
+    const coincideTexto = [u.nombre, u.email, u.rol].some((f) =>
       f?.toLowerCase().includes(search.toLowerCase())
-    )
-  );
+    );
+
+    const coincideRol = rolFiltro === 'todos' || u.rol === rolFiltro;
+    const coincideLocal =
+      localFiltro === 'todos' || u.local_id === parseInt(localFiltro);
+
+    return coincideTexto && coincideRol && coincideLocal;
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#1f2937] via-[#111827] to-[#000000] py-12 px-6 text-white relative font-sans">
@@ -105,7 +116,7 @@ export default function UsuariosGet() {
 
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-10">
-          <h1 className="text-4xl font-extrabold text-white flex items-center gap-3 drop-shadow-xl">
+          <h1 className="text-4xl titulo uppercase font-extrabold text-white flex items-center gap-3 drop-shadow-xl">
             <FaUser className="text-indigo-400" /> Gestión de Usuarios
           </h1>
           <button
@@ -116,13 +127,54 @@ export default function UsuariosGet() {
           </button>
         </div>
 
-        <input
-          type="text"
-          placeholder="Buscar usuario..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full mb-6 px-5 py-3 rounded-xl border border-gray-600 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
+        <div className="w-full bg-gray-900 p-4 rounded-xl shadow-md mb-6">
+          <h2 className="text-white text-lg font-semibold mb-4">Filtros</h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Filtro de texto */}
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Buscar</label>
+              <input
+                type="text"
+                placeholder="Nombre, email o rol..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/80"
+              />
+            </div>
+
+            {/* Filtro por rol */}
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Rol</label>
+              <select
+                value={rolFiltro}
+                onChange={(e) => setRolFiltro(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/80"
+              >
+                <option value="todos">Todos</option>
+                <option value="admin">Admin</option>
+                <option value="empleado">Empleado</option>
+              </select>
+            </div>
+
+            {/* Filtro por local */}
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Local</label>
+              <select
+                value={localFiltro}
+                onChange={(e) => setLocalFiltro(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/80"
+              >
+                <option value="todos">Todos</option>
+                {locales.map((local) => (
+                  <option key={local.id} value={local.id}>
+                    {local.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
 
         <div className="overflow-auto rounded-2xl shadow-xl bg-white/5 backdrop-blur-sm">
           <table className="w-full text-sm text-left text-white">

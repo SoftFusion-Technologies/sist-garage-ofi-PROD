@@ -46,17 +46,26 @@ const TallesGet = () => {
         ordenCategoria[a.tipo_categoria] - ordenCategoria[b.tipo_categoria]
       );
     });
+
   const openModal = (talle = null) => {
-    setEditId(talle ? talle.id : null);
-    setFormValues(
-      talle
-        ? {
-            nombre: talle.nombre,
-            descripcion: talle.descripcion || '',
-            tipo_categoria: talle.tipo_categoria || 'ropa'
-          }
-        : { nombre: '', descripcion: '', tipo_categoria: 'ropa' }
-    );
+    if (talle) {
+      // ✨ Editar: usar los datos existentes
+      setEditId(talle.id);
+      setFormValues({
+        nombre: talle.nombre || '',
+        descripcion: talle.descripcion || '',
+        tipo_categoria: talle.tipo_categoria || 'ropa'
+      });
+    } else {
+      // 🆕 Crear: usar valores por defecto
+      setEditId(null);
+      setFormValues({
+        nombre: '',
+        descripcion: '',
+        tipo_categoria: 'ropa'
+      });
+    }
+
     setModalOpen(true);
   };
 
@@ -183,15 +192,20 @@ const TallesGet = () => {
             ></textarea>
             <select
               value={formValues.tipo_categoria}
-              onChange={(e) =>
-                setFormValues({ ...formValues, tipo_categoria: e.target.value })
-              }
+              onChange={(e) => {
+                console.log('Seleccionado:', e.target.value); // 👀
+                setFormValues({
+                  ...formValues,
+                  tipo_categoria: e.target.value
+                });
+              }}
               className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-400"
             >
               <option value="ropa">Ropa</option>
               <option value="calzado">Calzado</option>
               <option value="accesorio">Accesorio</option>
             </select>
+
             <div className="text-right">
               <button
                 type="submit"
