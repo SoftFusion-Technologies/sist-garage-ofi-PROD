@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import ButtonBack from '../../Components/ButtonBack';
 import ParticlesBackground from '../../Components/ParticlesBackground';
 import DropdownCategoriasConFiltro from '../../Components/DropdownCategoriasConFiltro';
+import BulkUploadButton from '../../Components/BulkUploadButton.jsx';
 Modal.setAppElement('#root');
 
 const ProductosGet = () => {
@@ -156,15 +157,26 @@ const ProductosGet = () => {
       <div className="max-w-6xl mx-auto">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+            {/* Título */}
             <h1 className="text-4xl font-bold titulo text-rose-400 flex items-center gap-3 uppercase drop-shadow">
               <FaBox /> Productos
             </h1>
-            <button
-              onClick={() => openModal()}
-              className="bg-rose-500 hover:bg-rose-600 transition px-5 py-2 rounded-xl font-semibold flex items-center gap-2 shadow-lg"
-            >
-              <FaPlus /> Nuevo Producto
-            </button>
+
+            {/* Botones */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <BulkUploadButton
+                tabla="productos"
+                onSuccess={() => fetchData()} // refrescar lista si lo necesitas
+                className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white"
+              />
+
+              <button
+                onClick={() => openModal()}
+                className="w-full sm:w-auto bg-rose-500 hover:bg-rose-600 transition px-5 py-2 rounded-xl font-semibold flex items-center gap-2 shadow-lg"
+              >
+                <FaPlus /> Nuevo Producto
+              </button>
+            </div>
           </div>
         </div>
 
