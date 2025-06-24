@@ -242,8 +242,12 @@ const ProductosGet = () => {
                 Categoría: {p.categoria?.nombre || 'Sin categoría'}
               </p>
 
-              <p className="text-sm text-green-300 font-semibold">
-                ${p.precio ? parseFloat(p.precio).toFixed(2) : '0.00'}
+              <p className="text-sm mt-2 text-green-300 font-semibold">
+                {new Intl.NumberFormat('es-AR', {
+                  style: 'currency',
+                  currency: 'ARS',
+                  minimumFractionDigits: 2
+                }).format(p.precio || 0)}
               </p>
 
               <p

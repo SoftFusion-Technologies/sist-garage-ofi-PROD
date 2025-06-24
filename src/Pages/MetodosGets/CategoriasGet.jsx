@@ -110,10 +110,18 @@ const CategoriasGet = () => {
               className="bg-white/10 p-6 rounded-2xl shadow-md backdrop-blur-md border border-white/10 hover:scale-[1.02] transition-all"
             >
               <h2 className="text-xl font-bold text-blue-300">{cat.nombre}</h2>
-
               {cat.descripcion && (
                 <p className="text-sm text-gray-300 mt-1">{cat.descripcion}</p>
               )}
+              {/* Contador de productos */}
+              <p className="text-sm mt-2">
+                <span className="font-semibold text-blue-400">
+                  {cat.cantidadProductos}
+                </span>{' '}
+                producto{cat.cantidadProductos !== 1 && 's'} asignado
+                {cat.cantidadProductos !== 1 && 's'}
+              </p>{' '}
+              {/* 🆕 */}
               <p
                 className={`text-sm mt-2 font-semibold ${
                   cat.estado === 'activo' ? 'text-green-400' : 'text-red-400'
