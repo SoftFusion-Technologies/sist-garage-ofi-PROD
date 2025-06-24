@@ -40,6 +40,7 @@ import UsuariosGet from './Pages/UsuariosGet';
 import LugaresGet from './Pages/MetodosGets/LugaresGet';
 import EstadosGet from './Pages/MetodosGets/Estados';
 import CategoriasGet from './Pages/MetodosGets/CategoriasGet';
+import AdminPageVentas from './Pages/Ventas/AdminPageVentas';
 
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
@@ -142,7 +143,18 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        {/* MODULO DENTRO DE STOCK INICIO BENJAMIN ORELLANA 22 06 25 */}
+        {/* MODULO DENTRO DE STOCK FINAL BENJAMIN ORELLANA 22 06 25 */}
+        {/* MODULO DENTRO DE VENTAS INICIO BENJAMIN ORELLANA 22 06 25 */}
+        <Ruta
+          path="/dashboard/ventas"
+          element={
+            <ProtectedRoute>
+              {' '}
+              <AdminPageVentas />{' '}
+            </ProtectedRoute>
+          }
+        />
+        {/* MODULO DENTRO DE VENTAS FINAL BENJAMIN ORELLANA 22 06 25 */}
         {/* componentes del staff y login FINAL */}
         {/* <Ruta path="/*" element={<NotFound />} /> */}
         {/* 🔁 Redirección automática al login si se accede a "/" */}
