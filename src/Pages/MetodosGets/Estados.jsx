@@ -15,6 +15,9 @@ const EstadosGet = () => {
   const [editId, setEditId] = useState(null);
   const [formNombre, setFormNombre] = useState('');
 
+  const [confirmDelete, setConfirmDelete] = useState(null); // objeto con ID a eliminar
+  const [warningMessage, setWarningMessage] = useState('');
+
   const fetchEstados = async () => {
     try {
       const res = await axios.get('http://localhost:8080/estados');
@@ -61,8 +64,13 @@ const EstadosGet = () => {
     try {
       await axios.delete(`http://localhost:8080/estados/${id}`);
       fetchEstados();
-    } catch (error) {
-      console.error('Error al eliminar estado:', error);
+    } catch (err) {
+      if (err.response?.status === 409) {
+        setConfirmDelete(id);
+        setWarningMessage(err.response.data.mensajeError);
+      } else {
+        console.error('Error al eliminar lugar:', err);
+      }
     }
   };
 
@@ -146,6 +154,41 @@ const EstadosGet = () => {
               </button>
             </div>
           </form>
+        </Modal>
+        <Modal
+          isOpen={!!confirmDelete}
+          onRequestClose={() => setConfirmDelete(null)}
+          overlayClassName="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50"
+          className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl border-l-4 border-yellow-500"
+        >
+          <h2 className="text-xl font-bold text-yellow-600 mb-4">
+            Advertencia
+          </h2>
+          <p className="mb-6 text-gray-800">{warningMessage}</p>
+          <div className="flex justify-end gap-4">
+            <button
+              onClick={() => setConfirmDelete(null)}
+              className="px-4 py-2 rounded-lg bg-gray-300 hover:bg-gray-400"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  await axios.delete(
+                    `http://localhost:8080/estados/${confirmDelete}?forzar=true`
+                  );
+                  setConfirmDelete(null);
+                  fetchEstados();
+                } catch (error) {
+                  console.error('Error al eliminar con forzado:', error);
+                }
+              }}
+              className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white"
+            >
+              Eliminar
+            </button>
+          </div>
         </Modal>
       </div>
     </div>
