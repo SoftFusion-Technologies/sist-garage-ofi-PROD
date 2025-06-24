@@ -31,15 +31,15 @@ import LoginForm from './Components/login/LoginForm';
 import AdminPage from './Pages/Dash/AdminPage';
 import AdminPageStock from './Pages/Stock/AdminPageStock';
 import LocalesGet from './Pages/LocalesGet';
-import TallesGet from './Pages/MetodosGets/TallesGet';
-import ProductosGet from './Pages/MetodosGets/ProductosGet';
-import StockGet from './Pages/MetodosGets/StockGet';
+import TallesGet from './Pages/Stock/TallesGet';
+import ProductosGet from './Pages/Stock/ProductosGet';
+import StockGet from './Pages/Stock/StockGet';
 
 import { Navigate } from 'react-router-dom';
 import UsuariosGet from './Pages/UsuariosGet';
-import LugaresGet from './Pages/MetodosGets/LugaresGet';
-import EstadosGet from './Pages/MetodosGets/Estados';
-import CategoriasGet from './Pages/MetodosGets/CategoriasGet';
+import LugaresGet from './Pages/Stock/LugaresGet';
+import EstadosGet from './Pages/Stock/Estados';
+import CategoriasGet from './Pages/Stock/CategoriasGet';
 import AdminPageVentas from './Pages/Ventas/AdminPageVentas';
 
 function AppContent() {

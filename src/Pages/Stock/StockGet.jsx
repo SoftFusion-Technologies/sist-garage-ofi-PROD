@@ -12,8 +12,8 @@ import {
   FaTimesCircle,
   FaDownload
 } from 'react-icons/fa';
-import ButtonBack from '../../Components/ButtonBack';
-import ParticlesBackground from '../../Components/ParticlesBackground';
+import ButtonBack from '../../Components/ButtonBack.jsx';
+import ParticlesBackground from '../../Components/ParticlesBackground.jsx';
 import BulkUploadButton from '../../Components/BulkUploadButton.jsx';
 import * as XLSX from 'xlsx';
 

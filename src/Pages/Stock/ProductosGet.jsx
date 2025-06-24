@@ -3,9 +3,9 @@ import axios from 'axios';
 import Modal from 'react-modal';
 import { FaBox, FaPlus, FaEdit, FaTrash, FaDownload } from 'react-icons/fa';
 import { motion } from 'framer-motion';
-import ButtonBack from '../../Components/ButtonBack';
-import ParticlesBackground from '../../Components/ParticlesBackground';
-import DropdownCategoriasConFiltro from '../../Components/DropdownCategoriasConFiltro';
+import ButtonBack from '../../Components/ButtonBack.jsx';
+import ParticlesBackground from '../../Components/ParticlesBackground.jsx';
+import DropdownCategoriasConFiltro from '../../Components/DropdownCategoriasConFiltro.jsx';
 import BulkUploadButton from '../../Components/BulkUploadButton.jsx';
 import * as XLSX from 'xlsx';
 
@@ -56,11 +56,21 @@ const ProductosGet = () => {
   }, []);
 
   const filtered = productos
-    .filter((p) =>
-      [p.nombre, p.descripcion, p.categoria].some((field) =>
-        field?.toLowerCase().includes(search.toLowerCase())
-      )
-    )
+    .filter((p) => {
+      const searchLower = search.toLowerCase();
+
+      // Campos a buscar (solo strings)
+      const campos = [
+        p.nombre,
+        p.descripcion,
+        p.categoria?.nombre // <- extraemos nombre de la categoría
+      ];
+
+      return campos.some(
+        (campo) =>
+          typeof campo === 'string' && campo.toLowerCase().includes(searchLower)
+      );
+    })
     .filter((p) =>
       estadoFiltro === 'todos' ? true : p.estado === estadoFiltro
     )
@@ -69,7 +79,6 @@ const ProductosGet = () => {
         ? true
         : p.categoria_id === parseInt(categoriaFiltro)
     )
-
     .filter((p) => {
       const precio = parseFloat(p.precio);
       const min = parseFloat(precioMin) || 0;
@@ -227,7 +236,7 @@ const ProductosGet = () => {
           placeholder="Buscar producto..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full mb-8 px-4 py-3 rounded-xl border border-gray-600 bg-slate-800 text-white focus:outline-none focus:ring-2 focus:ring-rose-500"
+          className="w-full mb-6 px-4 py-2 rounded-lg border border-gray-600 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
         />
 
         {/* Filtros */}
