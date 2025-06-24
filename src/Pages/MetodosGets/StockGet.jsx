@@ -322,8 +322,9 @@ const StockGet = () => {
                 className="bg-white/10 p-6 rounded-2xl shadow-md backdrop-blur-md border border-white/10 hover:scale-[1.02] transition-all"
               >
                 <h2 className="text-xl font-bold text-cyan-300 mb-1">
-                  {producto?.nombre} - {talle?.nombre}
+                  {producto?.nombre}
                 </h2>
+                <p className="text-sm">Talle: {talle?.nombre || 'Sin Talle'}</p>
                 <p className="text-sm">Local: {local?.nombre}</p>
                 <p className="text-sm">Lugar: {lugar?.nombre || 'Sin lugar'}</p>
                 <p className="text-sm">
