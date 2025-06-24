@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { FaFolderOpen, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import ButtonBack from '../../Components/ButtonBack';
 import ParticlesBackground from '../../Components/ParticlesBackground';
+import BulkUploadButton from '../../Components/BulkUploadButton.jsx';
 
 Modal.setAppElement('#root');
 
@@ -82,16 +83,26 @@ const CategoriasGet = () => {
       <ButtonBack />
       <ParticlesBackground />
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
+          {/* Título */}
           <h1 className="text-3xl font-bold text-blue-400 flex items-center gap-2 uppercase">
             <FaFolderOpen /> Categorías
           </h1>
-          <button
-            onClick={() => openModal()}
-            className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg font-semibold flex items-center gap-2"
-          >
-            <FaPlus /> Nueva Categoría
-          </button>
+
+          {/* Botones */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <BulkUploadButton
+              tabla="categorias"
+              onSuccess={() => fetchCategorias()} // refrescar lista
+            />
+
+            <button
+              onClick={() => openModal()}
+              className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg font-semibold flex items-center gap-2"
+            >
+              <FaPlus /> Nueva Categoría
+            </button>
+          </div>
         </div>
 
         <input
