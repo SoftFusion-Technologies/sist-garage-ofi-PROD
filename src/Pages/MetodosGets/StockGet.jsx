@@ -2,7 +2,15 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Modal from 'react-modal';
 import { motion } from 'framer-motion';
-import { FaWarehouse, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
+import {
+  FaWarehouse,
+  FaPlus,
+  FaEdit,
+  FaTrash,
+  FaExclamationTriangle,
+  FaCheckCircle,
+  FaTimesCircle
+} from 'react-icons/fa';
 import ButtonBack from '../../Components/ButtonBack';
 import ParticlesBackground from '../../Components/ParticlesBackground';
 import BulkUploadButton from '../../Components/BulkUploadButton.jsx';
@@ -39,7 +47,11 @@ const StockGet = () => {
   const [cantidadMin, setCantidadMin] = useState('');
   const [cantidadMax, setCantidadMax] = useState('');
   const [skuFiltro, setSkuFiltro] = useState('');
+  const [verSoloStockBajo, setVerSoloStockBajo] = useState(false);
+
   // RELACION AL FILTRADO BENJAMIN ORELLANA 23-04-25
+
+  const UMBRAL_STOCK_BAJO = 5;
 
   const fetchAll = async () => {
     try {
@@ -182,6 +194,10 @@ const StockGet = () => {
     })
     .filter((item) =>
       item.codigo_sku?.toLowerCase().includes(skuFiltro.toLowerCase())
+    )
+    // 🆕 Filtro de stock bajo
+    .filter((item) =>
+      verSoloStockBajo ? item.cantidad <= UMBRAL_STOCK_BAJO : true
     );
 
   return (
@@ -313,6 +329,17 @@ const StockGet = () => {
           />
         </div>
 
+        <button
+          onClick={() => setVerSoloStockBajo((prev) => !prev)}
+          className={`px-4 mb-2 py-2 rounded-lg font-semibold flex items-center gap-2 transition ${
+            verSoloStockBajo
+              ? 'bg-red-600 hover:bg-red-700 text-white'
+              : 'bg-gray-700 hover:bg-gray-800 text-white'
+          }`}
+        >
+          {verSoloStockBajo ? 'Ver Todos' : 'Mostrar Stock Bajo'}
+        </button>
+
         <motion.div
           layout
           className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
@@ -339,12 +366,38 @@ const StockGet = () => {
                 <p className="text-sm">
                   Estado: {estado?.nombre || 'Sin Estado'}
                 </p>
-                <p className="text-sm">Cantidad: {item.cantidad}</p>
-                <p className="text-sm">
-                  En perchero: {item.en_perchero ? 'Sí' : 'No'}
+                <p className="text-sm font-semibold flex items-center gap-2">
+                  <span
+                    className={
+                      item.cantidad <= UMBRAL_STOCK_BAJO
+                        ? 'text-red-400'
+                        : 'text-green-300'
+                    }
+                  >
+                    Cantidad: {item.cantidad}
+                  </span>
+
+                  {item.cantidad <= UMBRAL_STOCK_BAJO && (
+                    <span className="flex items-center text-red-500 font-bold text-xs animate-pulse">
+                      <FaExclamationTriangle className="mr-1" />
+                      ¡Stock bajo!
+                    </span>
+                  )}
+                </p>
+
+                <p className="text-sm flex items-center gap-2">
+                  En perchero:
+                  {item.en_perchero ? (
+                    <span className="text-green-400 flex items-center gap-1">
+                      <FaCheckCircle /> Sí
+                    </span>
+                  ) : (
+                    <span className="text-red-400 flex items-center gap-1">
+                      <FaTimesCircle /> No
+                    </span>
+                  )}
                 </p>
                 <p className="text-sm ">SKU: {item.codigo_sku}</p>
-
                 <div className="mt-4 flex justify-end gap-4">
                   <button
                     onClick={() => openModal(item)}
