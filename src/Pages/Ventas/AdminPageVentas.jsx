@@ -104,9 +104,6 @@ const AdminPageVentas = () => {
             >
               Módulo de Ventas
             </motion.h1>
-            <p className="text-gray-300 max-w-xl mx-auto text-sm italic">
-              Gestioná tus ventas, clientes y reportes en un solo lugar
-            </p>
           </div>
 
           {/* Cuadrícula de accesos rápidos */}
