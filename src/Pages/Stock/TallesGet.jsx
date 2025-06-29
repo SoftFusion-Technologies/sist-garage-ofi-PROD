@@ -143,7 +143,9 @@ const TallesGet = () => {
               layout
               className="bg-white/10 p-6 rounded-2xl shadow-md backdrop-blur-md border border-white/10 hover:scale-[1.02] transition-all"
             >
-              <h2 className="text-xl font-bold text-pink-300">{talle.id}</h2>
+              <h2 className="text-xl font-bold text-pink-300">
+                ID: {talle.id}
+              </h2>
               <h2 className="text-xl font-bold text-pink-300">
                 {talle.nombre} ({talle.tipo_categoria})
               </h2>

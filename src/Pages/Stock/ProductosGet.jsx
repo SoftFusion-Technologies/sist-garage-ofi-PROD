@@ -411,7 +411,7 @@ const ProductosGet = () => {
               className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
             />
 
-            <input
+            {/* <input
               type="text"
               placeholder="URL de Imagen"
               value={formValues.imagen_url}
@@ -419,7 +419,7 @@ const ProductosGet = () => {
                 setFormValues({ ...formValues, imagen_url: e.target.value })
               }
               className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
-            />
+            /> */}
             <select
               value={formValues.estado}
               onChange={(e) =>
