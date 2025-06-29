@@ -6,6 +6,7 @@ import { FaFolderOpen, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import ButtonBack from '../../Components/ButtonBack.jsx';
 import ParticlesBackground from '../../Components/ParticlesBackground.jsx';
 import BulkUploadButton from '../../Components/BulkUploadButton.jsx';
+import AdminActions from '../../Components/AdminActions';
 
 Modal.setAppElement('#root');
 
@@ -120,7 +121,7 @@ const CategoriasGet = () => {
               layout
               className="bg-white/10 p-6 rounded-2xl shadow-md backdrop-blur-md border border-white/10 hover:scale-[1.02] transition-all"
             >
-              <h2 className="text-xl font-bold text-blue-300">{cat.id}</h2>
+              <h2 className="text-xl font-bold text-white">ID: {cat.id}</h2>
               <h2 className="text-xl font-bold text-blue-300">{cat.nombre}</h2>
               {cat.descripcion && (
                 <p className="text-sm text-gray-300 mt-1">{cat.descripcion}</p>
@@ -141,20 +142,10 @@ const CategoriasGet = () => {
               >
                 Estado: {cat.estado}
               </p>
-              <div className="mt-4 flex justify-end gap-4">
-                <button
-                  onClick={() => openModal(cat)}
-                  className="text-yellow-400 hover:text-yellow-300"
-                >
-                  <FaEdit />
-                </button>
-                <button
-                  onClick={() => handleDelete(cat.id)}
-                  className="text-red-500 hover:text-red-400"
-                >
-                  <FaTrash />
-                </button>
-              </div>
+              <AdminActions
+                onEdit={() => openModal(cat)}
+                onDelete={() => handleDelete(cat.id)}
+              />
             </motion.div>
           ))}
         </motion.div>

@@ -8,6 +8,7 @@ import ParticlesBackground from '../../Components/ParticlesBackground.jsx';
 import DropdownCategoriasConFiltro from '../../Components/DropdownCategoriasConFiltro.jsx';
 import BulkUploadButton from '../../Components/BulkUploadButton.jsx';
 import * as XLSX from 'xlsx';
+import AdminActions from '../../Components/AdminActions';
 
 Modal.setAppElement('#root');
 
@@ -294,7 +295,7 @@ const ProductosGet = () => {
               layout
               className="bg-white/10 p-6 rounded-2xl shadow-xl backdrop-blur-md border border-white/10 hover:scale-[1.02] transition-all"
             >
-              <h2 className="text-xl font-bold text-rose-300 mb-1">{p.id}</h2>
+              <h2 className="text-xl font-bold text-white mb-1">ID: {p.id}</h2>
               <h2 className="text-xl font-bold text-rose-300 mb-1">
                 {p.nombre}
               </h2>
@@ -334,20 +335,10 @@ const ProductosGet = () => {
                   hour12: false
                 })}
               </p>
-              <div className="mt-4 flex justify-end gap-4">
-                <button
-                  onClick={() => openModal(p)}
-                  className="text-yellow-400 hover:text-yellow-300"
-                >
-                  <FaEdit />
-                </button>
-                <button
-                  onClick={() => handleDelete(p.id)}
-                  className="text-red-500 hover:text-red-400"
-                >
-                  <FaTrash />
-                </button>
-              </div>
+              <AdminActions
+                onEdit={() => openModal(p)}
+                onDelete={() => handleDelete(p.id)}
+              />
             </motion.div>
           ))}
         </div>

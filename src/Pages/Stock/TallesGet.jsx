@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { FaTshirt, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import ButtonBack from '../../Components/ButtonBack';
 import ParticlesBackground from '../../Components/ParticlesBackground';
+import AdminActions from '../../Components/AdminActions';
 
 Modal.setAppElement('#root');
 
@@ -143,9 +144,7 @@ const TallesGet = () => {
               layout
               className="bg-white/10 p-6 rounded-2xl shadow-md backdrop-blur-md border border-white/10 hover:scale-[1.02] transition-all"
             >
-              <h2 className="text-xl font-bold text-pink-300">
-                ID: {talle.id}
-              </h2>
+              <h2 className="text-xl font-bold text-white">ID: {talle.id}</h2>
               <h2 className="text-xl font-bold text-pink-300">
                 {talle.nombre} ({talle.tipo_categoria})
               </h2>
@@ -154,20 +153,10 @@ const TallesGet = () => {
                   {talle.descripcion}
                 </p>
               )}
-              <div className="mt-4 flex justify-end gap-4">
-                <button
-                  onClick={() => openModal(talle)}
-                  className="text-yellow-400 hover:text-yellow-300"
-                >
-                  <FaEdit />
-                </button>
-                <button
-                  onClick={() => handleDelete(talle.id)}
-                  className="text-red-500 hover:text-red-400"
-                >
-                  <FaTrash />
-                </button>
-              </div>
+              <AdminActions
+                onEdit={() => openModal(talle)}
+                onDelete={() => handleDelete(talle.id)}
+              />
             </motion.div>
           ))}
         </motion.div>

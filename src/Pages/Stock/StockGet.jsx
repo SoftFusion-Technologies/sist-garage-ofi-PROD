@@ -13,17 +13,17 @@ import {
   FaDownload,
   FaBoxOpen,
   FaMapPin,
-  FaCircle,
-  
+  FaCircle
 } from 'react-icons/fa';
 import ButtonBack from '../../Components/ButtonBack.jsx';
 import ParticlesBackground from '../../Components/ParticlesBackground.jsx';
 import BulkUploadButton from '../../Components/BulkUploadButton.jsx';
 import * as XLSX from 'xlsx';
-
+import { useAuth } from '../../AuthContext.jsx';
 Modal.setAppElement('#root');
 
 const StockGet = () => {
+  const { userLevel } = useAuth();
   const UMBRAL_STOCK_BAJO = 5;
   const [stock, setStock] = useState([]);
   const [formData, setFormData] = useState({
@@ -639,20 +639,24 @@ const StockGet = () => {
                   >
                     Ver talles y SKU
                   </button>
-                  <button
-                    onClick={() => {
-                      openModal(null, group); // null para item, group como segundo argumento
-                    }}
-                    className="mt-2 mb-2 px-3 py-1 bg-yellow-500 hover:bg-yellow-400 rounded-lg text-white text-sm font-semibold flex items-center justify-center gap-2"
-                  >
-                    <FaEdit /> Editar
-                  </button>
-                  <button
-                    onClick={() => handleDeleteGroup(group)}
-                    className="mt-2 mb-2 px-3 py-1 bg-red-600 hover:bg-red-500 rounded-lg text-white text-sm font-semibold flex items-center justify-center gap-2"
-                  >
-                    <FaTrash /> Eliminar
-                  </button>
+                  {userLevel === 'admin' && (
+                    <>
+                      <button
+                        onClick={() => {
+                          openModal(null, group); // null para item, group como segundo argumento
+                        }}
+                        className="mt-2 mb-2 px-3 py-1 bg-yellow-500 hover:bg-yellow-400 rounded-lg text-white text-sm font-semibold flex items-center justify-center gap-2"
+                      >
+                        <FaEdit /> Editar
+                      </button>
+                      <button
+                        onClick={() => handleDeleteGroup(group)}
+                        className="mt-2 mb-2 px-3 py-1 bg-red-600 hover:bg-red-500 rounded-lg text-white text-sm font-semibold flex items-center justify-center gap-2"
+                      >
+                        <FaTrash /> Eliminar
+                      </button>
+                    </>
+                  )}
                 </div>
               </motion.div>
             );
@@ -976,25 +980,27 @@ const StockGet = () => {
                       </span>
                     )}
                   </div>
-                  <div className="flex flex-col gap-2 mt-3 sm:flex-row sm:gap-2">
-                    <button
-                      className="w-full sm:w-auto flex items-center justify-center gap-1 bg-yellow-400 hover:bg-yellow-300 text-white px-3 py-1 rounded-lg text-sm font-semibold shadow transition"
-                      onClick={() => {
-                        setModalTallesOpen(false);
-                        openModal(item);
-                      }}
-                      title="Editar este talle"
-                    >
-                      <FaEdit className="inline" /> 
-                    </button>
-                    <button
-                      className="w-full sm:w-auto flex items-center justify-center gap-1 bg-red-500 hover:bg-red-400 text-white px-3 py-1 rounded-lg text-sm font-semibold shadow transition"
-                      onClick={() => handleDelete(item.id)}
-                      title="Eliminar este talle"
-                    >
-                      <FaTrash className="inline" />
-                    </button>
-                  </div>
+                  {userLevel === 'admin' && (
+                    <div className="flex flex-col gap-2 mt-3 sm:flex-row sm:gap-2">
+                      <button
+                        className="w-full sm:w-auto flex items-center justify-center gap-1 bg-yellow-400 hover:bg-yellow-300 text-white px-3 py-1 rounded-lg text-sm font-semibold shadow transition"
+                        onClick={() => {
+                          setModalTallesOpen(false);
+                          openModal(item);
+                        }}
+                        title="Editar este talle"
+                      >
+                        <FaEdit className="inline" />
+                      </button>
+                      <button
+                        className="w-full sm:w-auto flex items-center justify-center gap-1 bg-red-500 hover:bg-red-400 text-white px-3 py-1 rounded-lg text-sm font-semibold shadow transition"
+                        onClick={() => handleDelete(item.id)}
+                        title="Eliminar este talle"
+                      >
+                        <FaTrash className="inline" />
+                      </button>
+                    </div>
+                  )}
                 </motion.div>
               );
             })}

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { FaFlag, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import ButtonBack from '../../Components/ButtonBack';
 import ParticlesBackground from '../../Components/ParticlesBackground';
+import AdminActions from '../../Components/AdminActions';
 
 Modal.setAppElement('#root');
 
@@ -106,26 +107,14 @@ const EstadosGet = () => {
               layout
               className="bg-white/10 p-6 rounded-2xl shadow-md backdrop-blur-md border border-white/10 hover:scale-[1.02] transition-all"
             >
-              <h2 className="text-xl font-bold text-pink-300">
-                {estado.id}
-              </h2>
+              <h2 className="text-xl font-bold text-white">ID: {estado.id}</h2>
               <h2 className="text-xl font-bold text-pink-300">
                 {estado.nombre}
               </h2>
-              <div className="mt-4 flex justify-end gap-4">
-                <button
-                  onClick={() => openModal(estado)}
-                  className="text-yellow-400 hover:text-yellow-300"
-                >
-                  <FaEdit />
-                </button>
-                <button
-                  onClick={() => handleDelete(estado.id)}
-                  className="text-red-500 hover:text-red-400"
-                >
-                  <FaTrash />
-                </button>
-              </div>
+              <AdminActions
+                onEdit={() => openModal(estado)}
+                onDelete={() => handleDelete(estado.id)}
+              />
             </motion.div>
           ))}
         </motion.div>
