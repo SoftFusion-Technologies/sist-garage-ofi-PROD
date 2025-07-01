@@ -12,10 +12,10 @@ import {
 } from 'react-icons/fa';
 import ParticlesBackground from '../../Components/ParticlesBackground';
 
-const mediosPago = [
-  { value: 'efectivo', label: 'Efectivo', icon: <FaMoneyBillAlt /> },
-  { value: 'tarjeta', label: 'Tarjeta', icon: <FaCreditCard /> }
-];
+import { FaCog } from 'react-icons/fa';
+import { dynamicIcon } from '../../utils/dynamicIcon'; // Lo creamos abajo
+import ModalMediosPago from '../../Components/Ventas/ModalMediosPago'; // Lo creamos abajo
+import axios from 'axios';
 
 // Agrupa productos por producto_id y junta sus talles en un array
 function agruparProductosConTalles(stockItems) {
@@ -50,10 +50,23 @@ function agruparProductosConTalles(stockItems) {
 }
 
 export default function PuntoVenta() {
+  const [mediosPago, setMediosPago] = useState([]);
+  const [loadingMediosPago, setLoadingMediosPago] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [medioPago, setMedioPago] = useState(null);
+
+  // Traer medios de pago al montar
+  useEffect(() => {
+    setLoadingMediosPago(true);
+    axios
+      .get('http://localhost:8080/medios-pago')
+      .then((res) => setMediosPago(res.data))
+      .finally(() => setLoadingMediosPago(false));
+  }, []);
+
   const [busqueda, setBusqueda] = useState('');
   const [productos, setProductos] = useState([]); // Productos agrupados con talles
   const [carrito, setCarrito] = useState([]);
-  const [medioPago, setMedioPago] = useState('efectivo');
 
   const [modalProducto, setModalProducto] = useState(null);
   const [talleSeleccionado, setTalleSeleccionado] = useState(null);
@@ -320,20 +333,39 @@ export default function PuntoVenta() {
           </div>
 
           {/* Medios de pago */}
-          <div className="flex gap-2">
-            {mediosPago.map((m) => (
-              <button
-                key={m.value}
-                onClick={() => setMedioPago(m.value)}
-                className={`flex-1 px-3 py-2 rounded-md text-sm font-semibold transition flex items-center gap-1 justify-center ${
-                  medioPago === m.value
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-white/10 text-white hover:bg-white/20'
-                }`}
-              >
-                {m.icon} {m.label}
-              </button>
-            ))}
+          <div className="flex flex-wrap gap-2 items-center mb-2">
+            <div className="flex flex-wrap gap-2 flex-1 min-w-0">
+              {loadingMediosPago ? (
+                <span className="text-gray-300 text-sm">Cargando...</span>
+              ) : (
+                mediosPago
+                  .filter((m) => m.activo)
+                  .sort((a, b) => a.orden - b.orden)
+                  .map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => setMedioPago(m.id)}
+                      className={`flex items-center gap-1 justify-center px-3 py-2 rounded-md text-sm font-semibold transition min-w-[110px] mb-1
+              ${
+                medioPago === m.id
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-white/10 text-white hover:bg-white/20'
+              }`}
+                      style={{ flex: '1 1 130px', maxWidth: '180px' }} // Hace que no se achiquen demasiado ni se amontonen
+                    >
+                      {dynamicIcon(m.icono)} {m.nombre}
+                    </button>
+                  ))
+              )}
+            </div>
+            {/* Tuerca para abrir el modal */}
+            <button
+              className="p-2 rounded-full hover:bg-white/10 text-xl shrink-0"
+              title="Gestionar medios de pago"
+              onClick={() => setShowModal(true)}
+            >
+              <FaCog />
+            </button>
           </div>
 
           <button
@@ -561,6 +593,13 @@ export default function PuntoVenta() {
           </div>
         </div>
       )}
+      {/* Modal de gestión */}
+      <ModalMediosPago
+        show={showModal}
+        onClose={() => setShowModal(false)}
+        mediosPago={mediosPago}
+        setMediosPago={setMediosPago}
+      />
     </div>
   );
 }
