@@ -43,6 +43,7 @@ import CategoriasGet from './Pages/Stock/CategoriasGet';
 import AdminPageVentas from './Pages/Ventas/AdminPageVentas';
 import PuntoVenta from './Pages/Ventas/PuntoVenta';
 import ConfiguracionPage from './Pages/Ventas/ConfiguracionPage';
+import ClientesGet from './Pages/MetodosGets/ClientesGet';
 
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
@@ -171,6 +172,15 @@ function AppContent() {
             <ProtectedRoute>
               {' '}
               <ConfiguracionPage />{' '}
+            </ProtectedRoute>
+          }
+        />
+        <Ruta
+          path="/dashboard/ventas/clientes"
+          element={
+            <ProtectedRoute>
+              {' '}
+              <ClientesGet />{' '}
             </ProtectedRoute>
           }
         />
