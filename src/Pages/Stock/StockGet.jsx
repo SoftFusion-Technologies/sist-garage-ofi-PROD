@@ -47,7 +47,6 @@ function ModalError({ open, onClose, msg }) {
   );
 }
 
-
 const StockGet = () => {
   const { userLevel } = useAuth();
   const UMBRAL_STOCK_BAJO = 5;
@@ -662,9 +661,10 @@ const StockGet = () => {
                 layout
                 className="bg-white/10 p-6 rounded-2xl shadow-md border border-white/10 hover:scale-[1.02] transition-all"
               >
-                <h2 className="text-xl font-bold text-cyan-300 mb-1">
+                <h2 className="text-xl font-bold text-cyan-300 mb-1 uppercase">
                   {producto?.nombre}
                 </h2>
+                <p className="text-sm">ID: {producto?.id}</p>
                 <p className="text-sm">Local: {local?.nombre}</p>
                 <p className="text-sm">Lugar: {lugar?.nombre || 'Sin lugar'}</p>
                 <p className="text-sm">
@@ -1003,19 +1003,20 @@ const StockGet = () => {
                     boxShadow: '0 4px 24px 0 rgba(0,255,255,0.18)'
                   }}
                 >
-                  <div className="flex items-center gap-2 mb-2 min-w-0">
-                    <span
-                      className={`
+                  <span
+                    className={`
     inline-block px-2 py-1 rounded-xl font-bold text-base sm:text-lg shadow
     ${isStockLow ? 'bg-red-400 text-white' : 'bg-cyan-400 text-white'}
     truncate max-w-[60px]
     sm:max-w-none sm:overflow-visible sm:whitespace-normal sm:text-clip
   `}
-                      title={nombreTalle}
-                    >
-                      {nombreTalle}
-                    </span>
+                    title={nombreTalle}
+                  >
+                    <span className="hidden md:inline">TALLE: </span>
+                    {nombreTalle}
+                  </span>
 
+                  <div className="flex items-center gap-2 mb-2 min-w-0">
                     <span
                       className="
     ml-auto
