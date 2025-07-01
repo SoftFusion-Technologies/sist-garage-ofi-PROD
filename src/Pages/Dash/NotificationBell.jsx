@@ -20,7 +20,7 @@ const NotificationBell = () => {
   useEffect(() => {
     const getUserIdByEmail = async () => {
       try {
-        const response = await fetch(`${URL}users/`);
+        const response = await fetch(`${URL}usuarios/`);
         if (!response.ok) {
           throw new Error(
             `Error al obtener los usuarios: ${response.statusText}`
@@ -31,7 +31,7 @@ const NotificationBell = () => {
         if (user) {
           setUserId(user.id);
         } else {
-          console.log(`Usuario con email ${userName} no encontrado`);
+          // console.log(`Usuario con email ${userName} no encontrado`);
         }
       } catch (err) {
         setError(err.message);
