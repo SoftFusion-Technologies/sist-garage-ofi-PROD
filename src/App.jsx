@@ -42,6 +42,7 @@ import EstadosGet from './Pages/Stock/Estados';
 import CategoriasGet from './Pages/Stock/CategoriasGet';
 import AdminPageVentas from './Pages/Ventas/AdminPageVentas';
 import PuntoVenta from './Pages/Ventas/PuntoVenta';
+import ConfiguracionPage from './Pages/Ventas/ConfiguracionPage';
 
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
@@ -161,6 +162,15 @@ function AppContent() {
             <ProtectedRoute>
               {' '}
               <PuntoVenta />{' '}
+            </ProtectedRoute>
+          }
+        />
+        <Ruta
+          path="/dashboard/ventas/configuracion"
+          element={
+            <ProtectedRoute>
+              {' '}
+              <ConfiguracionPage />{' '}
             </ProtectedRoute>
           }
         />
