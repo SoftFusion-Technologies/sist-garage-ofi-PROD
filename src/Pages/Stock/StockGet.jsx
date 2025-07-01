@@ -22,6 +22,32 @@ import * as XLSX from 'xlsx';
 import { useAuth } from '../../AuthContext.jsx';
 Modal.setAppElement('#root');
 
+function ModalError({ open, onClose, msg }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-xl p-7 shadow-2xl max-w-md w-full mx-4 border-l-4 border-red-500">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-red-500 text-2xl">❗</span>
+          <h2 className="text-lg font-bold text-red-500">
+            Error de transferencia
+          </h2>
+        </div>
+        <div className="text-gray-700 whitespace-pre-line mb-6">{msg}</div>
+        <div className="text-right">
+          <button
+            className="bg-red-500 hover:bg-red-600 transition px-6 py-2 text-white font-medium rounded-lg"
+            onClick={onClose}
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 const StockGet = () => {
   const { userLevel } = useAuth();
   const UMBRAL_STOCK_BAJO = 5;
@@ -64,6 +90,9 @@ const StockGet = () => {
   const [cantidadesPorTalle, setCantidadesPorTalle] = useState([]);
   const [grupoOriginal, setGrupoOriginal] = useState(null);
   const [grupoEditando, setGrupoEditando] = useState(null);
+
+  const [modalErrorOpen, setModalErrorOpen] = useState(false);
+  const [modalErrorMsg, setModalErrorMsg] = useState('');
 
   const fetchAll = async () => {
     try {
@@ -211,7 +240,48 @@ const StockGet = () => {
         grupoOriginal.en_perchero !== formData.en_perchero;
 
       if (cambioGrupo) {
-        // Llamada al endpoint especial para transferir/agrupar
+        // Trae los talles originales (solo los que tienen stock en el grupo origen)
+        const tallesOriginales = stock
+          .filter(
+            (s) =>
+              s.producto_id === grupoOriginal.producto_id &&
+              s.local_id === grupoOriginal.local_id &&
+              s.lugar_id === grupoOriginal.lugar_id &&
+              s.estado_id === grupoOriginal.estado_id
+          )
+          .map((s) => Number(s.talle_id)); // ¡Siempre como número!
+
+        // Compara talles a enviar contra los del grupo origen (también forzando a número)
+        const tallesInvalidos = tallesAEnviar.filter(
+          (t) => !tallesOriginales.includes(Number(t.talle_id))
+        );
+
+        // LOGS para debug:
+        console.log('STOCK ACTUAL:', stock);
+        console.log('TALLES ORIGINALES:', tallesOriginales);
+        console.log(
+          'TALLES A ENVIAR:',
+          tallesAEnviar.map((t) => Number(t.talle_id))
+        );
+        console.log('TALLES INVALIDOS DETECTADOS:', tallesInvalidos);
+
+        if (tallesInvalidos.length > 0) {
+          setModalErrorMsg(
+            `No podés transferir los siguientes talles porque no existen en el local/lugar de origen:\n\n${tallesInvalidos
+              .map(
+                (t) =>
+                  talles.find((tt) => Number(tt.id) === Number(t.talle_id))
+                    ?.nombre || t.talle_id
+              )
+              .join(
+                ', '
+              )}.\n\nPara agregar stock de estos talles en el destino, tenés que dar de alta como nuevo stock.`
+          );
+          setModalErrorOpen(true);
+          return;
+        }
+
+        // --- SOLO llega acá si todo está bien ---
         try {
           await axios.post('http://localhost:8080/transferir', {
             grupoOriginal,
@@ -1015,6 +1085,11 @@ const StockGet = () => {
           </div>
         </Modal>
       </div>
+      <ModalError
+        open={modalErrorOpen}
+        onClose={() => setModalErrorOpen(false)}
+        msg={modalErrorMsg}
+      />
     </div>
   );
 };
