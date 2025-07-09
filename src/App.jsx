@@ -44,6 +44,7 @@ import AdminPageVentas from './Pages/Ventas/AdminPageVentas';
 import PuntoVenta from './Pages/Ventas/PuntoVenta';
 import ConfiguracionPage from './Pages/Ventas/ConfiguracionPage';
 import ClientesGet from './Pages/MetodosGets/ClientesGet';
+import CajaPOS from './Pages/Ventas/CajaPos';
 
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
@@ -181,6 +182,15 @@ function AppContent() {
             <ProtectedRoute>
               {' '}
               <ClientesGet />{' '}
+            </ProtectedRoute>
+          }
+        />
+        <Ruta
+          path="/dashboard/ventas/caja"
+          element={
+            <ProtectedRoute>
+              {' '}
+              <CajaPOS />{' '}
             </ProtectedRoute>
           }
         />

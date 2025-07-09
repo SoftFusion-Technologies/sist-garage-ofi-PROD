@@ -29,14 +29,8 @@ const ventasLinks = [
     desc: 'Registrar ventas en mostrador'
   },
   {
-    to: '/dashboard/ventas/realizar',
-    label: 'Realizar Venta',
-    icon: <FaShoppingCart />,
-    desc: 'Crear venta manual con descuentos y cliente'
-  },
-  {
-    to: '/dashboard/ventas/cierre',
-    label: 'Cierre de Caja',
+    to: '/dashboard/ventas/caja',
+    label: 'Caja',
     icon: <FaFileInvoiceDollar />,
     desc: 'Resumen y arqueo diario'
   },

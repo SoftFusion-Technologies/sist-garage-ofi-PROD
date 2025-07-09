@@ -1,7 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Modal from 'react-modal';
-import { FaUserFriends, FaPlus, FaWhatsapp } from 'react-icons/fa';
+import {
+  FaUserFriends,
+  FaPlus,
+  FaWhatsapp,
+  FaTimes,
+  FaUserAlt,
+  FaShoppingCart
+} from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import ButtonBack from '../../Components/ButtonBack';
 import AdminActions from '../../Components/AdminActions';
@@ -128,6 +135,24 @@ export default function ClientesGet() {
     )} ${num.slice(7, 9)}-${num.slice(9)}`;
   }
 
+  const [detalleCliente, setDetalleCliente] = useState(null);
+
+  const openDetalleCliente = (cliente) => {
+    fetch(`http://localhost:8080/clientes/${cliente.id}/ventas`)
+      .then((res) => res.json())
+      .then((ventas) => setDetalleCliente({ ...cliente, ventas }))
+      .catch(() => setDetalleCliente({ ...cliente, ventas: [] }));
+  };
+
+  const [detalleVenta, setDetalleVenta] = useState(null);
+
+  const fetchDetalleVenta = (ventaId) => {
+    fetch(`http://localhost:8080/ventas/${ventaId}/detalle`)
+      .then((res) => res.json())
+      .then((data) => setDetalleVenta(data))
+      .catch(() => setDetalleVenta(null));
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-800 to-emerald-900 py-10 px-3 md:px-6 relative font-sans">
       <ButtonBack />
@@ -193,6 +218,8 @@ export default function ClientesGet() {
                 <th className="px-6 py-4">Nombre</th>
                 <th className="px-6 py-4">Teléfono</th>
                 <th className="px-6 py-4">Email</th>
+                <th className="px-6 py-4">DNI</th>
+                <th className="px-6 py-4">Dirección</th>
                 <th className="px-6 py-4">Última compra</th>
                 <th className="px-6 py-4">Acciones</th>
               </tr>
@@ -234,6 +261,9 @@ export default function ClientesGet() {
                   </td>
 
                   <td className="px-6 py-3">{c.email || '-'}</td>
+                  <td className="px-6 py-3 font-semibold">{c.dni}</td>
+                  <td className="px-6 py-3 font-semibold">{c.direccion}</td>
+
                   <td className="px-6 py-3">
                     {c.fecha_ultima_compra ? (
                       new Date(c.fecha_ultima_compra).toLocaleDateString()
@@ -241,7 +271,15 @@ export default function ClientesGet() {
                       <span className="italic text-emerald-200/60">Nunca</span>
                     )}
                   </td>
+
                   <td className="px-6 py-3 flex gap-2">
+                    <button
+                      className="text-emerald-400 mt-4 text-xs font-semibold hover:text-emerald-300 transition"
+                      onClick={() => openDetalleCliente(c)}
+                      title="Ver detalle del cliente"
+                    >
+                      Ver detalle
+                    </button>
                     <AdminActions
                       onEdit={() => openModal(c)}
                       onDelete={() => handleDelete(c.id)}
@@ -275,8 +313,25 @@ export default function ClientesGet() {
                 onEdit={() => openModal(c)}
                 onDelete={() => handleDelete(c.id)}
               />
+                <button
+                  className="text-emerald-400 mt-4 text-xs font-semibold hover:text-emerald-300 transition"
+                  onClick={() => openDetalleCliente(c)}
+                  title="Ver detalle del cliente"
+                >
+                  Ver detalle
+                </button>
             </div>
-            <div className="text-sm text-emerald-200/90">{c.email || '-'}</div>
+            <div className="text-sm text-emerald-200/90">
+              {c.email || 'Sin Email Agregado'}
+            </div>
+
+            <div className="text-sm text-emerald-200/90">
+              {c.dni || 'Sin DNI Agregado'}
+            </div>
+
+            <div className="text-sm text-emerald-200/90">
+              {c.direccion || 'Sin Dirección Agregada'}
+            </div>
             <div className="text-sm text-emerald-300">
               Tel:{' '}
               {c.telefono ? (
@@ -385,6 +440,166 @@ export default function ClientesGet() {
             </motion.div>
           </Modal>
         )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {detalleCliente && (
+          <motion.div
+            className="fixed inset-0 bg-black/60 flex justify-center items-center z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="bg-[#1a222c] rounded-2xl max-w-xl w-full shadow-2xl p-7 relative border-l-4 border-emerald-400">
+              <button
+                className="absolute top-4 right-5 text-gray-400 hover:text-emerald-400 text-xl"
+                onClick={() => setDetalleCliente(null)}
+              >
+                <FaTimes />
+              </button>
+              <h3 className="font-bold text-2xl mb-4 flex gap-2 items-center text-emerald-300">
+                <FaUserAlt /> Cliente:{' '}
+                <span className="ml-2 text-white">{detalleCliente.nombre}</span>
+              </h3>
+              <div className="text-gray-300 mb-3 text-sm space-y-1">
+                <div>
+                  <b>Teléfono:</b> {detalleCliente.telefono || '-'}
+                </div>
+                <div>
+                  <b>Email:</b> {detalleCliente.email || '-'}
+                </div>
+                <div>
+                  <b>DNI:</b> {detalleCliente.dni || '-'}
+                </div>
+                <div>
+                  <b>Dirección:</b> {detalleCliente.direccion || '-'}
+                </div>
+                <div>
+                  <b>Última compra:</b>{' '}
+                  {detalleCliente.fecha_ultima_compra ? (
+                    new Date(
+                      detalleCliente.fecha_ultima_compra
+                    ).toLocaleDateString()
+                  ) : (
+                    <span className="italic text-emerald-200/60">Nunca</span>
+                  )}
+                </div>
+              </div>
+              <div className="mt-6">
+                <h3 className="font-bold text-lg text-emerald-400 mt-8 mb-2">
+                  Historial de compras
+                </h3>
+                <ul className="space-y-1 max-h-44 overflow-y-auto custom-scrollbar mb-3">
+                  {detalleCliente.ventas && detalleCliente.ventas.length > 0 ? (
+                    detalleCliente.ventas.map((venta) => (
+                      <li
+                        key={venta.id}
+                        className="flex justify-between items-center bg-emerald-950/70 px-4 py-2 rounded-lg mb-1 shadow"
+                      >
+                        <span>
+                          Venta #{venta.id} –{' '}
+                          <span className="text-emerald-300">
+                            {new Date(venta.fecha).toLocaleString()}
+                          </span>
+                        </span>
+                        <span className="font-bold text-emerald-200">
+                          ${Number(venta.total).toLocaleString('es-AR')}
+                        </span>
+                        <button
+                          onClick={() => fetchDetalleVenta(venta.id)}
+                          className="ml-3 text-xs text-emerald-400 underline font-semibold hover:text-emerald-300 transition"
+                        >
+                          Ver detalle
+                        </button>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="text-emerald-200 text-center py-4">
+                      Sin compras registradas.
+                    </li>
+                  )}
+                </ul>
+              </div>
+            </div>
+          </motion.div>
+        )}
+        <AnimatePresence>
+          {detalleVenta && (
+            <motion.div
+              className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <div className="bg-[#232631] p-7 rounded-2xl max-w-lg w-full shadow-2xl relative">
+                <button
+                  className="absolute top-4 right-5 text-gray-400 hover:text-emerald-400 text-xl"
+                  onClick={() => setDetalleVenta(null)}
+                >
+                  ×
+                </button>
+                <h3 className="text-xl font-bold mb-3 text-emerald-400 flex items-center gap-2">
+                  <FaShoppingCart /> Detalle Venta #{detalleVenta.id}
+                </h3>
+                <div className="mb-3">
+                  <div className="text-sm text-gray-300 mb-1">
+                    Cliente:{' '}
+                    <b>{detalleVenta.cliente?.nombre || 'Consumidor Final'}</b>
+                    {detalleVenta.cliente?.dni ? (
+                      <span className="ml-2 text-xs text-gray-400">
+                        DNI: {detalleVenta.cliente.dni}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="text-sm text-gray-300 mb-1">
+                    Fecha: {new Date(detalleVenta.fecha).toLocaleString()}
+                  </div>
+                  <div className="text-sm text-gray-300 mb-1">
+                    Medio de pago:{' '}
+                    <b>
+                      {detalleVenta.venta_medios_pago?.[0]?.medios_pago
+                        ?.nombre || 'Efectivo'}
+                    </b>
+                  </div>
+                </div>
+                <ul className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar mb-3">
+                  {detalleVenta.detalles?.map((d) => (
+                    <li
+                      key={d.id}
+                      className="flex justify-between items-center px-3 py-2 bg-emerald-900/10 rounded-lg"
+                    >
+                      <span className="text-white">
+                        {d.stock.producto.nombre}
+                        {d.stock.talle ? (
+                          <span className="text-gray-400 ml-2">
+                            Talle: {d.stock.talle.nombre}
+                          </span>
+                        ) : null}
+                        {d.stock.codigo_sku && (
+                          <span className="ml-2 text-xs text-emerald-300">
+                            SKU: {d.stock.codigo_sku}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        x{d.cantidad}
+                      </span>
+                      <span className="font-bold text-emerald-300">
+                        $
+                        {Number(d.precio_unitario * d.cantidad).toLocaleString(
+                          'es-AR'
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="text-right text-lg text-white font-bold">
+                  Total: ${Number(detalleVenta.total).toLocaleString('es-AR')}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </AnimatePresence>
     </div>
   );

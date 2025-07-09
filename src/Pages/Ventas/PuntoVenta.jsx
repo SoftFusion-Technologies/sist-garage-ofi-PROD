@@ -7,6 +7,9 @@ import {
   FaTrash,
   FaMinus,
   FaPlus,
+  FaUser,
+  FaUserAlt,
+  FaCheckCircle,
   FaCreditCard,
   FaMoneyBillAlt
 } from 'react-icons/fa';
@@ -16,6 +19,7 @@ import { FaCog } from 'react-icons/fa';
 import { dynamicIcon } from '../../utils/dynamicIcon'; // Lo creamos abajo
 import ModalMediosPago from '../../Components/Ventas/ModalMediosPago'; // Lo creamos abajo
 import axios from 'axios';
+import { useAuth } from '../../AuthContext'; // Ajustá el path si es necesario
 
 // Agrupa productos por producto_id y junta sus talles en un array
 function agruparProductosConTalles(stockItems) {
@@ -54,6 +58,7 @@ export default function PuntoVenta() {
   const [loadingMediosPago, setLoadingMediosPago] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [medioPago, setMedioPago] = useState(null);
+  const { userId, userLocalId } = useAuth();
 
   // Traer medios de pago al montar
   useEffect(() => {
@@ -64,6 +69,15 @@ export default function PuntoVenta() {
       .finally(() => setLoadingMediosPago(false));
   }, []);
 
+  useEffect(() => {
+    if (!loadingMediosPago && mediosPago.length > 0 && medioPago == null) {
+      // Busca el medio de pago con id === 1 (efectivo)
+      const efectivo = mediosPago.find((m) => m.id === 1);
+      if (efectivo) setMedioPago(efectivo.id);
+      else setMedioPago(mediosPago[0].id); // fallback: primero de la lista
+    }
+  }, [loadingMediosPago, mediosPago]);
+
   const [busqueda, setBusqueda] = useState('');
   const [productos, setProductos] = useState([]); // Productos agrupados con talles
   const [carrito, setCarrito] = useState([]);
@@ -73,9 +87,6 @@ export default function PuntoVenta() {
 
   const [modalVerProductosOpen, setModalVerProductosOpen] = useState(false);
   const [productosModal, setProductosModal] = useState([]);
-
-  // Cambiar aquí para probar otras rutas si querés:
-  const endpoint = '/buscar-productos-detallado';
 
   useEffect(() => {
     const delay = setTimeout(() => {
@@ -107,8 +118,9 @@ export default function PuntoVenta() {
   }, [busqueda]);
 
   // Agregar producto al carrito
+  // Agregar producto al carrito
   const agregarAlCarrito = (producto, talle) => {
-    const stockId = `${producto.producto_id}-${talle.id}`;
+    const stockId = talle.stock_id; // <-- el real, ej: 188
     setCarrito((prev) => {
       const existe = prev.find((i) => i.stock_id === stockId);
       if (existe) {
@@ -120,7 +132,7 @@ export default function PuntoVenta() {
       return [
         ...prev,
         {
-          stock_id: stockId,
+          stock_id: stockId, // <-- el real, NO el compuesto
           producto_id: producto.producto_id,
           nombre: `${producto.nombre} - ${talle.nombre}`,
           precio: producto.precio,
@@ -168,9 +180,83 @@ export default function PuntoVenta() {
 
   const total = carrito.reduce((sum, i) => sum + i.precio * i.cantidad, 0);
 
-  const finalizarVenta = () => {
-    alert(`Venta registrada\nTotal: $${total}\nMedio: ${medioPago}`);
-    setCarrito([]);
+  const productosRequest = carrito.map((item) => ({
+    stock_id: item.stock_id,
+    cantidad: item.cantidad,
+    precio_unitario: item.precio
+  }));
+
+  const finalizarVenta = async () => {
+    // No dejar finalizar si no hay productos o medio de pago
+    if (carrito.length === 0) {
+      alert('Agregá productos al carrito.');
+      return;
+    }
+    if (!medioPago) {
+      alert('Seleccioná un medio de pago.');
+      return;
+    }
+
+    // Confirmar antes de enviar
+    if (!window.confirm('¿Deseás registrar la venta?')) return;
+
+    const productosRequest = carrito.map((item) => ({
+      stock_id: item.stock_id,
+      cantidad: item.cantidad,
+      precio_unitario: item.precio
+    }));
+
+    const ventaRequest = {
+      cliente_id: clienteSeleccionado ? clienteSeleccionado.id : null,
+      productos: productosRequest,
+      total: total,
+      medio_pago_id: medioPago,
+      usuario_id: userId,
+      local_id: userLocalId
+    };
+
+    try {
+      const response = await fetch('http://localhost:8080/ventas/pos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ventaRequest)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        alert(error.mensajeError || 'Error al registrar la venta');
+        return;
+      }
+
+      // Si todo OK:
+      setCarrito([]);
+      setBusqueda(''); // Limpia el input si querés
+      // Vuelve a buscar productos con el query actual
+      if (busqueda.trim() !== '') {
+        fetch(
+          `http://localhost:8080/buscar-productos-detallado?query=${encodeURIComponent(
+            busqueda
+          )}`
+        )
+          .then((res) => res.json())
+          .then((data) => {
+            const agrupados = agruparProductosConTalles(data);
+            setProductos(agrupados);
+          });
+      }
+      const data = await response.json();
+      // Mostrar info/ticket de la venta (puede ser un modal bonito)
+      alert(
+        `Venta registrada con éxito!\nNro: ${data.venta_id}\nTotal: $${total}`
+      );
+      // Limpiar carrito y cliente
+      setCarrito([]);
+      setClienteSeleccionado(null);
+      setBusquedaCliente('');
+    } catch (err) {
+      alert('Error de red al registrar la venta');
+      console.error('Error:', err);
+    }
   };
 
   const formatearPrecio = (valor) =>
@@ -219,6 +305,42 @@ export default function PuntoVenta() {
     prod.nombre.toLowerCase().includes(modalSearch.toLowerCase())
   );
 
+  const [busquedaCliente, setBusquedaCliente] = useState('');
+  const [sugerencias, setSugerencias] = useState([]);
+  const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
+
+  const handleBusquedaCliente = async (e) => {
+    setBusquedaCliente(e.target.value);
+    if (e.target.value.length > 2) {
+      try {
+        const res = await fetch(
+          `http://localhost:8080/clientes/search?query=${encodeURIComponent(
+            e.target.value
+          )}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setSugerencias(data);
+        } else if (res.status === 404) {
+          setSugerencias([]); // No hay resultados, es válido
+        } else {
+          // Otro error de red
+          setSugerencias([]);
+        }
+      } catch (err) {
+        setSugerencias([]); // Error de red/fetch
+      }
+    } else {
+      setSugerencias([]);
+    }
+  };
+
+  const seleccionarCliente = (cliente) => {
+    setClienteSeleccionado(cliente);
+    setBusquedaCliente(cliente.nombre);
+    setSugerencias([]);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-4 sm:p-6 text-white">
       <ParticlesBackground />
@@ -226,6 +348,65 @@ export default function PuntoVenta() {
       <h1 className="text-3xl font-bold mb-6 titulo uppercase flex items-center gap-3 text-emerald-400">
         <FaCashRegister /> Punto de Venta
       </h1>
+
+      <div className="mb-4 w-full max-w-2xl">
+        <label className="block text-xl font-bold mb-1 text-gray-200">
+          Cliente
+        </label>
+        <div className="relative">
+          <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-emerald-400 text-lg" />
+          <input
+            type="text"
+            placeholder="Buscar cliente por nombre, DNI o teléfono..."
+            value={busquedaCliente}
+            onChange={handleBusquedaCliente}
+            className="pl-10 pr-4 py-3 w-full rounded-xl bg-[#232323] text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow"
+            autoComplete="off"
+          />
+          {/* SUGERENCIAS */}
+          {sugerencias.length > 0 && (
+            <ul className="absolute z-10 left-0 right-0 bg-[#191919] shadow-xl rounded-xl mt-2 max-h-52 overflow-auto border border-emerald-700">
+              {sugerencias.map((cli) => (
+                <li
+                  key={cli.id}
+                  onClick={() => seleccionarCliente(cli)}
+                  className="px-4 py-2 hover:bg-emerald-800/80 cursor-pointer text-gray-200"
+                >
+                  {cli.nombre} –{' '}
+                  <span className="text-emerald-400">
+                    {cli.dni ? cli.dni : cli.telefono}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="mt-2">
+          {clienteSeleccionado ? (
+            <div className="flex items-center gap-3 text-emerald-400">
+              <FaCheckCircle className="text-emerald-500" />
+              <span>
+                {clienteSeleccionado.nombre} ({clienteSeleccionado.dni})
+              </span>
+              <button
+                className="ml-4 text-xs text-emerald-500 underline"
+                onClick={() => setClienteSeleccionado(null)}
+              >
+                Cambiar
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-gray-500">
+              <FaUserAlt />
+              <span>
+                Cliente no seleccionado (
+                <b className="text-emerald-400">Consumidor Final</b>)
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Buscador */}
       <div className="relative w-full max-w-3xl mb-6 flex items-center gap-2">
         <div className="relative flex-grow">
@@ -370,7 +551,7 @@ export default function PuntoVenta() {
 
           <button
             onClick={finalizarVenta}
-            disabled={carrito.length === 0}
+            disabled={carrito.length === 0 && mediosPago.length === ''}
             className={`w-full py-3 rounded-xl font-bold transition ${
               carrito.length === 0
                 ? 'bg-gray-600 cursor-not-allowed'
