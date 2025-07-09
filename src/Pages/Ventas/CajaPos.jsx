@@ -45,7 +45,6 @@ export default function CajaPOS() {
   const [historial, setHistorial] = useState([]);
   const [showHistorial, setShowHistorial] = useState(false);
 
-
   useEffect(() => {
     const fetchCaja = async () => {
       setCargando(true);
@@ -178,6 +177,8 @@ export default function CajaPOS() {
       alert('No se pudo obtener el detalle de la venta');
     }
   };
+
+  const [detalleCaja, setDetalleCaja] = useState(null);
 
   // RESPONSIVE & GLASS
   return (
@@ -449,6 +450,7 @@ export default function CajaPOS() {
                     historial.map((c) => (
                       <li
                         key={c.id}
+                        onClick={() => setDetalleCaja(c)} // <-- Aquí
                         className="flex justify-between text-sm bg-black/10 rounded-xl px-3 py-2 font-mono"
                       >
                         <span>
@@ -465,7 +467,7 @@ export default function CajaPOS() {
                         </span>
                         <span className="text-xs">
                           {c.saldo_final
-                            ? 'Final: $' + Number(c.saldo_final).toFixed(2)
+                            ? 'Final: ' + formatearPeso(c.saldo_final)
                             : 'Sin cerrar'}
                         </span>
                       </li>
@@ -607,6 +609,58 @@ export default function CajaPOS() {
           </motion.div>
         )}
       </AnimatePresence>
+      {detalleCaja && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-[#181c25] p-7 rounded-2xl max-w-xl w-full shadow-2xl relative">
+            <button
+              className="absolute top-4 right-5 text-gray-400 hover:text-emerald-400 text-xl"
+              onClick={() => setDetalleCaja(null)}
+            >
+              X
+            </button>
+            <h3 className="text-xl font-bold mb-3 text-emerald-400 flex items-center gap-2">
+              Caja #{detalleCaja.id}
+            </h3>
+            <div className="mb-4 text-sm text-gray-200">
+              <div>
+                <b>Local:</b> {detalleCaja.local_id || '-'}
+              </div>
+              <div>
+                <b>Usuario:</b> {detalleCaja.usuario_id || '-'}
+              </div>
+              <div>
+                <b>Apertura:</b>{' '}
+                {new Date(detalleCaja.fecha_apertura).toLocaleString()}
+              </div>
+              <div>
+                <b>Cierre:</b>{' '}
+                {detalleCaja.fecha_cierre
+                  ? new Date(detalleCaja.fecha_cierre).toLocaleString()
+                  : 'Sin cerrar'}
+              </div>
+              <div>
+                <b>Saldo inicial:</b> {formatearPeso(detalleCaja.saldo_inicial)}
+              </div>
+              <div>
+                <b>Saldo final:</b>{' '}
+                {detalleCaja.saldo_final
+                  ? formatearPeso(detalleCaja.saldo_final)
+                  : 'Sin cerrar'}
+              </div>
+            </div>
+            {/* Aquí podrías cargar movimientos de la caja si tenés endpoint */}
+            {/* Opcional: mostrar resumen de ventas y egresos */}
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setDetalleCaja(null)}
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-bold text-white transition"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
