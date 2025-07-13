@@ -20,7 +20,7 @@ import { dynamicIcon } from '../../utils/dynamicIcon'; // Lo creamos abajo
 import ModalMediosPago from '../../Components/Ventas/ModalMediosPago'; // Lo creamos abajo
 import axios from 'axios';
 import { useAuth } from '../../AuthContext'; // Ajustá el path si es necesario
-
+import TicketVentaModal from './Config/TicketVentaModal';
 // Agrupa productos por producto_id y junta sus talles en un array
 function agruparProductosConTalles(stockItems) {
   const map = new Map();
@@ -87,6 +87,7 @@ export default function PuntoVenta() {
 
   const [modalVerProductosOpen, setModalVerProductosOpen] = useState(false);
   const [productosModal, setProductosModal] = useState([]);
+  const [ventaFinalizada, setVentaFinalizada] = useState(null);
 
   useEffect(() => {
     const delay = setTimeout(() => {
@@ -245,10 +246,18 @@ export default function PuntoVenta() {
           });
       }
       const data = await response.json();
+      const ventaId = data.venta_id;
+
+      // Busca la venta completa
+
+      const ventaCompleta = await fetch(
+        `http://localhost:8080/ventas/${ventaId}`
+      ).then((r) => r.json());
+      setVentaFinalizada(ventaCompleta);
       // Mostrar info/ticket de la venta (puede ser un modal bonito)
-      alert(
-        `Venta registrada con éxito!\nNro: ${data.venta_id}\nTotal: $${total}`
-      );
+      // alert(
+      //   `Venta registrada con éxito!\nNro: ${data.venta_id}\nTotal: $${total}`
+      // );
       // Limpiar carrito y cliente
       setCarrito([]);
       setClienteSeleccionado(null);
@@ -781,6 +790,12 @@ export default function PuntoVenta() {
         mediosPago={mediosPago}
         setMediosPago={setMediosPago}
       />
+      {ventaFinalizada && (
+        <TicketVentaModal
+          venta={ventaFinalizada}
+          onClose={() => setVentaFinalizada(null)}
+        />
+      )}
     </div>
   );
 }

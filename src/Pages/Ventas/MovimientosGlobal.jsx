@@ -129,7 +129,7 @@ export default function MovimientosGlobal() {
             No se encontraron movimientos.
           </div>
         ) : (
-          <div className="overflow-auto rounded-lg border border-[#262940]">
+          <div className="overflow-auto rounded-lg border border-[#262940] max-h-[620px]">
             <table className="w-full text-left text-sm bg-[#23253a]">
               <thead>
                 <tr className="text-emerald-300 font-semibold border-b border-[#262940]">

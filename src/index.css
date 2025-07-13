@@ -147,3 +147,21 @@
     opacity: 0.25;
   }
 }
+
+/* App.css o index.css */
+.ticket-pdf *, .ticket-pdf {
+  color: #222 !important;
+  background: #fff !important;
+  border-color: #059669 !important;
+  box-shadow: none !important;
+  /* O agrega lo que necesites. */
+}
+.ticket-pdf .brand {
+  color: #059669 !important;
+}
+.ticket-pdf .brand-muted {
+  color: #64748b !important;
+}
+.ticket-pdf .precio {
+  color: #059669 !important;
+}

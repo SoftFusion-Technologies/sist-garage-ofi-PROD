@@ -46,6 +46,7 @@ import ConfiguracionPage from './Pages/Ventas/ConfiguracionPage';
 import ClientesGet from './Pages/MetodosGets/ClientesGet';
 import CajaPOS from './Pages/Ventas/CajaPos';
 import MovimientosGlobal from './Pages/Ventas/MovimientosGlobal';
+import VentasTimeline from './Pages/Ventas/VentasTimeline';
 
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
@@ -201,6 +202,15 @@ function AppContent() {
             <ProtectedRoute>
               {' '}
               <MovimientosGlobal />{' '}
+            </ProtectedRoute>
+          }
+        />{' '}
+        <Ruta
+          path="/dashboard/ventas/historial"
+          element={
+            <ProtectedRoute>
+              {' '}
+              <VentasTimeline />{' '}
             </ProtectedRoute>
           }
         />
