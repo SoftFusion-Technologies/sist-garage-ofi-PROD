@@ -73,8 +73,9 @@ export default function CajaPOS() {
         setCajaActual(abierta || null);
 
         if (abierta) {
+          // Ahora usa el endpoint RESTful, NO query params
           const mov = await axios.get(
-            `http://localhost:8080/movimientos_caja?caja_id=${abierta.id}`
+            `http://localhost:8080/movimientos/caja/${abierta.id}`
           );
           setMovimientos(mov.data);
         }
@@ -212,6 +213,7 @@ export default function CajaPOS() {
   const infoLocal = detalleCaja
     ? getInfoLocal(detalleCaja.local_id, locales)
     : { nombre: '-', direccion: '-' };
+
   // RESPONSIVE & GLASS
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#101016] via-[#181A23] to-[#11192b] px-2 py-8">

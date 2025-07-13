@@ -19,6 +19,7 @@ import {
   FaCog,
   FaCashRegister
 } from 'react-icons/fa';
+import { LiaCashRegisterSolid } from 'react-icons/lia';
 
 // Todas las secciones clave del módulo de ventas
 const ventasLinks = [
@@ -33,6 +34,12 @@ const ventasLinks = [
     label: 'Caja',
     icon: <FaFileInvoiceDollar />,
     desc: 'Resumen y arqueo diario'
+  },
+  {
+    to: '/dashboard/ventas/movimientos',
+    label: 'Movimientos',
+    icon: <LiaCashRegisterSolid />,
+    desc: 'Movimientos de caja'
   },
   {
     to: '/dashboard/ventas/mas-vendidos',
