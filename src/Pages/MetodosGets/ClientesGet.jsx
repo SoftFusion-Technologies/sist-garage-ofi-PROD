@@ -7,11 +7,28 @@ import {
   FaWhatsapp,
   FaTimes,
   FaUserAlt,
-  FaShoppingCart
+  FaShoppingCart,
+  FaPhoneAlt,
+  FaIdCard,
+  FaHome,
+  FaEnvelope,
+  FaStore,
+  FaUserTie,
+  FaCalendarAlt,
+  FaCreditCard,
+  FaCheckCircle,
+  FaMoneyBillWave
 } from 'react-icons/fa';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import ButtonBack from '../../Components/ButtonBack';
 import AdminActions from '../../Components/AdminActions';
+
+import {
+  fetchLocales,
+  fetchUsuarios,
+  getNombreLocal
+} from '../../utils/utils.js';
 Modal.setAppElement('#root');
 
 export default function ClientesGet() {
@@ -153,6 +170,21 @@ export default function ClientesGet() {
       .catch(() => setDetalleVenta(null));
   };
 
+  const [locales, setLocales] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Carga ambos catálogos en paralelo
+    setLoading(true);
+    Promise.all([fetchLocales(), fetchUsuarios()])
+      .then(([localesData, usuariosData]) => {
+        setLocales(localesData);
+        setUsuarios(usuariosData);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-800 to-emerald-900 py-10 px-3 md:px-6 relative font-sans">
       <ButtonBack />
@@ -208,20 +240,19 @@ export default function ClientesGet() {
           </div>
         </div>
       </div>
-
       {/* Tabla para desktop */}
       <div className="hidden md:block max-w-5xl mx-auto">
         <div className="overflow-auto rounded-2xl shadow-2xl bg-white/10 backdrop-blur-sm">
           <table className="w-full text-sm text-left text-white">
             <thead className="bg-emerald-700/90">
               <tr>
-                <th className="px-6 py-4">Nombre</th>
-                <th className="px-6 py-4">Teléfono</th>
-                <th className="px-6 py-4">Email</th>
-                <th className="px-6 py-4">DNI</th>
-                <th className="px-6 py-4">Dirección</th>
-                <th className="px-6 py-4">Última compra</th>
-                <th className="px-6 py-4">Acciones</th>
+                <th className="px-6 py-4 uppercase">Nombre</th>
+                <th className="px-6 py-4 uppercase">Teléfono</th>
+                <th className="px-6 py-4 uppercase">Email</th>
+                <th className="px-6 py-4 uppercase">DNI</th>
+                <th className="px-6 py-4 uppercase">Dirección</th>
+                <th className="px-6 py-4 uppercase">Última compra</th>
+                <th className="px-6 py-4 uppercase">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -291,7 +322,6 @@ export default function ClientesGet() {
           </table>
         </div>
       </div>
-
       {/* Tarjetas para mobile */}
       <div className="md:hidden grid grid-cols-1 gap-4 max-w-xl mx-auto mt-8">
         {filtered.length === 0 && (
@@ -313,13 +343,13 @@ export default function ClientesGet() {
                 onEdit={() => openModal(c)}
                 onDelete={() => handleDelete(c.id)}
               />
-                <button
-                  className="text-emerald-400 mt-4 text-xs font-semibold hover:text-emerald-300 transition"
-                  onClick={() => openDetalleCliente(c)}
-                  title="Ver detalle del cliente"
-                >
-                  Ver detalle
-                </button>
+              <button
+                className="text-emerald-400 mt-4 text-xs font-semibold hover:text-emerald-300 transition"
+                onClick={() => openDetalleCliente(c)}
+                title="Ver detalle del cliente"
+              >
+                Ver detalle
+              </button>
             </div>
             <div className="text-sm text-emerald-200/90">
               {c.email || 'Sin Email Agregado'}
@@ -361,7 +391,6 @@ export default function ClientesGet() {
           </motion.div>
         ))}
       </div>
-
       {/* Modal */}
       <AnimatePresence>
         {modalOpen && (
@@ -441,165 +470,239 @@ export default function ClientesGet() {
           </Modal>
         )}
       </AnimatePresence>
-
+      ;
       <AnimatePresence>
         {detalleCliente && (
           <motion.div
-            className="fixed inset-0 bg-black/60 flex justify-center items-center z-50"
+            className="fixed inset-0 bg-black/70 backdrop-blur-md flex justify-center items-center z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <div className="bg-[#1a222c] rounded-2xl max-w-xl w-full shadow-2xl p-7 relative border-l-4 border-emerald-400">
+            <motion.div
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 30, opacity: 0 }}
+              className="bg-gradient-to-br from-[#1e242f]/90 via-[#1a222c] to-[#171b24] rounded-3xl max-w-2xl w-full shadow-2xl p-8 border border-emerald-500 relative ring-emerald-500 ring-1 ring-opacity-20"
+            >
+              {/* Cerrar */}
               <button
-                className="absolute top-4 right-5 text-gray-400 hover:text-emerald-400 text-xl"
+                className="absolute top-4 right-5 text-gray-400 hover:text-emerald-400 text-2xl transition-all"
                 onClick={() => setDetalleCliente(null)}
               >
                 <FaTimes />
               </button>
-              <h3 className="font-bold text-2xl mb-4 flex gap-2 items-center text-emerald-300">
-                <FaUserAlt /> Cliente:{' '}
-                <span className="ml-2 text-white">{detalleCliente.nombre}</span>
-              </h3>
-              <div className="text-gray-300 mb-3 text-sm space-y-1">
-                <div>
-                  <b>Teléfono:</b> {detalleCliente.telefono || '-'}
+
+              {/* Header Cliente */}
+              <div className="flex items-center gap-4 mb-4">
+                <div className="bg-emerald-600/30 rounded-full p-3 text-2xl text-emerald-300 shadow-lg">
+                  <FaUserAlt />
                 </div>
                 <div>
-                  <b>Email:</b> {detalleCliente.email || '-'}
-                </div>
-                <div>
-                  <b>DNI:</b> {detalleCliente.dni || '-'}
-                </div>
-                <div>
-                  <b>Dirección:</b> {detalleCliente.direccion || '-'}
-                </div>
-                <div>
-                  <b>Última compra:</b>{' '}
-                  {detalleCliente.fecha_ultima_compra ? (
-                    new Date(
-                      detalleCliente.fecha_ultima_compra
-                    ).toLocaleDateString()
-                  ) : (
-                    <span className="italic text-emerald-200/60">Nunca</span>
-                  )}
+                  <div className="text-xl font-black text-emerald-300 tracking-wide flex items-center gap-2">
+                    Cliente:
+                    <span className="text-white drop-shadow">
+                      {detalleCliente.nombre}
+                    </span>
+                    {detalleCliente.vip && (
+                      <span className="ml-2 bg-yellow-400/80 text-gray-900 text-xs px-2 py-0.5 rounded-full font-bold shadow">
+                        VIP
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-400">
+                    {detalleCliente.telefono && (
+                      <span className="inline-flex items-center gap-1">
+                        <FaPhoneAlt /> {detalleCliente.telefono}
+                      </span>
+                    )}
+                    {detalleCliente.email && (
+                      <span className="inline-flex items-center gap-1">
+                        <FaEnvelope /> {detalleCliente.email}
+                      </span>
+                    )}
+                    {detalleCliente.dni && (
+                      <span className="inline-flex items-center gap-1">
+                        <FaIdCard /> {detalleCliente.dni}
+                      </span>
+                    )}
+                    {detalleCliente.direccion && (
+                      <span className="inline-flex items-center gap-1">
+                        <FaHome /> {detalleCliente.direccion}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="mt-6">
-                <h3 className="font-bold text-lg text-emerald-400 mt-8 mb-2">
-                  Historial de compras
-                </h3>
-                <ul className="space-y-1 max-h-44 overflow-y-auto custom-scrollbar mb-3">
-                  {detalleCliente.ventas && detalleCliente.ventas.length > 0 ? (
-                    detalleCliente.ventas.map((venta) => (
-                      <li
-                        key={venta.id}
-                        className="flex justify-between items-center bg-emerald-950/70 px-4 py-2 rounded-lg mb-1 shadow"
-                      >
-                        <span>
-                          Venta #{venta.id} –{' '}
-                          <span className="text-emerald-300">
-                            {new Date(venta.fecha).toLocaleString()}
+
+              <div className="flex items-center gap-2 mb-6">
+                <FaCheckCircle className="text-emerald-400" />
+                <span className="text-xs text-gray-200">
+                  Última compra:&nbsp;
+                  {detalleCliente.fecha_ultima_compra ? (
+                    <b className="text-white">
+                      {new Date(
+                        detalleCliente.fecha_ultima_compra
+                      ).toLocaleDateString()}
+                    </b>
+                  ) : (
+                    <span className="italic text-emerald-200/80">Nunca</span>
+                  )}
+                </span>
+              </div>
+
+              {/* Historial de compras */}
+              <h3 className="font-bold text-lg text-emerald-400 mb-2 mt-4 flex items-center gap-2">
+                <FaShoppingCart /> Historial de compras
+              </h3>
+              <ul className="space-y-2 max-h-52 overflow-y-auto custom-scrollbar mb-2">
+                {detalleCliente.ventas && detalleCliente.ventas.length > 0 ? (
+                  detalleCliente.ventas.map((venta) => (
+                    <li
+                      key={venta.id}
+                      className="flex flex-col md:flex-row md:justify-between md:items-center gap-1 bg-emerald-950/60 px-4 py-3 rounded-xl shadow group hover:shadow-lg hover:bg-emerald-800/30 transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="font-bold text-emerald-200 tracking-wide">
+                          #{venta.id}
+                        </span>
+                        <span className="text-xs text-emerald-300 flex items-center gap-1">
+                          <FaCalendarAlt />{' '}
+                          {new Date(venta.fecha).toLocaleString()}
+                        </span>
+                        <span className="text-xs text-gray-300 ml-2">
+                          Total:{' '}
+                          <span className="font-bold text-emerald-200">
+                            ${Number(venta.total).toLocaleString('es-AR')}
                           </span>
                         </span>
-                        <span className="font-bold text-emerald-200">
-                          ${Number(venta.total).toLocaleString('es-AR')}
-                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 mt-1 md:mt-0">
                         <button
                           onClick={() => fetchDetalleVenta(venta.id)}
-                          className="ml-3 text-xs text-emerald-400 underline font-semibold hover:text-emerald-300 transition"
+                          className="text-emerald-400 text-xs font-bold px-3 py-1 rounded-lg bg-emerald-900/40 hover:bg-emerald-700/80 transition-all shadow"
                         >
                           Ver detalle
                         </button>
-                      </li>
-                    ))
-                  ) : (
-                    <li className="text-emerald-200 text-center py-4">
-                      Sin compras registradas.
+                      </div>
                     </li>
-                  )}
-                </ul>
-              </div>
-            </div>
+                  ))
+                ) : (
+                  <li className="text-emerald-200 text-center py-4">
+                    Sin compras registradas.
+                  </li>
+                )}
+              </ul>
+            </motion.div>
           </motion.div>
         )}
-        <AnimatePresence>
-          {detalleVenta && (
+
+        {/* MODAL DETALLE VENTA */}
+        {detalleVenta && (
+          <motion.div
+            className="fixed inset-0 bg-black/80 flex items-center justify-center z-[70]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
             <motion.div
-              className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ y: 35, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 25, opacity: 0 }}
+              className="bg-gradient-to-br from-[#262b39]/90 via-[#232631] to-[#202331]/90 p-8 rounded-3xl max-w-2xl w-full shadow-2xl border border-emerald-500 relative"
             >
-              <div className="bg-[#232631] p-7 rounded-2xl max-w-lg w-full shadow-2xl relative">
-                <button
-                  className="absolute top-4 right-5 text-gray-400 hover:text-emerald-400 text-xl"
-                  onClick={() => setDetalleVenta(null)}
-                >
-                  ×
-                </button>
-                <h3 className="text-xl font-bold mb-3 text-emerald-400 flex items-center gap-2">
-                  <FaShoppingCart /> Detalle Venta #{detalleVenta.id}
+              <button
+                className="absolute top-4 right-5 text-gray-400 hover:text-emerald-400 text-2xl transition-all"
+                onClick={() => setDetalleVenta(null)}
+              >
+                <FaTimes />
+              </button>
+              <div className="flex items-center gap-3 mb-4">
+                <FaShoppingCart className="text-emerald-400 text-2xl" />
+                <h3 className="text-xl font-black text-emerald-400 tracking-tight">
+                  Detalle Venta #{detalleVenta.id}
                 </h3>
-                <div className="mb-3">
-                  <div className="text-sm text-gray-300 mb-1">
-                    Cliente:{' '}
-                    <b>{detalleVenta.cliente?.nombre || 'Consumidor Final'}</b>
-                    {detalleVenta.cliente?.dni ? (
-                      <span className="ml-2 text-xs text-gray-400">
-                        DNI: {detalleVenta.cliente.dni}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="text-sm text-gray-300 mb-1">
-                    Fecha: {new Date(detalleVenta.fecha).toLocaleString()}
-                  </div>
-                  <div className="text-sm text-gray-300 mb-1">
-                    Medio de pago:{' '}
+              </div>
+              <div className="mb-3 text-sm text-gray-300 space-y-1">
+                <div>
+                  <b>Cliente:</b>{' '}
+                  <span className="text-white">
+                    {detalleVenta.cliente?.nombre || 'Consumidor Final'}
+                  </span>
+                  {detalleVenta.cliente?.dni && (
+                    <span className="ml-2 text-xs text-gray-400">
+                      DNI: {detalleVenta.cliente.dni}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <b>Fecha:</b> {new Date(detalleVenta.fecha).toLocaleString()}
+                </div>
+                <div>
+                  <b>Medio de pago:</b>{' '}
+                  <span className="inline-flex items-center gap-1">
+                    <FaCreditCard className="text-emerald-300" />
                     <b>
                       {detalleVenta.venta_medios_pago?.[0]?.medios_pago
                         ?.nombre || 'Efectivo'}
                     </b>
-                  </div>
+                  </span>
                 </div>
-                <ul className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar mb-3">
-                  {detalleVenta.detalles?.map((d) => (
-                    <li
-                      key={d.id}
-                      className="flex justify-between items-center px-3 py-2 bg-emerald-900/10 rounded-lg"
-                    >
-                      <span className="text-white">
-                        {d.stock.producto.nombre}
-                        {d.stock.talle ? (
-                          <span className="text-gray-400 ml-2">
-                            Talle: {d.stock.talle.nombre}
-                          </span>
-                        ) : null}
-                        {d.stock.codigo_sku && (
-                          <span className="ml-2 text-xs text-emerald-300">
-                            SKU: {d.stock.codigo_sku}
-                          </span>
-                        )}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        x{d.cantidad}
-                      </span>
-                      <span className="font-bold text-emerald-300">
-                        $
-                        {Number(d.precio_unitario * d.cantidad).toLocaleString(
-                          'es-AR'
-                        )}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <div className="text-right text-lg text-white font-bold">
-                  Total: ${Number(detalleVenta.total).toLocaleString('es-AR')}
+                <div>
+                  <b>Vendedor:</b>{' '}
+                  <span className="text-emerald-200">
+                    {detalleVenta.usuario?.nombre || '-'}
+                  </span>
+                </div>
+                <div>
+                  <b>Local:</b>{' '}
+                  <span className="text-emerald-200">
+                    {getNombreLocal(
+                      detalleVenta.usuario?.local_id || '-',
+                      locales
+                    )}
+                  </span>
                 </div>
               </div>
+              <ul className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar mb-3 mt-3">
+                {detalleVenta.detalles?.map((d) => (
+                  <li
+                    key={d.id}
+                    className="flex justify-between items-center px-3 py-2 bg-emerald-900/10 rounded-lg"
+                  >
+                    <span className="text-white">
+                      {d.stock.producto.nombre}
+                      {d.stock.talle && (
+                        <span className="text-gray-400 ml-2">
+                          Talle: {d.stock.talle.nombre}
+                        </span>
+                      )}
+                      {d.stock.codigo_sku && (
+                        <span className="ml-2 text-xs text-emerald-300">
+                          SKU: {d.stock.codigo_sku}
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-xs text-gray-400">x{d.cantidad}</span>
+                    <span className="font-bold text-emerald-300">
+                      $
+                      {Number(d.precio_unitario * d.cantidad).toLocaleString(
+                        'es-AR'
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <div className="text-right text-lg text-white font-black mt-4">
+                <FaMoneyBillWave className="inline-block mr-2 text-emerald-400" />
+                Total:{' '}
+                <span className="text-emerald-200">
+                  ${Number(detalleVenta.total).toLocaleString('es-AR')}
+                </span>
+              </div>
             </motion.div>
-          )}
-        </AnimatePresence>
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );
