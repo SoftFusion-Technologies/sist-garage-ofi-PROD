@@ -7,20 +7,34 @@ import {
   FaStop,
   FaPlus,
   FaShoppingCart,
-  FaHistory,
-  FaTimes,
   FaCalendarAlt,
   FaUserCircle,
   FaUser,
   FaMapMarkerAlt,
   FaMoneyBillAlt,
   FaBarcode,
-  FaMinus
+  FaMinus,
+  FaTimes,
+  FaHistory,
+  FaClock,
+  FaCheckCircle,
+  FaMoneyBillWave,
+  FaStore,
+  FaCalendarCheck,
+  FaTimesCircle
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import ParticlesBackground from '../../Components/ParticlesBackground';
 import ButtonBack from '../../Components/ButtonBack';
 import { formatearPeso } from '../../utils/formatearPeso';
+
+import {
+  fetchLocales,
+  fetchUsuarios,
+  getNombreLocal,
+  getInfoLocal,
+  getNombreUsuario
+} from '../../utils/utils.js';
 // Microcomponente Glass Card
 const GlassCard = ({ children, className = '' }) => (
   <div
@@ -180,6 +194,24 @@ export default function CajaPOS() {
 
   const [detalleCaja, setDetalleCaja] = useState(null);
 
+  const [locales, setLocales] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Carga ambos catálogos en paralelo
+    setLoading(true);
+    Promise.all([fetchLocales(), fetchUsuarios()])
+      .then(([localesData, usuariosData]) => {
+        setLocales(localesData);
+        setUsuarios(usuariosData);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const infoLocal = detalleCaja
+    ? getInfoLocal(detalleCaja.local_id, locales)
+    : { nombre: '-', direccion: '-' };
   // RESPONSIVE & GLASS
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#101016] via-[#181A23] to-[#11192b] px-2 py-8">
@@ -426,55 +458,89 @@ export default function CajaPOS() {
         <AnimatePresence>
           {showHistorial && (
             <motion.div
-              className="fixed inset-0 flex items-center justify-center bg-black/60 z-40"
+              className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-50"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <div className="bg-[#202231] rounded-2xl max-w-lg w-full shadow-2xl p-7 relative">
+              <motion.div
+                initial={{ scale: 0.96, opacity: 0, y: 40 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 40 }}
+                transition={{ duration: 0.18 }}
+                className="bg-[#23253a] rounded-2xl max-w-lg w-full shadow-2xl p-7 relative border border-emerald-700"
+              >
                 <button
-                  className="absolute top-4 right-5 text-gray-400 hover:text-emerald-400 text-xl"
+                  className="absolute top-4 right-5 text-gray-400 hover:text-emerald-400 text-xl transition-transform hover:scale-125"
                   onClick={() => setShowHistorial(false)}
                 >
                   <FaTimes />
                 </button>
-                <h4 className="font-bold mb-4 text-emerald-400 text-lg flex gap-2 items-center">
-                  <FaHistory /> Historial de cajas cerradas
-                </h4>
-                <ul className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
+                <div className="flex items-center gap-3 mb-5">
+                  <FaHistory className="text-emerald-400 text-lg" />
+                  <h4 className="font-bold text-emerald-400 text-xl tracking-tight">
+                    Historial de cajas cerradas
+                  </h4>
+                </div>
+                <ul className="space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
                   {historial.length === 0 ? (
-                    <li className="text-gray-400 text-center py-6">
+                    <li className="text-gray-400 text-center py-8 font-semibold text-base">
                       Sin historial…
                     </li>
                   ) : (
                     historial.map((c) => (
                       <li
                         key={c.id}
-                        onClick={() => setDetalleCaja(c)} // <-- Aquí
-                        className="flex justify-between text-sm bg-black/10 rounded-xl px-3 py-2 font-mono"
+                        onClick={() => setDetalleCaja(c)}
+                        className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center bg-black/20 rounded-xl px-4 py-3 font-mono border border-transparent hover:border-emerald-400 hover:bg-emerald-900/30 cursor-pointer transition-all shadow-sm group"
                       >
-                        <span>
-                          #{c.id} -{' '}
-                          {new Date(c.fecha_apertura).toLocaleDateString()}{' '}
-                          <span className="text-gray-500">
-                            (
-                            {new Date(c.fecha_apertura).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                            )
+                        <div className="flex flex-col gap-1">
+                          <span className="flex items-center gap-2 font-bold text-emerald-300 group-hover:text-white">
+                            #{c.id}
+                            <span
+                              className={`ml-2 text-xs px-2 py-0.5 rounded-full font-semibold shadow 
+                      ${
+                        c.fecha_cierre
+                          ? 'bg-emerald-600/80 text-white'
+                          : 'bg-yellow-400/80 text-gray-900'
+                      }
+                    `}
+                            >
+                              {c.fecha_cierre ? (
+                                <span className="flex items-center gap-1">
+                                  <FaCheckCircle className="inline" /> Cerrada
+                                </span>
+                              ) : (
+                                'Abierta'
+                              )}
+                            </span>
                           </span>
-                        </span>
-                        <span className="text-xs">
-                          {c.saldo_final
-                            ? 'Final: ' + formatearPeso(c.saldo_final)
-                            : 'Sin cerrar'}
+                          <span className="text-gray-400 flex items-center gap-2 text-xs">
+                            <FaClock />{' '}
+                            {new Date(c.fecha_apertura).toLocaleDateString()}{' '}
+                            <span className="text-gray-500">
+                              (
+                              {new Date(c.fecha_apertura).toLocaleTimeString(
+                                [],
+                                { hour: '2-digit', minute: '2-digit' }
+                              )}
+                              )
+                            </span>
+                          </span>
+                        </div>
+                        <span className="flex items-center gap-2 text-xs text-emerald-300 group-hover:text-emerald-100 mt-2 sm:mt-0">
+                          <FaMoneyBillWave className="inline" />
+                          {c.saldo_final ? (
+                            'Final: ' + formatearPeso(c.saldo_final)
+                          ) : (
+                            <span className="text-yellow-400">Sin cerrar</span>
+                          )}
                         </span>
                       </li>
                     ))
                   )}
                 </ul>
-              </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -609,58 +675,136 @@ export default function CajaPOS() {
           </motion.div>
         )}
       </AnimatePresence>
-      {detalleCaja && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-[#181c25] p-7 rounded-2xl max-w-xl w-full shadow-2xl relative">
-            <button
-              className="absolute top-4 right-5 text-gray-400 hover:text-emerald-400 text-xl"
-              onClick={() => setDetalleCaja(null)}
+      <AnimatePresence>
+        {detalleCaja && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.97 }}
+            className="fixed inset-0 flex items-center justify-center bg-black/75 backdrop-blur-md z-50"
+            key="detalle-caja-modal"
+          >
+            <motion.div
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 30, opacity: 0 }}
+              transition={{ duration: 0.19 }}
+              className="bg-[#1a202d] p-8 rounded-3xl max-w-lg w-full shadow-2xl relative border border-emerald-600"
             >
-              X
-            </button>
-            <h3 className="text-xl font-bold mb-3 text-emerald-400 flex items-center gap-2">
-              Caja #{detalleCaja.id}
-            </h3>
-            <div className="mb-4 text-sm text-gray-200">
-              <div>
-                <b>Local:</b> {detalleCaja.local_id || '-'}
-              </div>
-              <div>
-                <b>Usuario:</b> {detalleCaja.usuario_id || '-'}
-              </div>
-              <div>
-                <b>Apertura:</b>{' '}
-                {new Date(detalleCaja.fecha_apertura).toLocaleString()}
-              </div>
-              <div>
-                <b>Cierre:</b>{' '}
-                {detalleCaja.fecha_cierre
-                  ? new Date(detalleCaja.fecha_cierre).toLocaleString()
-                  : 'Sin cerrar'}
-              </div>
-              <div>
-                <b>Saldo inicial:</b> {formatearPeso(detalleCaja.saldo_inicial)}
-              </div>
-              <div>
-                <b>Saldo final:</b>{' '}
-                {detalleCaja.saldo_final
-                  ? formatearPeso(detalleCaja.saldo_final)
-                  : 'Sin cerrar'}
-              </div>
-            </div>
-            {/* Aquí podrías cargar movimientos de la caja si tenés endpoint */}
-            {/* Opcional: mostrar resumen de ventas y egresos */}
-            <div className="mt-6 flex justify-end">
+              {/* Botón de cerrar */}
               <button
+                className="absolute top-4 right-4 text-gray-400 hover:text-emerald-400 text-2xl transition-transform hover:scale-125"
+                aria-label="Cerrar"
                 onClick={() => setDetalleCaja(null)}
-                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-bold text-white transition"
               >
-                Cerrar
+                <FaTimesCircle />
               </button>
-            </div>
-          </div>
-        </div>
-      )}
+
+              {/* Header con badge */}
+              <div className="flex items-center gap-4 mb-5">
+                <span
+                  className={`px-3 py-1 rounded-full font-bold text-xs shadow 
+            ${
+              detalleCaja.fecha_cierre
+                ? 'bg-emerald-500/80 text-white'
+                : 'bg-yellow-400/80 text-gray-900'
+            }`}
+                >
+                  {detalleCaja.fecha_cierre ? 'CERRADA' : 'ABIERTA'}
+                </span>
+                <h3 className="text-2xl font-black text-emerald-400 tracking-tight flex items-center gap-2 drop-shadow">
+                  <FaMoneyBillWave /> Caja #{detalleCaja.id}
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5 text-[15px]">
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2 items-center">
+                    <FaStore className="text-emerald-400" />
+                    <span>
+                      <b>Local:</b> {infoLocal.nombre}
+                    </span>
+                  </div>
+                  <div className="flex gap-2 items-center text-gray-400 text-xs pl-6">
+                    {infoLocal.direccion}
+                  </div>
+                  <div className="flex gap-2 items-center mt-2">
+                    <FaUser className="text-emerald-400" />
+                    <span>
+                      <b>Usuario:</b>{' '}
+                      {getNombreUsuario(detalleCaja.usuario_id, usuarios)}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2 items-center">
+                    <FaClock className="text-emerald-400" />
+                    <span>
+                      <b>Apertura:</b>
+                      <br />
+                      <span className="text-gray-100">
+                        {new Date(detalleCaja.fecha_apertura).toLocaleString()}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <FaCalendarCheck className="text-emerald-400" />
+                    <span>
+                      <b>Cierre:</b>
+                      <br />
+                      {detalleCaja.fecha_cierre ? (
+                        <span className="text-gray-100">
+                          {new Date(detalleCaja.fecha_cierre).toLocaleString()}
+                        </span>
+                      ) : (
+                        <span className="text-yellow-400">Sin cerrar</span>
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6 mt-6 mb-3">
+                <div className="flex flex-col items-start">
+                  <span className="flex gap-2 items-center text-lg font-bold text-emerald-400">
+                    <FaMoneyBillWave /> Saldo inicial:
+                  </span>
+                  <span className="text-2xl font-black text-gray-100 tracking-wide">
+                    {formatearPeso(detalleCaja.saldo_inicial)}
+                  </span>
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="flex gap-2 items-center text-lg font-bold text-emerald-400">
+                    <FaMoneyBillWave /> Saldo final:
+                  </span>
+                  <span
+                    className={`text-2xl font-black tracking-wide ${
+                      detalleCaja.saldo_final
+                        ? 'text-emerald-300'
+                        : 'text-yellow-400'
+                    }`}
+                  >
+                    {detalleCaja.saldo_final
+                      ? formatearPeso(detalleCaja.saldo_final)
+                      : 'Sin cerrar'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Footer con botón */}
+              <div className="mt-7 flex justify-end">
+                <motion.button
+                  whileTap={{ scale: 0.96 }}
+                  className="px-7 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-xl font-bold text-lg text-white transition shadow-lg shadow-emerald-800/10"
+                  onClick={() => setDetalleCaja(null)}
+                >
+                  Cerrar
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
