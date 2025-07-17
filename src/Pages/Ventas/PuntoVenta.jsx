@@ -119,7 +119,6 @@ export default function PuntoVenta() {
   }, [busqueda]);
 
   // Agregar producto al carrito
-  // Agregar producto al carrito
   const agregarAlCarrito = (producto, talle) => {
     const stockId = talle.stock_id; // <-- el real, ej: 188
     setCarrito((prev) => {
@@ -350,6 +349,73 @@ export default function PuntoVenta() {
     setSugerencias([]);
   };
 
+  function calcularTotalAjustado(precioBase, ajuste) {
+    return parseFloat((precioBase * (1 + ajuste / 100)).toFixed(2));
+  }
+  const medioSeleccionado = mediosPago.find((m) => m.id === medioPago);
+  const ajuste = medioSeleccionado?.ajuste_porcentual || 0;
+
+  const totalBase = carrito.reduce(
+    (acc, item) => acc + item.precio * item.cantidad,
+    0
+  );
+
+  const totalAjustado = calcularTotalAjustado(totalBase, ajuste);
+
+  const [cuotasDisponibles, setCuotasDisponibles] = useState([]);
+  const [cuotasSeleccionadas, setCuotasSeleccionadas] = useState(1);
+  const [totalCalculado, setTotalCalculado] = useState(null);
+
+  useEffect(() => {
+    if (!medioPago) return;
+
+    const cargarCuotas = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:8080/cuotas-medios-pago/${medioPago}`
+        );
+        setCuotasDisponibles(res.data);
+        setCuotasSeleccionadas(1); // reset por defecto
+      } catch (err) {
+        setCuotasDisponibles([]);
+      }
+    };
+
+    cargarCuotas();
+  }, [medioPago]);
+
+  useEffect(() => {
+    const calcularTotal = async () => {
+      if (!medioPago || carrito.length === 0) return;
+
+      const precio_base = carrito.reduce(
+        (acc, item) => acc + item.precio * item.cantidad,
+        0
+      );
+
+      try {
+        const res = await axios.post(
+          'http://localhost:8080/calcular-total-final',
+          {
+            precio_base,
+            medio_pago_id: medioPago,
+            cuotas: cuotasSeleccionadas
+          }
+        );
+        setTotalCalculado(res.data);
+      } catch (err) {
+        console.error('Error al calcular total', err);
+      }
+    };
+
+    calcularTotal();
+  }, [carrito, medioPago, cuotasSeleccionadas]);
+
+  const cuotasUnicas = Array.from(
+    new Set([1, ...cuotasDisponibles.map((c) => c.cuotas)])
+  ).sort((a, b) => a - b);
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-4 sm:p-6 text-white">
       <ParticlesBackground />
@@ -518,9 +584,62 @@ export default function PuntoVenta() {
           )}
 
           {/* Total */}
-          <div className="text-right text-lg font-bold text-white">
-            Total: {formatearPrecio(total)}
-          </div>
+          {totalCalculado && totalCalculado.total > 0 && (
+            <div className="text-right text-lg font-bold text-white space-y-1">
+              <div>
+                Total:{' '}
+                {totalCalculado.precio_base !== totalCalculado.total ? (
+                  <>
+                    <span className="line-through text-red-400 mr-2">
+                      {formatearPrecio(totalCalculado.precio_base)}
+                    </span>
+                    <span
+                      className={
+                        totalCalculado.ajuste_porcentual < 0
+                          ? 'text-emerald-400'
+                          : 'text-orange-300'
+                      }
+                    >
+                      {formatearPrecio(totalCalculado.total)}
+                    </span>
+                  </>
+                ) : (
+                  <span>{formatearPrecio(totalCalculado.total)}</span>
+                )}
+              </div>
+
+              {totalCalculado.monto_por_cuota && totalCalculado.cuotas > 1 && (
+                <div className="text-xs text-gray-300">
+                  {totalCalculado.cuotas - 1} cuotas de{' '}
+                  {formatearPrecio(totalCalculado.monto_por_cuota)} y 1 cuota de{' '}
+                  {formatearPrecio(
+                    totalCalculado.monto_por_cuota +
+                      totalCalculado.diferencia_redondeo
+                  )}
+                </div>
+              )}
+
+              {(totalCalculado.ajuste_porcentual !== 0 ||
+                totalCalculado.porcentaje_recargo_cuotas !== 0) && (
+                <div
+                  className={`text-xs font-medium italic ${
+                    totalCalculado.ajuste_porcentual < 0
+                      ? 'text-emerald-300'
+                      : 'text-orange-300'
+                  }`}
+                >
+                  {totalCalculado.ajuste_porcentual > 0 &&
+                    `+${totalCalculado.ajuste_porcentual}% por método de pago`}
+                  {totalCalculado.ajuste_porcentual < 0 &&
+                    `${totalCalculado.ajuste_porcentual}% de descuento`}
+                  {totalCalculado.porcentaje_recargo_cuotas > 0 &&
+                    ` + ${totalCalculado.porcentaje_recargo_cuotas}% por ${
+                      totalCalculado.cuotas
+                    } cuota${totalCalculado.cuotas > 1 ? 's' : ''}`}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Medios de pago */}
           <div className="flex flex-wrap gap-2 items-center mb-2">
@@ -557,6 +676,25 @@ export default function PuntoVenta() {
               <FaCog />
             </button>
           </div>
+
+          {/* SELECTOR DE CUOTAS */}
+          {cuotasDisponibles.length > 0 && (
+            <div className="flex items-center justify-end gap-2 text-white text-sm">
+              <label htmlFor="cuotas">Cuotas:</label>
+              <select
+                id="cuotas"
+                value={cuotasSeleccionadas}
+                onChange={(e) => setCuotasSeleccionadas(Number(e.target.value))}
+                className="bg-transparent border border-emerald-400 text-emerald-600 rounded px-2 py-1 focus:outline-none"
+              >
+                {cuotasUnicas.map((num) => (
+                  <option key={num} value={num}>
+                    {num} cuota{num > 1 ? 's' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <button
             onClick={finalizarVenta}
