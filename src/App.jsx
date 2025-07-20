@@ -54,185 +54,187 @@ function AppContent() {
 
   return (
     <>
-      {/* {!hideLayoutNav && <NavBar />} */}
-      <Rutas>
-        {/* <Ruta path="/" element={<Home />} /> */}
-        {/* componentes del staff y login INICIO */}
-        <Ruta path="/login" element={<LoginForm />} />
-        <Ruta
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              {' '}
-              <AdminPage />{' '}
-            </ProtectedRoute>
-          }
-        />
-        <Ruta
-          path="/dashboard/usuarios"
-          element={
-            <ProtectedRoute>
-              {' '}
-              <UsuariosGet />{' '}
-            </ProtectedRoute>
-          }
-        />
-        <Ruta
-          path="/dashboard/stock"
-          element={
-            <ProtectedRoute>
-              {' '}
-              <AdminPageStock />{' '}
-            </ProtectedRoute>
-          }
-        />
-        <Ruta
-          path="/dashboard/locales"
-          element={
-            <ProtectedRoute>
-              {' '}
-              <LocalesGet />{' '}
-            </ProtectedRoute>
-          }
-        />
-        {/* MODULO DENTRO DE STOCK INICIO BENJAMIN ORELLANA 22 06 25 */}
-        <Ruta
-          path="/dashboard/stock/talles"
-          element={
-            <ProtectedRoute>
-              {' '}
-              <TallesGet />{' '}
-            </ProtectedRoute>
-          }
-        />
-        <Ruta
-          path="/dashboard/stock/categorias"
-          element={
-            <ProtectedRoute>
-              {' '}
-              <CategoriasGet />{' '}
-            </ProtectedRoute>
-          }
-        />
-        <Ruta
-          path="/dashboard/stock/productos"
-          element={
-            <ProtectedRoute>
-              {' '}
-              <ProductosGet />{' '}
-            </ProtectedRoute>
-          }
-        />
-        <Ruta
-          path="/dashboard/stock/stock"
-          element={
-            <ProtectedRoute>
-              {' '}
-              <StockGet />{' '}
-            </ProtectedRoute>
-          }
-        />
-        <Ruta
-          path="/dashboard/stock/lugares"
-          element={
-            <ProtectedRoute>
-              {' '}
-              <LugaresGet />{' '}
-            </ProtectedRoute>
-          }
-        />{' '}
-        <Ruta
-          path="/dashboard/stock/estados"
-          element={
-            <ProtectedRoute>
-              {' '}
-              <EstadosGet />{' '}
-            </ProtectedRoute>
-          }
-        />
-        {/* MODULO DENTRO DE STOCK FINAL BENJAMIN ORELLANA 22 06 25 */}
-        {/* MODULO DENTRO DE VENTAS INICIO BENJAMIN ORELLANA 22 06 25 */}
-        <Ruta
-          path="/dashboard/ventas"
-          element={
-            <ProtectedRoute>
-              {' '}
-              <AdminPageVentas />{' '}
-            </ProtectedRoute>
-          }
-        />
-        <Ruta
-          path="/dashboard/ventas/pos"
-          element={
-            <ProtectedRoute>
-              {' '}
-              <PuntoVenta />{' '}
-            </ProtectedRoute>
-          }
-        />
-        <Ruta
-          path="/dashboard/ventas/configuracion"
-          element={
-            <ProtectedRoute>
-              {' '}
-              <ConfiguracionPage />{' '}
-            </ProtectedRoute>
-          }
-        />
-        <Ruta
-          path="/dashboard/ventas/clientes"
-          element={
-            <ProtectedRoute>
-              {' '}
-              <ClientesGet />{' '}
-            </ProtectedRoute>
-          }
-        />
-        <Ruta
-          path="/dashboard/ventas/caja"
-          element={
-            <ProtectedRoute>
-              {' '}
-              <CajaPOS />{' '}
-            </ProtectedRoute>
-          }
-        />
-        <Ruta
-          path="/dashboard/ventas/movimientos"
-          element={
-            <ProtectedRoute>
-              {' '}
-              <MovimientosGlobal />{' '}
-            </ProtectedRoute>
-          }
-        />{' '}
-        <Ruta
-          path="/dashboard/ventas/historial"
-          element={
-            <ProtectedRoute>
-              {' '}
-              <VentasTimeline />{' '}
-            </ProtectedRoute>
-          }
-        />
-        <Ruta
-          path="/dashboard/ventas/vendidos"
-          element={
-            <ProtectedRoute>
-              {' '}
-              <EstadisticaVentasMes />{' '}
-            </ProtectedRoute>
-          }
-        />
-        {/* MODULO DENTRO DE VENTAS FINAL BENJAMIN ORELLANA 22 06 25 */}
-        {/* componentes del staff y login FINAL */}
-        {/* <Ruta path="/*" element={<NotFound />} /> */}
-        {/* 🔁 Redirección automática al login si se accede a "/" */}
-        <Ruta path="/" element={<Navigate to="/login" replace />} />
-        {/* 🔁 Ruta no encontrada */}
-        <Ruta path="*" element={<Navigate to="/login" replace />} />
-      </Rutas>
-      {/* {!hideLayoutFooter && <Footer />} */}
+      <div className="w-full min-h-screen overflow-x-hidden bg-[#1f3636]">
+        {/* {!hideLayoutNav && <NavBar />} */}
+        <Rutas>
+          {/* <Ruta path="/" element={<Home />} /> */}
+          {/* componentes del staff y login INICIO */}
+          <Ruta path="/login" element={<LoginForm />} />
+          <Ruta
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <AdminPage />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/usuarios"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <UsuariosGet />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/stock"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <AdminPageStock />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/locales"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <LocalesGet />{' '}
+              </ProtectedRoute>
+            }
+          />
+          {/* MODULO DENTRO DE STOCK INICIO BENJAMIN ORELLANA 22 06 25 */}
+          <Ruta
+            path="/dashboard/stock/talles"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <TallesGet />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/stock/categorias"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <CategoriasGet />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/stock/productos"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <ProductosGet />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/stock/stock"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <StockGet />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/stock/lugares"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <LugaresGet />{' '}
+              </ProtectedRoute>
+            }
+          />{' '}
+          <Ruta
+            path="/dashboard/stock/estados"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <EstadosGet />{' '}
+              </ProtectedRoute>
+            }
+          />
+          {/* MODULO DENTRO DE STOCK FINAL BENJAMIN ORELLANA 22 06 25 */}
+          {/* MODULO DENTRO DE VENTAS INICIO BENJAMIN ORELLANA 22 06 25 */}
+          <Ruta
+            path="/dashboard/ventas"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <AdminPageVentas />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/ventas/pos"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <PuntoVenta />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/ventas/configuracion"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <ConfiguracionPage />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/ventas/clientes"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <ClientesGet />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/ventas/caja"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <CajaPOS />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/ventas/movimientos"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <MovimientosGlobal />{' '}
+              </ProtectedRoute>
+            }
+          />{' '}
+          <Ruta
+            path="/dashboard/ventas/historial"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <VentasTimeline />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/ventas/vendidos"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <EstadisticaVentasMes />{' '}
+              </ProtectedRoute>
+            }
+          />
+          {/* MODULO DENTRO DE VENTAS FINAL BENJAMIN ORELLANA 22 06 25 */}
+          {/* componentes del staff y login FINAL */}
+          {/* <Ruta path="/*" element={<NotFound />} /> */}
+          {/* 🔁 Redirección automática al login si se accede a "/" */}
+          <Ruta path="/" element={<Navigate to="/login" replace />} />
+          {/* 🔁 Ruta no encontrada */}
+          <Ruta path="*" element={<Navigate to="/login" replace />} />
+        </Rutas>
+        {/* {!hideLayoutFooter && <Footer />} */}
+      </div>
     </>
   );
 }

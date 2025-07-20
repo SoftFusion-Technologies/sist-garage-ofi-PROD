@@ -1,9 +1,19 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import axios from 'axios';
 
 export default function TicketVentaModal({ venta, onClose }) {
-  const ref = React.useRef();
+  const ref = useRef();
+  const [config, setConfig] = useState(null);
+
+  // Traer configuración del ticket solo una vez al abrir
+  useEffect(() => {
+    axios
+      .get('http://localhost:8080/ticket-config')
+      .then((res) => setConfig(res.data))
+      .catch(() => setConfig(null));
+  }, []);
 
   if (!venta) return null;
   const detalles = Array.isArray(venta.detalles) ? venta.detalles : [];
@@ -46,46 +56,86 @@ export default function TicketVentaModal({ venta, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl relative border border-[#059669] animate-fade-in overflow-auto max-h-[90vh]">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-md w-full shadow-2xl relative border border-[#059669] animate-fade-in overflow-auto max-h-[90vh]">
         <button
           onClick={onClose}
-          className="absolute top-3 right-4 text-3xl text-gray-400 hover:text-[#059669]"
+          className="absolute top-3 right-4 text-3xl text-gray-400 hover:text-[#059669] dark:hover:text-emerald-400"
           title="Cerrar"
         >
           ×
         </button>
 
-        <div ref={ref} className="ticket-pdf font-mono text-sm text-black p-4">
+        <div
+          ref={ref}
+          className="ticket-pdf font-mono text-sm text-black dark:text-white p-4"
+          style={{
+            background: 'white',
+            borderRadius: '12px',
+            minWidth: 260
+          }}
+        >
           {/* Header */}
           <div className="text-center mb-4">
-            <div className="brand font-extrabold text-2xl tracking-widest mb-2">
-              EL GARAGE
+            {config?.logo_url && (
+              <img
+                src={config.logo_url}
+                alt="Logo"
+                className="mx-auto mb-2 max-h-16 object-contain rounded shadow"
+                style={{ maxWidth: 120 }}
+              />
+            )}
+            <div
+              className="font-extrabold text-2xl tracking-widest mb-1 uppercase"
+              style={{
+                color: '#6d28d9',
+                letterSpacing: 2
+              }}
+            >
+              {config?.nombre_tienda || ''}
             </div>
-            <div className="brand-muted text-xs font-bold tracking-widest">
-              TU TIENDA DE ROPA FAVORITA
+            <div
+              className="text-xs font-bold tracking-widest mb-1"
+              style={{
+                color: '#059669'
+              }}
+            >
+              {config?.lema || ''}
             </div>
+            <div className="text-xs text-gray-600 dark:text-gray-300 font-medium mb-1">
+              {config?.direccion}
+              {config?.telefono && <span> • {config.telefono}</span>}
+            </div>
+            {config?.email && (
+              <div className="text-xs text-gray-500">{config.email}</div>
+            )}
           </div>
 
           {/* Info venta */}
-          <div className="flex justify-between mb-3 font-semibold text-gray-700 text-lg">
+          <div className="flex justify-between mb-3 font-semibold text-gray-700 dark:text-gray-200 text-lg">
             <span>Venta #{venta.id}</span>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-gray-400 dark:text-gray-300">
               {venta.fecha ? new Date(venta.fecha).toLocaleString() : ''}
             </span>
           </div>
 
           {/* Datos Vendedor, Local, Cliente */}
-          <div className="grid grid-cols-1 gap-1 mb-3 text-gray-800 text-sm">
+          <div className="grid grid-cols-1 gap-1 mb-3 text-gray-800 dark:text-gray-200 text-sm">
             <div>
-              <span className="font-bold text-gray-900">Vendedor:</span>{' '}
+              <span className="font-bold text-gray-900 dark:text-white">
+                Vendedor:
+              </span>{' '}
               <span>{venta.usuario?.nombre || '-'}</span>
             </div>
             <div>
-              <span className="font-bold text-gray-900">Local:</span>{' '}
+              <span className="font-bold text-gray-900 dark:text-white">
+                Local:
+              </span>{' '}
               <span>{venta.locale?.nombre || '-'}</span>
             </div>
             <div>
-              <span className="font-bold text-gray-900">Cliente:</span>{' '}
+              <span className="font-bold text-gray-900 dark:text-white">
+                Cliente:
+              </span>{' '}
               <span>{venta.cliente?.nombre || 'Consumidor Final'}</span>
             </div>
           </div>
@@ -97,7 +147,6 @@ export default function TicketVentaModal({ venta, onClose }) {
           >
             ARTÍCULOS
           </div>
-
           <div className="mb-4">
             {detalles.length === 0 ? (
               <div className="text-center text-gray-400 py-2">
@@ -107,7 +156,7 @@ export default function TicketVentaModal({ venta, onClose }) {
               detalles.map((d) => (
                 <div
                   key={d.id}
-                  className="flex justify-between items-center py-1 px-0.5 border-b border-dashed border-emerald-200"
+                  className="flex justify-between items-center py-1 px-0.5 border-b border-dashed border-emerald-200 dark:border-emerald-800"
                 >
                   <span>
                     <span className="font-bold">
@@ -117,7 +166,7 @@ export default function TicketVentaModal({ venta, onClose }) {
                       x{d.cantidad}
                     </span>
                   </span>
-                  <span className="font-bold tabular-nums text-emerald-700">
+                  <span className="font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
                     $
                     {Number(d.precio_unitario * d.cantidad).toLocaleString(
                       'es-AR'
@@ -129,8 +178,8 @@ export default function TicketVentaModal({ venta, onClose }) {
           </div>
 
           {/* Subtotal, descuento/recargo y total */}
-          <div className="border-t border-gray-300 pt-3">
-            <div className="flex justify-between text-gray-700 text-sm mb-1">
+          <div className="border-t border-gray-300 dark:border-gray-700 pt-3">
+            <div className="flex justify-between text-gray-700 dark:text-gray-200 text-sm mb-1">
               <span>Subtotal</span>
               <span>
                 $
@@ -142,7 +191,7 @@ export default function TicketVentaModal({ venta, onClose }) {
 
             {mostrarAjuste()}
 
-            <div className="flex justify-between text-lg font-black text-emerald-700 mt-2">
+            <div className="flex justify-between text-lg font-black text-emerald-700 dark:text-emerald-400 mt-2">
               <span>Total</span>
               <span>
                 $
@@ -153,35 +202,35 @@ export default function TicketVentaModal({ venta, onClose }) {
             </div>
           </div>
 
-          <div
-            className="text-center text-[11px] mt-3 font-medium tracking-wider"
-            style={{ color: '#64748b' }}
-          >
-            ¡Gracias por su compra!
-          </div>
+          {/* Footer dinámico */}
+          {config?.mensaje_footer && (
+            <div
+              className="text-center text-[11px] mt-3 font-medium tracking-wider"
+              style={{ color: '#059669', opacity: 0.9 }}
+            >
+              {config.mensaje_footer}
+            </div>
+          )}
+          {!config?.mensaje_footer && (
+            <div
+              className="text-center text-[11px] mt-3 font-medium tracking-wider"
+              style={{ color: '#64748b' }}
+            >
+              ¡Gracias por su compra!
+            </div>
+          )}
         </div>
 
+        {/* Botones de acción */}
         <button
           onClick={exportPDF}
-          className="mt-5 w-full py-2 rounded-lg font-bold"
-          style={{
-            background: '#059669',
-            color: 'white',
-            boxShadow: '0 2px 8px #05966933',
-            transition: 'background .2s'
-          }}
+          className="mt-5 w-full py-2 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition"
         >
           Descargar PDF
         </button>
         <button
           onClick={() => window.print()}
-          className="mt-2 w-full py-2 rounded-lg font-bold"
-          style={{
-            background: '#334155',
-            color: 'white',
-            boxShadow: '0 2px 8px #33415533',
-            transition: 'background .2s'
-          }}
+          className="mt-2 w-full py-2 rounded-lg font-bold bg-zinc-700 hover:bg-zinc-900 text-white shadow-md transition"
         >
           Imprimir directo
         </button>
