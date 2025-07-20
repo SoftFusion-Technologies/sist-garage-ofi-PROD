@@ -42,7 +42,7 @@ const ventasLinks = [
     desc: 'Movimientos de caja'
   },
   {
-    to: '/dashboard/ventas/mas-vendidos',
+    to: '/dashboard/ventas/vendidos',
     label: 'Más Vendidos',
     icon: <FaStar />,
     desc: 'Ranking de productos top'
