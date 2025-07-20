@@ -24,7 +24,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import ButtonBack from '../../Components/ButtonBack';
 import AdminActions from '../../Components/AdminActions';
-
+import { ModalFeedback } from '../../Pages/Ventas/Config/ModalFeedback.jsx';
 import {
   fetchLocales,
   fetchUsuarios,
@@ -137,6 +137,10 @@ export default function ClientesGet() {
     dni: ''
   });
 
+  const [modalFeedbackOpen, setModalFeedbackOpen] = React.useState(false);
+  const [modalFeedbackMsg, setModalFeedbackMsg] = React.useState('');
+  const [modalFeedbackType, setModalFeedbackType] = React.useState('info'); // 'success', 'error', 'info'
+
   // Filtro avanzado: por nombre, teléfono, email o fecha de última compra
   const [fechaFiltro, setFechaFiltro] = useState('');
 
@@ -175,31 +179,49 @@ export default function ClientesGet() {
     }
     setModalOpen(true);
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (editId) {
         await axios.put(`http://localhost:8080/clientes/${editId}`, formData);
+        setModalFeedbackMsg('Cliente actualizado correctamente');
+        setModalFeedbackType('success');
       } else {
         await axios.post('http://localhost:8080/clientes', formData);
+        setModalFeedbackMsg('Cliente creado correctamente');
+        setModalFeedbackType('success');
       }
       fetchClientes();
       setModalOpen(false);
+      setModalFeedbackOpen(true); // <--- Abrir modal aquí
     } catch (err) {
-      alert('Error al guardar cliente');
+      setModalFeedbackMsg('Error al guardar cliente');
+      setModalFeedbackType('error');
+      setModalFeedbackOpen(true); // <--- Abrir modal aquí también
       console.error(err);
     }
   };
 
   const handleDelete = async (id) => {
+    // Aquí deberías abrir un modal de confirmación en vez de usar window.confirm
+    // Ejemplo: setConfirmDeleteId(id); setConfirmModalOpen(true);
+
+    // Para simplificar (pero aún con alert):
     if (!window.confirm('¿Eliminar este cliente?')) return;
+
     try {
       await axios.delete(`http://localhost:8080/clientes/${id}`);
       fetchClientes();
+      setModalFeedbackMsg('Cliente eliminado correctamente');
+      setModalFeedbackType('success');
     } catch (err) {
-      alert('Error al eliminar cliente');
+      const mensaje =
+        err.response?.data?.mensajeError || 'Error al eliminar cliente';
+
+      setModalFeedbackMsg(mensaje);
+      setModalFeedbackType('error');
     }
+    setModalFeedbackOpen(true);
   };
 
   const filtered = clientes.filter((c) => {
@@ -785,6 +807,12 @@ export default function ClientesGet() {
           </motion.div>
         )}
       </AnimatePresence>
+      <ModalFeedback
+        open={modalFeedbackOpen}
+        onClose={() => setModalFeedbackOpen(false)}
+        msg={modalFeedbackMsg}
+        type={modalFeedbackType}
+      />
     </div>
   );
 }
