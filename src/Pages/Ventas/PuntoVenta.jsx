@@ -22,7 +22,7 @@ import ModalMediosPago from '../../Components/Ventas/ModalMediosPago'; // Lo cre
 import axios from 'axios';
 import { useAuth } from '../../AuthContext'; // Ajustá el path si es necesario
 import TicketVentaModal from './Config/TicketVentaModal';
-
+import TotalConOpciones from './Components/TotalConOpciones';
 // Agrupa productos por producto_id y junta sus talles en un array
 function agruparProductosConTalles(stockItems) {
   const map = new Map();
@@ -63,6 +63,7 @@ export default function PuntoVenta() {
   const [medioPago, setMedioPago] = useState(null);
   const { userId, userLocalId } = useAuth();
   const [modalNuevoClienteOpen, setModalNuevoClienteOpen] = useState(false);
+  const [aplicarDescuento, setAplicarDescuento] = useState(true);
 
   // Traer medios de pago al montar
   useEffect(() => {
@@ -191,7 +192,6 @@ export default function PuntoVenta() {
   }));
 
   const finalizarVenta = async () => {
-    // No dejar finalizar si no hay productos o medio de pago
     if (carrito.length === 0) {
       alert('Agregá productos al carrito.');
       return;
@@ -200,8 +200,6 @@ export default function PuntoVenta() {
       alert('Seleccioná un medio de pago.');
       return;
     }
-
-    // Confirmar antes de enviar
     if (!window.confirm('¿Deseás registrar la venta?')) return;
 
     const productosRequest = carrito.map((item) => ({
@@ -213,19 +211,21 @@ export default function PuntoVenta() {
     const ventaRequest = {
       cliente_id: clienteSeleccionado ? clienteSeleccionado.id : null,
       productos: productosRequest,
-      total: totalCalculado.precio_base, // total bruto sin ajustes
+      total: totalCalculado.precio_base, // Total sin descuentos ni recargos
       medio_pago_id: medioPago,
       usuario_id: userId,
       local_id: userLocalId,
       descuento_porcentaje:
-        totalCalculado.ajuste_porcentual < 0
+        aplicarDescuento && totalCalculado.ajuste_porcentual < 0
           ? Math.abs(totalCalculado.ajuste_porcentual)
           : 0,
       recargo_porcentaje:
-        totalCalculado.ajuste_porcentual > 0
+        aplicarDescuento && totalCalculado.ajuste_porcentual > 0
           ? totalCalculado.ajuste_porcentual
-          : 0
+          : 0,
+      aplicar_descuento: aplicarDescuento // este flag para backend
     };
+
     try {
       const response = await fetch('http://localhost:8080/ventas/pos', {
         method: 'POST',
@@ -239,10 +239,8 @@ export default function PuntoVenta() {
         return;
       }
 
-      // Si todo OK:
       setCarrito([]);
-      setBusqueda(''); // Limpia el input si querés
-      // Vuelve a buscar productos con el query actual
+      setBusqueda('');
       if (busqueda.trim() !== '') {
         fetch(
           `http://localhost:8080/buscar-productos-detallado?query=${encodeURIComponent(
@@ -258,17 +256,11 @@ export default function PuntoVenta() {
       const data = await response.json();
       const ventaId = data.venta_id;
 
-      // Busca la venta completa
-
       const ventaCompleta = await fetch(
         `http://localhost:8080/ventas/${ventaId}`
       ).then((r) => r.json());
       setVentaFinalizada(ventaCompleta);
-      // Mostrar info/ticket de la venta (puede ser un modal bonito)
-      // alert(
-      //   `Venta registrada con éxito!\nNro: ${data.venta_id}\nTotal: $${total}`
-      // );
-      // Limpiar carrito y cliente
+
       setCarrito([]);
       setClienteSeleccionado(null);
       setBusquedaCliente('');
@@ -277,6 +269,7 @@ export default function PuntoVenta() {
       console.error('Error:', err);
     }
   };
+
 
   const formatearPrecio = (valor) =>
     new Intl.NumberFormat('es-AR', {
@@ -612,60 +605,12 @@ export default function PuntoVenta() {
 
           {/* Total */}
           {carrito.length > 0 && totalCalculado && totalCalculado.total > 0 && (
-            <div className="text-right text-lg font-bold text-white space-y-1">
-              <div>
-                Total:{' '}
-                {totalCalculado.precio_base !== totalCalculado.total ? (
-                  <>
-                    <span className="line-through text-red-400 mr-2">
-                      {formatearPrecio(totalCalculado.precio_base)}
-                    </span>
-                    <span
-                      className={
-                        totalCalculado.ajuste_porcentual < 0
-                          ? 'text-emerald-400'
-                          : 'text-orange-300'
-                      }
-                    >
-                      {formatearPrecio(totalCalculado.total)}
-                    </span>
-                  </>
-                ) : (
-                  <span>{formatearPrecio(totalCalculado.total)}</span>
-                )}
-              </div>
-
-              {totalCalculado.monto_por_cuota && totalCalculado.cuotas > 1 && (
-                <div className="text-xs text-gray-300">
-                  {totalCalculado.cuotas - 1} cuotas de{' '}
-                  {formatearPrecio(totalCalculado.monto_por_cuota)} y 1 cuota de{' '}
-                  {formatearPrecio(
-                    totalCalculado.monto_por_cuota +
-                      totalCalculado.diferencia_redondeo
-                  )}
-                </div>
-              )}
-
-              {(totalCalculado.ajuste_porcentual !== 0 ||
-                totalCalculado.porcentaje_recargo_cuotas !== 0) && (
-                <div
-                  className={`text-xs font-medium italic ${
-                    totalCalculado.ajuste_porcentual < 0
-                      ? 'text-emerald-300'
-                      : 'text-orange-300'
-                  }`}
-                >
-                  {totalCalculado.ajuste_porcentual > 0 &&
-                    `+${totalCalculado.ajuste_porcentual}% por método de pago`}
-                  {totalCalculado.ajuste_porcentual < 0 &&
-                    `${totalCalculado.ajuste_porcentual}% de descuento`}
-                  {totalCalculado.porcentaje_recargo_cuotas > 0 &&
-                    ` + ${totalCalculado.porcentaje_recargo_cuotas}% por ${
-                      totalCalculado.cuotas
-                    } cuota${totalCalculado.cuotas > 1 ? 's' : ''}`}
-                </div>
-              )}
-            </div>
+            <TotalConOpciones
+              totalCalculado={totalCalculado}
+              formatearPrecio={formatearPrecio}
+              aplicarDescuento={aplicarDescuento}
+              setAplicarDescuento={setAplicarDescuento}
+            />
           )}
 
           {/* Medios de pago */}

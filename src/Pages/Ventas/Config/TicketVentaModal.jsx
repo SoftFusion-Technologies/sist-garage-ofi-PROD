@@ -14,7 +14,7 @@ export default function TicketVentaModal({ venta, onClose }) {
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: 'a6' // Más ancho que a7
+      format: 'a6'
     });
     const width = pdf.internal.pageSize.getWidth();
     const height = (canvas.height * width) / canvas.width;
@@ -22,7 +22,6 @@ export default function TicketVentaModal({ venta, onClose }) {
     pdf.save(`ticket-venta-${venta.id}.pdf`);
   };
 
-  // Mostrar porcentaje como texto con color
   const mostrarAjuste = () => {
     if (!venta.descuento_porcentaje && !venta.recargo_porcentaje) return null;
 
@@ -57,6 +56,7 @@ export default function TicketVentaModal({ venta, onClose }) {
         </button>
 
         <div ref={ref} className="ticket-pdf font-mono text-sm text-black p-4">
+          {/* Header */}
           <div className="text-center mb-4">
             <div className="brand font-extrabold text-2xl tracking-widest mb-2">
               EL GARAGE
@@ -66,6 +66,7 @@ export default function TicketVentaModal({ venta, onClose }) {
             </div>
           </div>
 
+          {/* Info venta */}
           <div className="flex justify-between mb-3 font-semibold text-gray-700 text-lg">
             <span>Venta #{venta.id}</span>
             <span className="text-xs text-gray-400">
@@ -73,6 +74,7 @@ export default function TicketVentaModal({ venta, onClose }) {
             </span>
           </div>
 
+          {/* Datos Vendedor, Local, Cliente */}
           <div className="grid grid-cols-1 gap-1 mb-3 text-gray-800 text-sm">
             <div>
               <span className="font-bold text-gray-900">Vendedor:</span>{' '}
@@ -88,6 +90,7 @@ export default function TicketVentaModal({ venta, onClose }) {
             </div>
           </div>
 
+          {/* Artículos */}
           <div
             className="mb-2 mt-5 text-sm font-bold tracking-widest text-center"
             style={{ color: '#059669' }}
@@ -125,7 +128,7 @@ export default function TicketVentaModal({ venta, onClose }) {
             )}
           </div>
 
-          {/* Subtotal, descuentos y total */}
+          {/* Subtotal, descuento/recargo y total */}
           <div className="border-t border-gray-300 pt-3">
             <div className="flex justify-between text-gray-700 text-sm mb-1">
               <span>Subtotal</span>

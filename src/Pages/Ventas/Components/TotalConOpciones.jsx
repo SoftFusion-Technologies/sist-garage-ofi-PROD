@@ -1,0 +1,98 @@
+function TotalConOpciones({
+  totalCalculado,
+  formatearPrecio,
+  aplicarDescuento,
+  setAplicarDescuento
+}) {
+  return (
+    <>
+      {/* Selector aplicar descuento */}
+      <div className="flex justify-end items-center gap-6 mb-2 text-white select-none text-sm">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="radio"
+            name="aplicarDescuento"
+            checked={aplicarDescuento}
+            onChange={() => setAplicarDescuento(true)}
+            className="accent-emerald-400"
+          />
+          Aplicar descuento
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="radio"
+            name="aplicarDescuento"
+            checked={!aplicarDescuento}
+            onChange={() => setAplicarDescuento(false)}
+            className="accent-emerald-400"
+          />
+          No aplicar
+        </label>
+      </div>
+
+      {/* Total */}
+      {totalCalculado && totalCalculado.total > 0 && (
+        <div className="text-right text-lg font-bold text-white space-y-1">
+          <div>
+            Total:{' '}
+            {aplicarDescuento &&
+            totalCalculado.precio_base !== totalCalculado.total ? (
+              <>
+                <span className="line-through text-red-400 mr-2">
+                  {formatearPrecio(totalCalculado.precio_base)}
+                </span>
+                <span
+                  className={
+                    totalCalculado.ajuste_porcentual < 0
+                      ? 'text-emerald-400'
+                      : 'text-orange-300'
+                  }
+                >
+                  {formatearPrecio(totalCalculado.total)}
+                </span>
+              </>
+            ) : (
+              <span>{formatearPrecio(totalCalculado.precio_base)}</span>
+            )}
+          </div>
+
+          {aplicarDescuento &&
+            totalCalculado.monto_por_cuota &&
+            totalCalculado.cuotas > 1 && (
+              <div className="text-xs text-gray-300">
+                {totalCalculado.cuotas - 1} cuotas de{' '}
+                {formatearPrecio(totalCalculado.monto_por_cuota)} y 1 cuota de{' '}
+                {formatearPrecio(
+                  totalCalculado.monto_por_cuota +
+                    totalCalculado.diferencia_redondeo
+                )}
+              </div>
+            )}
+
+          {aplicarDescuento &&
+            (totalCalculado.ajuste_porcentual !== 0 ||
+              totalCalculado.porcentaje_recargo_cuotas !== 0) && (
+              <div
+                className={`text-xs font-medium italic ${
+                  totalCalculado.ajuste_porcentual < 0
+                    ? 'text-emerald-300'
+                    : 'text-orange-300'
+                }`}
+              >
+                {totalCalculado.ajuste_porcentual > 0 &&
+                  `+${totalCalculado.ajuste_porcentual}% por método de pago`}
+                {totalCalculado.ajuste_porcentual < 0 &&
+                  `${Math.abs(totalCalculado.ajuste_porcentual)}% de descuento`}
+                {totalCalculado.porcentaje_recargo_cuotas > 0 &&
+                  ` + ${totalCalculado.porcentaje_recargo_cuotas}% por ${
+                    totalCalculado.cuotas
+                  } cuota${totalCalculado.cuotas > 1 ? 's' : ''}`}
+              </div>
+            )}
+        </div>
+      )}
+    </>
+  );
+}
+
+export default TotalConOpciones;
