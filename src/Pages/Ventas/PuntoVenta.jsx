@@ -22,6 +22,7 @@ import ModalMediosPago from '../../Components/Ventas/ModalMediosPago'; // Lo cre
 import axios from 'axios';
 import { useAuth } from '../../AuthContext'; // Ajustá el path si es necesario
 import TicketVentaModal from './Config/TicketVentaModal';
+
 // Agrupa productos por producto_id y junta sus talles en un array
 function agruparProductosConTalles(stockItems) {
   const map = new Map();
