@@ -5,17 +5,13 @@ import {
   FaRegCalendarAlt,
   FaStore,
   FaMoneyBillWave,
-  FaFileDownload
+  FaFileDownload,
+  FaChevronLeft,
+  FaChevronRight
 } from 'react-icons/fa';
 import { format } from 'date-fns';
 import clsx from 'clsx';
 import ParticlesBackground from '../../Components/ParticlesBackground';
-
-// Simulando endpoint
-const fetchVentas = async () => {
-  const res = await fetch('http://localhost:8080/ventas-historial');
-  return await res.json();
-};
 
 export default function VentasTimeline() {
   const [ventas, setVentas] = useState([]);
@@ -24,40 +20,58 @@ export default function VentasTimeline() {
   const [filtroFecha, setFiltroFecha] = useState('');
   const [filtroLocal, setFiltroLocal] = useState('');
   const [locales, setLocales] = useState([]);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10); // filas por página fijas o hacer dinámico si quieres
+  const [total, setTotal] = useState(0);
+  const totalPages = Math.ceil(total / limit);
+
+  // Función para cargar datos con filtros y paginación
+  const cargarVentas = () => {
+    const params = new URLSearchParams();
+
+    if (busqueda) params.append('busqueda', busqueda);
+    if (filtroFecha) params.append('desde', filtroFecha);
+    if (filtroFecha) params.append('hasta', filtroFecha);
+    if (filtroLocal) params.append('local', filtroLocal);
+    params.append('page', page);
+    params.append('limit', limit);
+
+    fetch(`http://localhost:8080/ventas-historial?${params.toString()}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setVentas(data.ventas);
+        setTotal(data.total);
+      })
+      .catch(console.error);
+  };
 
   useEffect(() => {
-    fetchVentas().then(setVentas);
     // Traer locales para filtro
     fetch('http://localhost:8080/locales')
       .then((r) => r.json())
       .then(setLocales);
+
+    // Cargar ventas inicial
+    cargarVentas();
   }, []);
 
-  const ventasFiltradas = ventas.filter((v) => {
-    const f1 =
-      busqueda.length === 0 ||
-      v.cliente?.toLowerCase().includes(busqueda.toLowerCase()) ||
-      v.vendedor?.toLowerCase().includes(busqueda.toLowerCase()) ||
-      v.local?.toLowerCase().includes(busqueda.toLowerCase());
-    const f2 =
-      !filtroFecha || format(new Date(v.fecha), 'yyyy-MM-dd') === filtroFecha;
-    const f3 = !filtroLocal || v.local === filtroLocal;
-    return f1 && f2 && f3;
-  });
+  // Recargar cuando cambien filtros o página
+  useEffect(() => {
+    cargarVentas();
+  }, [busqueda, filtroFecha, filtroLocal, page]);
 
-  // Para el efecto timeline
-  const colorMap = ['emerald', 'cyan', 'blue', 'violet', 'fuchsia'];
-  const getColor = (i) => colorMap[i % colorMap.length];
+  // Filtro simple local y texto con backend, no local filtering
 
   return (
     <div className="min-h-screen bg-gradient-to-tr from-[#181c25] via-[#1e2340] to-[#131a22] flex flex-col items-center px-2 py-8 relative">
-      {/* Filtros */}
-      <ParticlesBackground></ParticlesBackground>
+      <ParticlesBackground />
+      {/* Filtros y exportación */}
       <motion.div
         className="sticky top-0 z-30 w-full max-w-2xl mx-auto mb-8 bg-[#1a1e2e]/80 backdrop-blur-lg rounded-2xl shadow-xl flex flex-wrap md:flex-nowrap items-center gap-2 px-4 py-3"
         initial={{ y: -40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
       >
+        {/* Buscador */}
         <div className="flex items-center gap-2 flex-1 bg-[#202542] rounded-xl px-2 py-1">
           <FaSearch className="text-emerald-400" />
           <input
@@ -65,52 +79,64 @@ export default function VentasTimeline() {
             type="text"
             placeholder="Buscar cliente, vendedor o local..."
             value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
+            onChange={(e) => {
+              setBusqueda(e.target.value);
+              setPage(1);
+            }}
           />
         </div>
-        <div className="flex gap-2">
-          <label className="flex items-center gap-2 text-xs text-gray-400">
-            <FaRegCalendarAlt />
-            <input
-              type="date"
-              className="bg-[#202542] text-white px-2 py-1 rounded"
-              value={filtroFecha}
-              onChange={(e) => setFiltroFecha(e.target.value)}
-            />
-          </label>
-          <label className="flex items-center gap-2 text-xs text-gray-400">
-            <FaStore />
-            <select
-              className="bg-[#202542] text-white px-2 py-1 rounded"
-              value={filtroLocal}
-              onChange={(e) => setFiltroLocal(e.target.value)}
-            >
-              <option value="">Todos</option>
-              {locales.map((l) => (
-                <option key={l.id} value={l.nombre}>
-                  {l.nombre}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+
+        {/* Fecha */}
+        <label className="flex items-center gap-2 text-xs text-gray-400">
+          <FaRegCalendarAlt />
+          <input
+            type="date"
+            className="bg-[#202542] text-white px-2 py-1 rounded"
+            value={filtroFecha}
+            onChange={(e) => {
+              setFiltroFecha(e.target.value);
+              setPage(1);
+            }}
+          />
+        </label>
+
+        {/* Local */}
+        <label className="flex items-center gap-2 text-xs text-gray-400">
+          <FaStore />
+          <select
+            className="bg-[#202542] text-white px-2 py-1 rounded"
+            value={filtroLocal}
+            onChange={(e) => {
+              setFiltroLocal(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">Todos</option>
+            {locales.map((l) => (
+              <option key={l.id} value={l.nombre}>
+                {l.nombre}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {/* Exportar CSV */}
         <button
           onClick={() => {
-            // Exportar CSV
             const header = 'Venta,Fecha,Cliente,Vendedor,Local,Total\n';
-            const rows = ventasFiltradas.map(
-              (v) =>
-                `${v.venta_id},${format(
-                  new Date(v.fecha),
-                  'dd/MM/yyyy HH:mm'
-                )},${v.cliente},${v.vendedor},${v.local},${v.total}`
-            );
-            const blob = new Blob([header + rows.join('\n')], {
-              type: 'text/csv'
-            });
+            const rows = ventas
+              .map(
+                (v) =>
+                  `${v.venta_id},${format(
+                    new Date(v.fecha),
+                    'dd/MM/yyyy HH:mm'
+                  )},${v.cliente},${v.vendedor},${v.local},${v.total}`
+              )
+              .join('\n');
+            const blob = new Blob([header + rows], { type: 'text/csv' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `ventas-historial.csv`;
+            a.download = `ventas-historial-page${page}.csv`;
             a.click();
             URL.revokeObjectURL(a.href);
           }}
@@ -120,15 +146,15 @@ export default function VentasTimeline() {
         </button>
       </motion.div>
 
-      {/* Timeline */}
+      {/* Timeline con paginación */}
       <div className="w-full max-w-2xl">
-        {ventasFiltradas.length === 0 ? (
+        {ventas.length === 0 ? (
           <div className="py-14 text-center text-gray-400 animate-pulse">
             Sin ventas registradas.
           </div>
         ) : (
           <ol className="relative border-l-4 border-emerald-500/30 pl-6 space-y-10">
-            {ventasFiltradas.map((venta, i) => (
+            {ventas.map((venta, i) => (
               <motion.li
                 key={venta.venta_id}
                 initial={{ x: 100, opacity: 0 }}
@@ -201,7 +227,30 @@ export default function VentasTimeline() {
         )}
       </div>
 
-      {/* Slideover de detalle */}
+      {/* Paginación */}
+      <div className="mt-10 flex justify-center items-center gap-4 select-none">
+        <button
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          disabled={page === 1}
+          className="disabled:opacity-50 disabled:cursor-not-allowed bg-indigo-700 hover:bg-indigo-800 text-white rounded-full p-3"
+          title="Página anterior"
+        >
+          <FaChevronLeft />
+        </button>
+        <span className="font-semibold text-white">
+          Página {page} de {totalPages}
+        </span>
+        <button
+          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          disabled={page === totalPages}
+          className="disabled:opacity-50 disabled:cursor-not-allowed bg-indigo-700 hover:bg-indigo-800 text-white rounded-full p-3"
+          title="Página siguiente"
+        >
+          <FaChevronRight />
+        </button>
+      </div>
+
+      {/* Slideover detalle */}
       <AnimatePresence>
         {detalle && (
           <motion.div
@@ -239,7 +288,6 @@ export default function VentasTimeline() {
                 Total: ${Number(detalle.total).toLocaleString('es-AR')}
               </div>
             </div>
-            {/* Aquí podrías hacer fetch y renderizar el detalle del producto vendido */}
             <div className="px-7 py-4">
               <span className="text-sm text-gray-400">
                 (Aquí iría el detalle completo: productos, cantidades,
