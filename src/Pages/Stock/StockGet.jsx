@@ -20,34 +20,158 @@ import ParticlesBackground from '../../Components/ParticlesBackground.jsx';
 import BulkUploadButton from '../../Components/BulkUploadButton.jsx';
 import * as XLSX from 'xlsx';
 import { useAuth } from '../../AuthContext.jsx';
+import { toast, ToastContainer } from 'react-toastify';
+import { ModalFeedback } from '../Ventas/Config/ModalFeedback.jsx';
 Modal.setAppElement('#root');
 
-function ModalError({ open, onClose, msg }) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl p-7 shadow-2xl max-w-md w-full mx-4 border-l-4 border-red-500">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-red-500 text-2xl">❗</span>
-          <h2 className="text-lg font-bold text-red-500">
-            Error de transferencia
-          </h2>
-        </div>
-        <div className="text-gray-700 whitespace-pre-line mb-6">{msg}</div>
-        <div className="text-right">
-          <button
-            className="bg-red-500 hover:bg-red-600 transition px-6 py-2 text-white font-medium rounded-lg"
-            onClick={onClose}
-          >
-            Cerrar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+const CATEGORIAS_TALLES = {
+  calzado: [
+    // TIPOS DE CALZADO
+    'calzado',
+    'zapatilla',
+    'zapatillas',
+    'zapato',
+    'zapatos',
+    'botín',
+    'botines',
+    'bota',
+    'botas',
+    'sandalia',
+    'sandalias',
+    'alpargata',
+    'alpargatas',
+    'pantufla',
+    'pantuflas',
+    'ojota',
+    'ojotas',
+    'crocs',
+    'slipper',
+    'slippers',
+    'mocasín',
+    'mocasines',
+    'borcego',
+    'borcegos',
+    'nautica',
+    'náutica'
+  ],
+  ropa: [
+    // TIPOS DE ROPA
+    'ropa',
+    'remera',
+    'remeras',
+    'campera',
+    'camperas',
+    'camisa',
+    'camisas',
+    'pantalon',
+    'pantalón',
+    'pantalones',
+    'buzo',
+    'buzos',
+    'jean',
+    'jeans',
+    'chomba',
+    'chombas',
+    'short',
+    'shorts',
+    'chaleco',
+    'chalecos',
+    'saco',
+    'sacos',
+    'musculosa',
+    'musculosas',
+    'sweater',
+    'sweaters',
+    'top',
+    'tops',
+    'falda',
+    'faldas',
+    'vestido',
+    'vestidos',
+    'blusa',
+    'blusas',
+    'pollera',
+    'polleras',
+    'tapado',
+    'tapados',
+    'camiseta',
+    'camisetas',
+    'bermuda',
+    'bermudas',
+    'anorak',
+    'anoraks',
+    'mameluco',
+    'mamelucos',
+    'enterito',
+    'enteritos',
+    'overol',
+    'overoles',
+    'body',
+    'bodys',
+    'leggins',
+    'legging',
+    'pijama',
+    'pijamas'
+  ],
+  accesorio: [
+    // ACCESORIOS
+    'accesorio',
+    'accesorios',
+    'gorra',
+    'gorras',
+    'bolso',
+    'bolsos',
+    'riñonera',
+    'riñoneras',
+    'mochila',
+    'mochilas',
+    'cinturon',
+    'cinturón',
+    'cinturones',
+    'cartera',
+    'carteras',
+    'bufanda',
+    'bufandas',
+    'pañuelo',
+    'pañuelos',
+    'guante',
+    'guantes',
+    'billetera',
+    'billeteras',
+    'correa',
+    'correas',
+    'paraguas',
+    'sombrero',
+    'sombreros',
+    'corbata',
+    'corbatas',
+    'vincha',
+    'vinchas',
+    'bandolera',
+    'bandoleras',
+    'pasamontañas',
+    'tapaboca',
+    'tapabocas',
+    'anteojo',
+    'anteojos',
+    'lentes',
+    'gafas'
+  ]
+};
 
 const StockGet = () => {
+  function mapCategoriaATipoTalle(nombreCategoria) {
+    const cat = nombreCategoria?.toLowerCase() || '';
+
+    for (const [tipo, palabras] of Object.entries(CATEGORIAS_TALLES)) {
+      if (palabras.some((palabra) => cat.includes(palabra))) {
+        return tipo;
+      }
+    }
+    // return 'ropa';
+    return null;
+  }
+  // Estados arriba en tu componente
   const { userLevel } = useAuth();
   const UMBRAL_STOCK_BAJO = 5;
   const [stock, setStock] = useState([]);
@@ -87,11 +211,16 @@ const StockGet = () => {
   // RELACION AL FILTRADO BENJAMIN ORELLANA 23-04-25
 
   const [cantidadesPorTalle, setCantidadesPorTalle] = useState([]);
+
   const [grupoOriginal, setGrupoOriginal] = useState(null);
   const [grupoEditando, setGrupoEditando] = useState(null);
+  const [grupoAEliminar, setGrupoAEliminar] = useState(null);
 
-  const [modalErrorOpen, setModalErrorOpen] = useState(false);
-  const [modalErrorMsg, setModalErrorMsg] = useState('');
+  const [modalFeedbackOpen, setModalFeedbackOpen] = useState(false);
+  const [modalFeedbackMsg, setModalFeedbackMsg] = useState('');
+  const [modalFeedbackType, setModalFeedbackType] = useState('info'); // success | error | info
+
+  const [openConfirm, setOpenConfirm] = useState(false);
 
   const fetchAll = async () => {
     try {
@@ -111,7 +240,14 @@ const StockGet = () => {
       setLugares(resLugares.data);
       setEstados(resEstados.data);
     } catch (err) {
-      console.error('Error cargando datos:', err);
+      setModalFeedbackMsg(
+        'Ocurrió un error al cargar los datos.\n' +
+          (process.env.NODE_ENV !== 'production'
+            ? err.message || err.toString()
+            : '')
+      );
+      setModalFeedbackType('error');
+      setModalFeedbackOpen(true);
     }
   };
 
@@ -121,14 +257,13 @@ const StockGet = () => {
 
   const openModal = (item = null, group = null) => {
     if (item) {
-      // Edición individual
-      setEditId(item.id);
+      setEditId(item.id); // Edición individual
       setFormData({ ...item });
       setCantidadesPorTalle([]);
       setGrupoOriginal(null);
       setGrupoEditando(null);
     } else if (group) {
-      setEditId(null);
+      setEditId(null); // 👈 ¡Asegurate de limpiar el editId!
       setFormData({
         producto_id: group.producto_id,
         local_id: group.local_id,
@@ -145,7 +280,6 @@ const StockGet = () => {
         en_perchero: group.en_perchero
       });
       setGrupoEditando(group); // <- Guardá el grupo actual
-      // Inicializá cantidadesPorTalle con los talles y cantidades del grupo
       setCantidadesPorTalle(
         group.items.map((i) => ({
           talle_id: i.talle_id,
@@ -171,14 +305,15 @@ const StockGet = () => {
 
   useEffect(() => {
     if (formData.producto_id && !editId && !grupoEditando) {
-      // Solo para alta nueva, NO para edición de grupo (porque ya seteaste talles)
       const producto = productos.find(
         (p) => p.id === Number(formData.producto_id)
       );
-      const tipoCategoria = producto?.categoria?.nombre?.toLowerCase();
-      const tallesFiltradosGroup = talles.filter(
-        (t) => t.tipo_categoria?.toLowerCase() === tipoCategoria
-      );
+      const tipoTalle = mapCategoriaATipoTalle(producto?.categoria?.nombre);
+
+      const tallesFiltradosGroup = tipoTalle
+        ? talles.filter((t) => t.tipo_categoria?.toLowerCase() === tipoTalle)
+        : [];
+
       setCantidadesPorTalle(
         tallesFiltradosGroup.map((t) => ({
           talle_id: t.id,
@@ -201,7 +336,9 @@ const StockGet = () => {
         !formData.talle_id ||
         formData.cantidad == null
       ) {
-        alert('Completa todos los campos');
+        setModalFeedbackMsg('Completa todos los campos.');
+        setModalFeedbackType('info'); // O 'error' si preferís rojo
+        setModalFeedbackOpen(true);
         return;
       }
 
@@ -209,21 +346,36 @@ const StockGet = () => {
         await axios.put(`http://localhost:8080/stock/${editId}`, formData);
         fetchAll();
         setModalOpen(false);
+
+        setModalFeedbackMsg('Stock actualizado correctamente.');
+        setModalFeedbackType('success');
+        setModalFeedbackOpen(true);
       } catch (err) {
+        setModalFeedbackMsg(
+          err.response?.data?.mensajeError ||
+            err.response?.data?.message ||
+            err.message ||
+            'Error inesperado al editar el stock'
+        );
+        setModalFeedbackType('error');
+        setModalFeedbackOpen(true);
+
         console.error('Error al editar stock:', err);
       }
       return;
     }
-
     // Edición masiva (grupo) o alta múltiple
-    const tallesAEnviar = cantidadesPorTalle.filter((t) => t.cantidad > 0);
-
+    const tallesAEnviar = cantidadesPorTalle
+      .filter((t) => t.talle_id) // filtra sólo si hay talle_id válido
+      .map((t) => ({
+        talle_id: t.talle_id,
+        cantidad: Number(t.cantidad) || 0 // siempre número
+      }));
     if (
       !formData.producto_id ||
       !formData.local_id ||
       !formData.lugar_id ||
-      !formData.estado_id ||
-      tallesAEnviar.length === 0
+      !formData.estado_id
     ) {
       alert('Completa todos los campos y asigna cantidad a al menos un talle');
       return;
@@ -256,16 +408,16 @@ const StockGet = () => {
         );
 
         // LOGS para debug:
-        console.log('STOCK ACTUAL:', stock);
-        console.log('TALLES ORIGINALES:', tallesOriginales);
-        console.log(
-          'TALLES A ENVIAR:',
-          tallesAEnviar.map((t) => Number(t.talle_id))
-        );
-        console.log('TALLES INVALIDOS DETECTADOS:', tallesInvalidos);
+        // console.log('STOCK ACTUAL:', stock);
+        // console.log('TALLES ORIGINALES:', tallesOriginales);
+        // console.log(
+        //   'TALLES A ENVIAR:',
+        //   tallesAEnviar.map((t) => Number(t.talle_id))
+        // );
+        // console.log('TALLES INVALIDOS DETECTADOS:', tallesInvalidos);
 
         if (tallesInvalidos.length > 0) {
-          setModalErrorMsg(
+          setModalFeedbackMsg(
             `No podés transferir los siguientes talles porque no existen en el local/lugar de origen:\n\n${tallesInvalidos
               .map(
                 (t) =>
@@ -276,7 +428,8 @@ const StockGet = () => {
                 ', '
               )}.\n\nPara agregar stock de estos talles en el destino, tenés que dar de alta como nuevo stock.`
           );
-          setModalErrorOpen(true);
+          setModalFeedbackType('error');
+          setModalFeedbackOpen(true);
           return;
         }
 
@@ -296,7 +449,22 @@ const StockGet = () => {
           fetchAll();
           setModalOpen(false);
           setGrupoOriginal(null);
+
+          // Modal de éxito opcional
+          setModalFeedbackMsg('Stock transferido correctamente.');
+          setModalFeedbackType('success');
+          setModalFeedbackOpen(true);
         } catch (err) {
+          // Captura y muestra el mensaje que devuelve el backend, o uno genérico
+          setModalFeedbackMsg(
+            err.response?.data?.mensajeError ||
+              err.response?.data?.message ||
+              err.message ||
+              'Error inesperado al transferir el stock'
+          );
+          setModalFeedbackType('error');
+          setModalFeedbackOpen(true);
+
           console.error('Error al transferir stock:', err);
         }
         return;
@@ -317,7 +485,20 @@ const StockGet = () => {
       fetchAll();
       setModalOpen(false);
       setGrupoOriginal(null);
+
+      setModalFeedbackMsg('Stock guardado correctamente.');
+      setModalFeedbackType('success');
+      setModalFeedbackOpen(true);
     } catch (err) {
+      setModalFeedbackMsg(
+        err.response?.data?.mensajeError ||
+          err.response?.data?.message ||
+          err.message ||
+          'Error inesperado al guardar el stock'
+      );
+      setModalFeedbackType('error');
+      setModalFeedbackOpen(true);
+
       console.error('Error al guardar stock:', err);
     }
   };
@@ -330,42 +511,63 @@ const StockGet = () => {
 
     try {
       await axios.delete(`http://localhost:8080/stock/${id}`);
-      // Actualizá SOLO el array items del group, sin recargar todo
       setTallesGroupView((prev) => ({
         ...prev,
         items: prev.items.filter((x) => x.id !== id)
       }));
-      // Si querés refrescar todo (menos eficiente):
       fetchAll();
+
+      setModalFeedbackMsg('Talle eliminado correctamente.');
+      setModalFeedbackType('success');
+      setModalFeedbackOpen(true);
     } catch (err) {
+      setModalFeedbackMsg(
+        err.response?.data?.mensajeError ||
+          err.response?.data?.message ||
+          err.message ||
+          'Ocurrió un error al eliminar el talle. Intenta de nuevo.'
+      );
+      setModalFeedbackType('error');
+      setModalFeedbackOpen(true);
+
       console.error('Error al eliminar stock:', err);
-      alert('Ocurrió un error al eliminar el talle. Intenta de nuevo.');
     }
   };
 
-  const handleDeleteGroup = async (group) => {
+  // handler SIN parámetro, usa el estado actual
+  const handleDeleteGroup = async () => {
+    if (!grupoAEliminar) return;
     const nombreProducto =
-      productos.find((p) => p.id === group.producto_id)?.nombre || '';
-
-    const confirmado = window.confirm(
-      `¿Estás seguro de eliminar TODO el stock del producto "${nombreProducto}"? Esta acción no se puede deshacer.`
-    );
-    if (!confirmado) return;
+      productos.find((p) => p.id === grupoAEliminar.producto_id)?.nombre || '';
 
     try {
-      await axios.post('http://localhost:8080/eliminar-grupo', {
-        producto_id: group.producto_id,
-        local_id: group.local_id,
-        lugar_id: group.lugar_id,
-        estado_id: group.estado_id
+      const res = await axios.post('http://localhost:8080/eliminar-grupo', {
+        producto_id: grupoAEliminar.producto_id,
+        local_id: grupoAEliminar.local_id,
+        lugar_id: grupoAEliminar.lugar_id,
+        estado_id: grupoAEliminar.estado_id
       });
 
-      // Actualizá solo el estado para no recargar todo
-      setTallesGroupView(null); // o algo que limpie/oculte modal
-      fetchAll(); // opcional, para refrescar todo el listado
+      setModalFeedbackMsg(res.data.message || 'Stock eliminado exitosamente.');
+      setModalFeedbackType('success'); // 👈🏼 Mostrá el verde éxito
+      setModalFeedbackOpen(true);
+
+      setOpenConfirm(false);
+      setGrupoAEliminar(null);
+      fetchAll();
     } catch (err) {
-      alert('Error al eliminar el stock del grupo');
-      console.error(err);
+      const mensaje =
+        err.response?.data?.mensajeError ||
+        err.response?.data?.message ||
+        err.message ||
+        'Error inesperado al eliminar el stock del grupo';
+
+      setModalFeedbackMsg(mensaje);
+      setModalFeedbackType('error'); // 👈🏼 Mostrá el rojo error
+      setModalFeedbackOpen(true);
+
+      setOpenConfirm(false);
+      setGrupoAEliminar(null);
     }
   };
 
@@ -447,23 +649,13 @@ const StockGet = () => {
     (p) => p.id === Number(formData.producto_id)
   );
 
-  const tipoCategoria = productoSeleccionado?.categoria?.nombre
-    ?.toLowerCase()
-    .includes('calzado')
-    ? 'calzado'
-    : productoSeleccionado?.categoria?.nombre?.toLowerCase().includes('ropa')
-    ? 'ropa'
-    : productoSeleccionado?.categoria?.nombre
-        ?.toLowerCase()
-        .includes('accesorio')
-    ? 'accesorio'
-    : null;
+  const tipoTalle = mapCategoriaATipoTalle(
+    productoSeleccionado?.categoria?.nombre
+  );
 
-  // Solo mostramos los talles que coinciden, si no, dejamos vacío el array
-  const tallesFiltrados =
-    tipoCategoria != null
-      ? talles.filter((t) => t.tipo_categoria?.toLowerCase() === tipoCategoria)
-      : [];
+  const tallesFiltrados = tipoTalle
+    ? talles.filter((t) => t.tipo_categoria?.toLowerCase() === tipoTalle)
+    : [];
 
   const stockAgrupado = [];
   filtered.forEach((item) => {
@@ -720,7 +912,10 @@ const StockGet = () => {
                         <FaEdit /> Editar
                       </button>
                       <button
-                        onClick={() => handleDeleteGroup(group)}
+                        onClick={() => {
+                          setGrupoAEliminar(group);
+                          setOpenConfirm(true);
+                        }}
                         className="mt-2 mb-2 px-3 py-1 bg-red-600 hover:bg-red-500 rounded-lg text-white text-sm font-semibold flex items-center justify-center gap-2"
                       >
                         <FaTrash /> Eliminar
@@ -746,7 +941,11 @@ const StockGet = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4 text-gray-800">
             {[
-              { label: 'Producto', name: 'producto_id', options: productos },
+              {
+                label: 'Producto',
+                name: 'producto_id',
+                options: productos
+              },
               ...(editId
                 ? [{ label: 'Talle', name: 'talle_id', options: talles }]
                 : []),
@@ -1086,11 +1285,62 @@ const StockGet = () => {
           </div>
         </Modal>
       </div>
-      <ModalError
+      {/* <ModalError
         open={modalErrorOpen}
-        onClose={() => setModalErrorOpen(false)}
-        msg={modalErrorMsg}
+        onClose={() => setModalFeedbackOpen(false)}
+        msg={modalFeedbackMsg}
+      /> */}
+      {/* Modal simple */}
+      {openConfirm && grupoAEliminar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#232b32] rounded-2xl shadow-2xl p-8 w-[90vw] max-w-sm flex flex-col gap-4 border border-gray-800 animate-fade-in">
+            <div className="flex items-center gap-2 text-xl font-bold text-[#32d8fd]">
+              <FaExclamationTriangle className="text-yellow-400 text-2xl" />
+              Eliminar de stock
+            </div>
+            <div className="text-base text-gray-200">
+              ¿Seguro que deseas eliminar TODO el stock del producto{' '}
+              <span className="font-bold text-pink-400">
+                "
+                {productos.find((p) => p.id === grupoAEliminar.producto_id)
+                  ?.nombre || ''}
+                "
+              </span>
+              ?
+            </div>
+            <div className="text-xs text-gray-400 mb-3">
+              Esta acción no puede deshacerse.
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={handleDeleteGroup}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold shadow"
+              >
+                Eliminar
+              </button>
+
+              <button
+                onClick={() => {
+                  setOpenConfirm(false);
+                  setGrupoAEliminar(null);
+                }}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-xl font-bold shadow"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ModalFeedback
+        open={modalFeedbackOpen}
+        onClose={() => setModalFeedbackOpen(false)}
+        msg={modalFeedbackMsg}
+        type={modalFeedbackType}
       />
+
+      <ToastContainer />
     </div>
   );
 };
