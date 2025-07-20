@@ -13,7 +13,7 @@ import {
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
-
+import { useAuth } from '../../../AuthContext';
 const tipoIcons = {
   ingreso: <FaArrowUp className="text-emerald-400" />,
   egreso: <FaArrowDown className="text-red-400" />
@@ -36,7 +36,7 @@ const tipoBadge = (tipo) => (
 function DetalleMovimientoModal({ movimiento, onClose, onUpdate, onDelete }) {
   const [edit, setEdit] = useState(false);
   const [form, setForm] = useState({ ...movimiento });
-
+  const { userLevel } = useAuth();
   useEffect(() => {
     setForm({ ...movimiento });
     setEdit(false);
@@ -194,29 +194,30 @@ function DetalleMovimientoModal({ movimiento, onClose, onUpdate, onDelete }) {
             </div>
             {/* ACCIONES */}
             <div className="flex gap-2 mt-8 mb-1 justify-end sticky bottom-2">
-              {edit ? (
-                <button
-                  onClick={handleUpdate}
-                  className="bg-emerald-700 hover:bg-emerald-800 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 shadow shadow-emerald-800/10 transition-all"
-                >
-                  <FaCheckCircle /> Guardar
-                </button>
-              ) : (
-                <>
+              {userLevel === 'admin' &&
+                (edit ? (
                   <button
-                    onClick={() => setEdit(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 shadow transition-all"
+                    onClick={handleUpdate}
+                    className="bg-emerald-700 hover:bg-emerald-800 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 shadow shadow-emerald-800/10 transition-all"
                   >
-                    <FaEdit /> Editar
+                    <FaCheckCircle /> Guardar
                   </button>
-                  <button
-                    onClick={handleDelete}
-                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 shadow transition-all"
-                  >
-                    <FaTrash /> Eliminar
-                  </button>
-                </>
-              )}
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setEdit(true)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 shadow transition-all"
+                    >
+                      <FaEdit /> Editar
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 shadow transition-all"
+                    >
+                      <FaTrash /> Eliminar
+                    </button>
+                  </>
+                ))}
             </div>
           </div>
         </motion.div>
