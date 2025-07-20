@@ -10,11 +10,11 @@ import {
   FaUser,
   FaUserAlt,
   FaCheckCircle,
-  FaCreditCard,
+  FaUserPlus,
   FaMoneyBillAlt
 } from 'react-icons/fa';
 import ParticlesBackground from '../../Components/ParticlesBackground';
-
+import ModalNuevoCliente from '../../Components/Ventas/ModalNuevoCliente';
 import { FaCog } from 'react-icons/fa';
 import { dynamicIcon } from '../../utils/dynamicIcon'; // Lo creamos abajo
 import ModalMediosPago from '../../Components/Ventas/ModalMediosPago'; // Lo creamos abajo
@@ -59,6 +59,7 @@ export default function PuntoVenta() {
   const [showModal, setShowModal] = useState(false);
   const [medioPago, setMedioPago] = useState(null);
   const { userId, userLocalId } = useAuth();
+  const [modalNuevoClienteOpen, setModalNuevoClienteOpen] = useState(false);
 
   // Traer medios de pago al montar
   useEffect(() => {
@@ -415,6 +416,7 @@ export default function PuntoVenta() {
     new Set([1, ...cuotasDisponibles.map((c) => c.cuotas)])
   ).sort((a, b) => a - b);
 
+  const abrirModalNuevoCliente = () => setModalNuevoClienteOpen(true);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-4 sm:p-6 text-white">
@@ -428,34 +430,49 @@ export default function PuntoVenta() {
         <label className="block text-xl font-bold mb-1 text-gray-200">
           Cliente
         </label>
-        <div className="relative">
-          <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-emerald-400 text-lg" />
-          <input
-            type="text"
-            placeholder="Buscar cliente por nombre, DNI o teléfono..."
-            value={busquedaCliente}
-            onChange={handleBusquedaCliente}
-            className="pl-10 pr-4 py-3 w-full rounded-xl bg-[#232323] text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow"
-            autoComplete="off"
-          />
-          {/* SUGERENCIAS */}
-          {sugerencias.length > 0 && (
-            <ul className="absolute z-10 left-0 right-0 bg-[#191919] shadow-xl rounded-xl mt-2 max-h-52 overflow-auto border border-emerald-700">
-              {sugerencias.map((cli) => (
-                <li
-                  key={cli.id}
-                  onClick={() => seleccionarCliente(cli)}
-                  className="px-4 py-2 hover:bg-emerald-800/80 cursor-pointer text-gray-200"
-                >
-                  {cli.nombre} –{' '}
-                  <span className="text-emerald-400">
-                    {cli.dni ? cli.dni : cli.telefono}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+
+        <div className="relative w-full max-w-3xl mb-6 flex items-center gap-2">
+          {/* Input + icono */}
+          <div className="relative flex-grow">
+            <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-emerald-400 text-lg" />
+            <input
+              type="text"
+              placeholder="Buscar cliente por nombre, DNI o teléfono..."
+              value={busquedaCliente}
+              onChange={handleBusquedaCliente}
+              className="pl-10 pr-4 py-3 w-full rounded-xl bg-[#232323] text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow"
+              autoComplete="off"
+            />
+            {/* SUGERENCIAS */}
+            {sugerencias.length > 0 && (
+              <ul className="absolute z-10 left-0 right-0 bg-[#191919] shadow-xl rounded-xl mt-2 max-h-52 overflow-auto border border-emerald-700">
+                {sugerencias.map((cli) => (
+                  <li
+                    key={cli.id}
+                    onClick={() => seleccionarCliente(cli)}
+                    className="px-4 py-2 hover:bg-emerald-800/80 cursor-pointer text-gray-200"
+                  >
+                    {cli.nombre} –{' '}
+                    <span className="text-emerald-400">
+                      {cli.dni ? cli.dni : cli.telefono}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Botón "Nuevo" alineado a la derecha */}
+          <button
+            type="button"
+            onClick={abrirModalNuevoCliente}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold shadow transition flex items-center gap-2"
+            title="Agregar nuevo cliente"
+          >
+            <FaUserPlus /> Nuevo Cliente
+          </button>
         </div>
+
         <div className="mt-2">
           {clienteSeleccionado ? (
             <div className="flex items-center gap-3 text-emerald-400">
@@ -934,6 +951,10 @@ export default function PuntoVenta() {
           onClose={() => setVentaFinalizada(null)}
         />
       )}
+      <ModalNuevoCliente
+        open={modalNuevoClienteOpen}
+        onClose={() => setModalNuevoClienteOpen(false)}
+      />
     </div>
   );
 }

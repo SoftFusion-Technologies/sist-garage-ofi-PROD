@@ -17,7 +17,8 @@ import {
   FaCalendarAlt,
   FaCreditCard,
   FaCheckCircle,
-  FaMoneyBillWave
+  FaMoneyBillWave,
+  FaRegCopy
 } from 'react-icons/fa';
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -31,6 +32,98 @@ import {
 } from '../../utils/utils.js';
 Modal.setAppElement('#root');
 
+// --- Función para formatear teléfono:
+function formatDisplayPhone(num) {
+  // Saca todo lo que no es número
+  let n = num.replace(/\D/g, '');
+
+  // Si ya empieza con 54, asumimos formato internacional argentino
+  if (n.length === 13 && n.startsWith('54')) {
+    // +54 9 3863 41-4717
+    return `+${n.slice(0, 2)} ${n[2]} ${n.slice(3, 7)} ${n.slice(
+      7,
+      9
+    )}-${n.slice(9, 13)}`;
+  }
+
+  // +549...
+  if (n.length === 12 && n.startsWith('549')) {
+    return `+${n.slice(0, 2)} ${n[2]} ${n.slice(3, 7)} ${n.slice(
+      7,
+      9
+    )}-${n.slice(9, 12)}`;
+  }
+
+  // 11 dígitos típico móvil Arg: 38653488333 → +54 9 3865 34-8833
+  if (n.length === 11) {
+    return `+54 9 ${n.slice(0, 4)} ${n.slice(4, 6)}-${n.slice(6, 10)}`;
+  }
+
+  // 10 dígitos típico fijo Arg: 3816583391 → +54 3816 58-3391
+  if (n.length === 10) {
+    return `+54 ${n.slice(0, 4)} ${n.slice(4, 6)}-${n.slice(6, 10)}`;
+  }
+
+  // 8 ó 7 dígitos, local corto
+  if (n.length === 8) {
+    return `${n.slice(0, 4)}-${n.slice(4, 8)}`;
+  }
+  if (n.length === 7) {
+    return `${n.slice(0, 3)}-${n.slice(3, 7)}`;
+  }
+
+  // Si no, devolvé como está, pero podés agregarle prefijo si querés
+  return num;
+}
+
+function TelCell({ telefono }) {
+  const [copied, setCopied] = useState(false);
+
+  // Lógica igual que antes
+  const raw = telefono.replace(/\D/g, '');
+  const link = `https://wa.me/${raw.startsWith('54') ? raw : '54' + raw}`;
+  const display = formatDisplayPhone(telefono);
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(display);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch {}
+  };
+
+  return (
+    <div className="flex items-center justify-center">
+      <a
+        href={link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 bg-[#25D366]/10 border border-[#25D366] rounded-full px-4 py-2 font-bold text-emerald-200 hover:bg-[#25D366]/20 hover:text-white shadow-sm transition-all whitespace-nowrap"
+        title="Enviar WhatsApp"
+        style={{ fontSize: '1.1em', letterSpacing: '0.02em' }}
+      >
+        <FaWhatsapp className="text-[#25D366] text-xl mr-2" />
+        <span className="font-bold tracking-wider">{display}</span>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            copyToClipboard();
+          }}
+          className="ml-2 text-xs text-gray-400 hover:text-emerald-200 transition"
+          title="Copiar número"
+          tabIndex={-1}
+        >
+          {copied ? (
+            <FaCheckCircle className="text-emerald-400 text-lg" />
+          ) : (
+            <FaRegCopy className="text-lg" />
+          )}
+        </button>
+      </a>
+    </div>
+  );
+}
 export default function ClientesGet() {
   const [clientes, setClientes] = useState([]);
   const [search, setSearch] = useState('');
@@ -274,23 +367,11 @@ export default function ClientesGet() {
                   <td className="px-6 py-3 font-semibold">{c.nombre}</td>
                   <td className="px-6 py-3">
                     {c.telefono ? (
-                      <a
-                        href={`https://wa.me/${formatWhatsappNumber(
-                          c.telefono
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 font-semibold underline hover:text-emerald-400 transition cursor-pointer"
-                        title="Enviar WhatsApp"
-                      >
-                        {formatDisplayPhone(c.telefono)}
-                        <FaWhatsapp className="ml-1 text-green-500" />
-                      </a>
+                      <TelCell telefono={c.telefono} />
                     ) : (
                       <span className="text-emerald-300">-</span>
                     )}
                   </td>
-
                   <td className="px-6 py-3">{c.email || '-'}</td>
                   <td className="px-6 py-3 font-semibold">{c.dni}</td>
                   <td className="px-6 py-3 font-semibold">{c.direccion}</td>
