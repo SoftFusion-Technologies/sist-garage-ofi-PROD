@@ -1,5 +1,6 @@
 // src/Pages/Ventas/PuntoVenta.jsx
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   FaCashRegister,
   FaSearch,
@@ -54,6 +55,7 @@ function agruparProductosConTalles(stockItems) {
 }
 
 export default function PuntoVenta() {
+  const navigate = useNavigate();
   const [mediosPago, setMediosPago] = useState([]);
   const [loadingMediosPago, setLoadingMediosPago] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -210,12 +212,19 @@ export default function PuntoVenta() {
     const ventaRequest = {
       cliente_id: clienteSeleccionado ? clienteSeleccionado.id : null,
       productos: productosRequest,
-      total: total,
+      total: totalCalculado.precio_base, // total bruto sin ajustes
       medio_pago_id: medioPago,
       usuario_id: userId,
-      local_id: userLocalId
+      local_id: userLocalId,
+      descuento_porcentaje:
+        totalCalculado.ajuste_porcentual < 0
+          ? Math.abs(totalCalculado.ajuste_porcentual)
+          : 0,
+      recargo_porcentaje:
+        totalCalculado.ajuste_porcentual > 0
+          ? totalCalculado.ajuste_porcentual
+          : 0
     };
-
     try {
       const response = await fetch('http://localhost:8080/ventas/pos', {
         method: 'POST',
@@ -601,7 +610,7 @@ export default function PuntoVenta() {
           )}
 
           {/* Total */}
-          {totalCalculado && totalCalculado.total > 0 && (
+          {carrito.length > 0 && totalCalculado && totalCalculado.total > 0 && (
             <div className="text-right text-lg font-bold text-white space-y-1">
               <div>
                 Total:{' '}
@@ -926,7 +935,15 @@ export default function PuntoVenta() {
             )}
 
             {/* Footer */}
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => navigate('/dashboard/stock/stock')}
+                className="flex items-center gap-2 px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-semibold shadow transition-all"
+                type="button"
+              >
+                <FaPlus />
+                Agregar Producto
+              </button>
               <button
                 onClick={() => setModalVerProductosOpen(false)}
                 className="px-5 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg font-semibold text-gray-800 transition"

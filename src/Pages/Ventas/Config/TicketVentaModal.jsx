@@ -1,4 +1,3 @@
-// TicketVentaModal.jsx
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import React from 'react';
@@ -6,18 +5,16 @@ import React from 'react';
 export default function TicketVentaModal({ venta, onClose }) {
   const ref = React.useRef();
 
-  // Fallback defensivo: venta puede ser null o sin detalles
   if (!venta) return null;
   const detalles = Array.isArray(venta.detalles) ? venta.detalles : [];
 
-  // Exportar a PDF (ahora compatible!)
   const exportPDF = async () => {
     const canvas = await html2canvas(ref.current, { scale: 2 });
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: 'a7' // Ticket tamaño chico
+      format: 'a6' // Más ancho que a7
     });
     const width = pdf.internal.pageSize.getWidth();
     const height = (canvas.height * width) / canvas.width;
@@ -25,20 +22,43 @@ export default function TicketVentaModal({ venta, onClose }) {
     pdf.save(`ticket-venta-${venta.id}.pdf`);
   };
 
+  // Mostrar porcentaje como texto con color
+  const mostrarAjuste = () => {
+    if (!venta.descuento_porcentaje && !venta.recargo_porcentaje) return null;
+
+    if (venta.descuento_porcentaje > 0) {
+      return (
+        <div className="text-sm text-emerald-600 font-semibold">
+          -{venta.descuento_porcentaje}% de descuento
+        </div>
+      );
+    }
+
+    if (venta.recargo_porcentaje > 0) {
+      return (
+        <div className="text-sm text-orange-600 font-semibold">
+          +{venta.recargo_porcentaje}% de recargo
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center">
-      <div className="bg-white rounded-2xl p-6 max-w-xs w-full shadow-2xl relative border border-[#059669] animate-fade-in">
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl relative border border-[#059669] animate-fade-in overflow-auto max-h-[90vh]">
         <button
           onClick={onClose}
-          className="absolute top-3 right-4 text-2xl text-gray-400 hover:text-[#059669]"
+          className="absolute top-3 right-4 text-3xl text-gray-400 hover:text-[#059669]"
           title="Cerrar"
         >
           ×
         </button>
-        {/* Ticket visual */}
-        <div ref={ref} className="ticket-pdf font-mono text-xs text-black p-2">
-          <div className="text-center mb-3">
-            <div className="brand font-extrabold text-xl tracking-widest mb-2">
+
+        <div ref={ref} className="ticket-pdf font-mono text-sm text-black p-4">
+          <div className="text-center mb-4">
+            <div className="brand font-extrabold text-2xl tracking-widest mb-2">
               EL GARAGE
             </div>
             <div className="brand-muted text-xs font-bold tracking-widest">
@@ -46,40 +66,36 @@ export default function TicketVentaModal({ venta, onClose }) {
             </div>
           </div>
 
-          <div className="flex justify-between mb-2 font-semibold text-gray-700 text-base">
+          <div className="flex justify-between mb-3 font-semibold text-gray-700 text-lg">
             <span>Venta #{venta.id}</span>
             <span className="text-xs text-gray-400">
               {venta.fecha ? new Date(venta.fecha).toLocaleString() : ''}
             </span>
           </div>
-          <div className="grid grid-cols-1 gap-0.5 mb-2">
+
+          <div className="grid grid-cols-1 gap-1 mb-3 text-gray-800 text-sm">
             <div>
-              <span className="font-bold" style={{ color: '#334155' }}>
-                Vendedor:
-              </span>{' '}
+              <span className="font-bold text-gray-900">Vendedor:</span>{' '}
               <span>{venta.usuario?.nombre || '-'}</span>
             </div>
             <div>
-              <span className="font-bold" style={{ color: '#334155' }}>
-                Local:
-              </span>{' '}
+              <span className="font-bold text-gray-900">Local:</span>{' '}
               <span>{venta.locale?.nombre || '-'}</span>
             </div>
             <div>
-              <span className="font-bold" style={{ color: '#334155' }}>
-                Cliente:
-              </span>{' '}
+              <span className="font-bold text-gray-900">Cliente:</span>{' '}
               <span>{venta.cliente?.nombre || 'Consumidor Final'}</span>
             </div>
           </div>
 
           <div
-            className="mb-1 mt-4 text-xs font-bold tracking-widest text-center"
+            className="mb-2 mt-5 text-sm font-bold tracking-widest text-center"
             style={{ color: '#059669' }}
           >
             ARTÍCULOS
           </div>
-          <div className="mb-1">
+
+          <div className="mb-4">
             {detalles.length === 0 ? (
               <div className="text-center text-gray-400 py-2">
                 Cargando productos...
@@ -88,8 +104,7 @@ export default function TicketVentaModal({ venta, onClose }) {
               detalles.map((d) => (
                 <div
                   key={d.id}
-                  className="flex justify-between items-center py-1 px-0.5"
-                  style={{ borderBottom: '1px dashed #BBF7D0' }} // emerald-100
+                  className="flex justify-between items-center py-1 px-0.5 border-b border-dashed border-emerald-200"
                 >
                   <span>
                     <span className="font-bold">
@@ -99,10 +114,7 @@ export default function TicketVentaModal({ venta, onClose }) {
                       x{d.cantidad}
                     </span>
                   </span>
-                  <span
-                    className="font-bold tabular-nums"
-                    style={{ color: '#059669' }}
-                  >
+                  <span className="font-bold tabular-nums text-emerald-700">
                     $
                     {Number(d.precio_unitario * d.cantidad).toLocaleString(
                       'es-AR'
@@ -113,28 +125,45 @@ export default function TicketVentaModal({ venta, onClose }) {
             )}
           </div>
 
-          <div
-            className="mt-3 mb-1 flex justify-between items-center text-lg font-black tracking-widest"
-            style={{ color: '#059669' }}
-          >
-            <span>Total</span>
-            <span>${Number(venta.total).toLocaleString('es-AR')}</span>
+          {/* Subtotal, descuentos y total */}
+          <div className="border-t border-gray-300 pt-3">
+            <div className="flex justify-between text-gray-700 text-sm mb-1">
+              <span>Subtotal</span>
+              <span>
+                $
+                {venta.total_bruto
+                  ? Number(venta.total_bruto).toLocaleString('es-AR')
+                  : Number(venta.total).toLocaleString('es-AR')}
+              </span>
+            </div>
+
+            {mostrarAjuste()}
+
+            <div className="flex justify-between text-lg font-black text-emerald-700 mt-2">
+              <span>Total</span>
+              <span>
+                $
+                {Number(venta.total_final ?? venta.total).toLocaleString(
+                  'es-AR'
+                )}
+              </span>
+            </div>
           </div>
+
           <div
-            className="text-center text-[11px] mt-2 font-medium tracking-wider"
+            className="text-center text-[11px] mt-3 font-medium tracking-wider"
             style={{ color: '#64748b' }}
           >
             ¡Gracias por su compra!
           </div>
         </div>
+
         <button
           onClick={exportPDF}
-          className="mt-5 w-full py-2"
+          className="mt-5 w-full py-2 rounded-lg font-bold"
           style={{
             background: '#059669',
             color: 'white',
-            borderRadius: 12,
-            fontWeight: 'bold',
             boxShadow: '0 2px 8px #05966933',
             transition: 'background .2s'
           }}
@@ -143,12 +172,10 @@ export default function TicketVentaModal({ venta, onClose }) {
         </button>
         <button
           onClick={() => window.print()}
-          className="mt-2 w-full py-2"
+          className="mt-2 w-full py-2 rounded-lg font-bold"
           style={{
             background: '#334155',
             color: 'white',
-            borderRadius: 12,
-            fontWeight: 'bold',
             boxShadow: '0 2px 8px #33415533',
             transition: 'background .2s'
           }}
