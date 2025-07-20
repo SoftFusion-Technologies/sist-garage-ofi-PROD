@@ -62,6 +62,20 @@ export default function VentasTimeline() {
 
   // Filtro simple local y texto con backend, no local filtering
 
+  const cargarDetalleVenta = async (ventaId) => {
+    try {
+      const res = await fetch(
+        `http://localhost:8080/ventas/${ventaId}/detalle`
+      );
+      if (!res.ok) throw new Error('Error al obtener detalle de venta');
+      const data = await res.json();
+      setDetalle(data);
+    } catch (error) {
+      console.error(error);
+      setDetalle(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-tr from-[#181c25] via-[#1e2340] to-[#131a22] flex flex-col items-center px-2 py-8 relative">
       <ParticlesBackground />
@@ -165,7 +179,7 @@ export default function VentasTimeline() {
                   `from-emerald-900/${80 - i * 4} to-[#232942]`,
                   'hover:scale-105 transition-transform rounded-xl px-5 py-4 shadow-xl border border-[#252b3f] cursor-pointer'
                 )}
-                onClick={() => setDetalle(venta)}
+                onClick={() => cargarDetalleVenta(venta.venta_id)}
               >
                 <span
                   className={clsx(
@@ -261,7 +275,8 @@ export default function VentasTimeline() {
           >
             <div className="flex items-center justify-between px-7 py-5 border-b border-emerald-500">
               <div className="text-2xl font-bold text-emerald-400 flex items-center gap-2">
-                <FaMoneyBillWave /> Venta #{detalle.venta_id}
+                <FaMoneyBillWave /> Venta #
+                {detalle.id /* o detalle.venta_id si existe */}
               </div>
               <button
                 onClick={() => setDetalle(null)}
@@ -278,10 +293,13 @@ export default function VentasTimeline() {
               <div className="mb-3">
                 <div className="text-lg font-bold text-white">
                   Cliente:{' '}
-                  <span className="text-emerald-300">{detalle.cliente}</span>
+                  <span className="text-emerald-300">
+                    {detalle.cliente?.nombre || '-'}
+                  </span>
                 </div>
                 <div className="text-sm text-gray-300">
-                  Vendedor: {detalle.vendedor} • Local: {detalle.local}
+                  Vendedor: {detalle.usuario?.nombre || '-'} • Local:{' '}
+                  {detalle.locale?.nombre || '-'}
                 </div>
               </div>
               <div className="font-bold text-lg text-right text-emerald-400">
@@ -289,10 +307,107 @@ export default function VentasTimeline() {
               </div>
             </div>
             <div className="px-7 py-4">
-              <span className="text-sm text-gray-400">
-                (Aquí iría el detalle completo: productos, cantidades,
-                descuentos, etc.)
-              </span>
+              {detalle.detalles && detalle.detalles.length > 0 ? (
+                <div className="overflow-x-auto rounded-lg border border-gray-700 bg-[#1f2a25] p-2">
+                  <table className="w-full min-w-[700px] text-sm text-gray-300 border-separate border-spacing-y-2">
+                    <thead>
+                      <tr className="bg-emerald-700/90 rounded-lg text-left text-white uppercase tracking-wide select-none">
+                        <th className="py-3 px-4 rounded-l-lg">Producto</th>
+                        <th className="py-3 px-4">Talle</th>
+                        <th className="py-3 px-4 text-right">Cantidad</th>
+                        <th className="py-3 px-4 text-right">
+                          Precio Unitario
+                        </th>
+                        <th className="py-3 px-4 text-right">Subtotal</th>
+                        <th className="py-3 px-4 text-right rounded-r-lg">
+                          Descuento
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detalle.detalles.map((item, idx) => (
+                        <tr
+                          key={item.id}
+                          className={clsx(
+                            'bg-[#22332f] hover:bg-[#2a433a] transition-colors',
+                            idx % 2 === 0 ? 'bg-opacity-80' : 'bg-opacity-60',
+                            'rounded-lg'
+                          )}
+                        >
+                          <td className="py-3 px-4 font-semibold">
+                            {item.stock?.producto?.nombre || 'Producto'}
+                          </td>
+                          <td className="py-3 px-4">
+                            {item.stock?.talle?.nombre || '-'}
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono">
+                            {item.cantidad}
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono">
+                            $
+                            {Number(item.precio_unitario).toLocaleString(
+                              'es-AR'
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono">
+                            $
+                            {(
+                              item.cantidad * Number(item.precio_unitario)
+                            ).toLocaleString('es-AR')}
+                          </td>
+                          <td className="py-3 px-4 text-right font-mono">
+                            {Number(item.descuento) > 0 ? (
+                              <span className="text-emerald-400 font-semibold">
+                                -$
+                                {Number(item.descuento).toLocaleString('es-AR')}
+                              </span>
+                            ) : (
+                              <span className="text-gray-500">-</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center text-gray-500">
+                  No hay detalles disponibles.
+                </div>
+              )}
+
+              {/* Totales y medios de pago */}
+              <div className="mt-4 border-t border-gray-700 pt-3 text-right space-y-1 text-white font-semibold">
+                <div>
+                  Subtotal: $
+                  {Number(detalle.total_bruto ?? detalle.total).toLocaleString(
+                    'es-AR'
+                  )}
+                </div>
+                {Number(detalle.descuento_porcentaje) > 0 && (
+                  <div className="text-emerald-400">
+                    Descuento: -{detalle.descuento_porcentaje}%
+                  </div>
+                )}
+                {Number(detalle.recargo_porcentaje) > 0 && (
+                  <div className="text-orange-400">
+                    Recargo: +{detalle.recargo_porcentaje}%
+                  </div>
+                )}
+                <div className="text-xl font-bold text-emerald-300">
+                  Total final: $
+                  {Number(detalle.total_final ?? detalle.total).toLocaleString(
+                    'es-AR'
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-3 text-gray-400 text-sm text-right">
+                Medio de pago:{' '}
+                <span className="text-white">
+                  {detalle.venta_medios_pago?.[0]?.medios_pago?.nombre || '-'}
+                </span>
+              </div>
             </div>
           </motion.div>
         )}
