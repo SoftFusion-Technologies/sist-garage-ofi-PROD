@@ -192,10 +192,10 @@
   body * {
     visibility: hidden !important;
   }
-  #barcode-etiqueta, #barcode-etiqueta * {
+  .barcode-etiqueta, .barcode-etiqueta * {
     visibility: visible !important;
   }
-  #barcode-etiqueta {
+  .barcode-etiqueta {
     position: absolute !important;
     left: 50% !important;
     top: 40mm !important;
@@ -209,5 +209,6 @@
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
+    z-index: 9999 !important;
   }
 }

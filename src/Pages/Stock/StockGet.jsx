@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import Modal from 'react-modal';
 import { motion } from 'framer-motion';
@@ -225,6 +225,7 @@ const StockGet = () => {
   const [openConfirm, setOpenConfirm] = useState(false);
 
   const [skuParaImprimir, setSkuParaImprimir] = useState(null);
+  const titleRef = useRef(document.title);
 
   const fetchAll = async () => {
     try {
@@ -691,14 +692,25 @@ const StockGet = () => {
   };
 
   const handlePrint = () => {
-    const oldTitle = document.title;
+    titleRef.current = document.title;
     document.title = skuParaImprimir.codigo_sku || 'Etiqueta';
     window.print();
     setTimeout(() => {
-      document.title = oldTitle;
+      document.title = titleRef.current;
       setSkuParaImprimir(null);
     }, 1000);
   };
+
+  const handleClose = () => {
+    document.title = titleRef.current;
+    setSkuParaImprimir(null);
+  };
+
+  useEffect(() => {
+    return () => {
+      document.title = titleRef.current;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-10 px-6 text-white">
@@ -1416,8 +1428,8 @@ const StockGet = () => {
             </button>
 
             <button
-              onClick={() => setSkuParaImprimir(null)}
-              className="text-gray-600 mt-2 underline"
+              onClick={handleClose}
+              className="mt-2 px-5 py-1 rounded-full border border-green-300 text-green-700 font-semibold bg-white hover:bg-green-50 hover:border-green-400 transition-all text-sm shadow-sm"
             >
               Cerrar
             </button>
