@@ -38,6 +38,9 @@ function agruparProductosConTalles(stockItems) {
         producto_id: item.producto_id,
         nombre: productoNombre,
         precio: productoPrecio,
+        descuento_porcentaje: parseFloat(item.descuento_porcentaje) || 0,
+        precio_con_descuento:
+          parseFloat(item.precio_con_descuento) || productoPrecio,
         talles: []
       });
     }
@@ -66,6 +69,8 @@ export default function PuntoVenta() {
   const [modalNuevoClienteOpen, setModalNuevoClienteOpen] = useState(false);
   const [aplicarDescuento, setAplicarDescuento] = useState(true);
   const [descuentoPersonalizado, setDescuentoPersonalizado] = useState('');
+  const [usarDescuentoPorProducto, setUsarDescuentoPorProducto] = useState({});
+  const [modalUsarDescuento, setModalUsarDescuento] = useState(true);
 
   const inputRef = useRef(); // input invisible
   const buscadorRef = useRef(); // buscador manual
@@ -80,6 +85,13 @@ export default function PuntoVenta() {
     }
   }, [modoEscaner]);
 
+  // Función para toggle checkbox
+  const toggleDescuento = (id) => {
+    setUsarDescuentoPorProducto((prev) => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
   // Traer medios de pago al montar
   useEffect(() => {
     setLoadingMediosPago(true);
@@ -146,8 +158,8 @@ export default function PuntoVenta() {
   }, [busqueda]);
 
   // Agregar producto al carrito
-  const agregarAlCarrito = (producto, talle) => {
-    const stockId = talle.stock_id; // <-- el real, ej: 188
+  const agregarAlCarrito = (producto, talle, usarDesc) => {
+    const stockId = talle.stock_id;
     setCarrito((prev) => {
       const existe = prev.find((i) => i.stock_id === stockId);
       if (existe) {
@@ -159,10 +171,16 @@ export default function PuntoVenta() {
       return [
         ...prev,
         {
-          stock_id: stockId, // <-- el real, NO el compuesto
+          stock_id: stockId,
           producto_id: producto.producto_id,
           nombre: `${producto.nombre} - ${talle.nombre}`,
-          precio: producto.precio,
+          precio_original: producto.precio,
+          precio_con_descuento:
+            producto.precio_con_descuento ?? producto.precio,
+          precio: usarDesc
+            ? producto.precio_con_descuento ?? producto.precio
+            : producto.precio,
+
           talla_id: talle.id,
           cantidad_disponible: talle.cantidad,
           cantidad: 1
@@ -174,16 +192,39 @@ export default function PuntoVenta() {
   };
 
   // Manejo click para agregar producto (modal si tiene varios talles)
-  const manejarAgregarProducto = (producto) => {
+  const manejarAgregarProducto = (producto, usarDesc) => {
     if (!producto.talles || producto.talles.length === 0) return;
 
     if (producto.talles.length === 1) {
-      agregarAlCarrito(producto, producto.talles[0]);
+      agregarAlCarrito(producto, producto.talles[0], usarDesc);
     } else {
       setModalProducto(producto);
       setTalleSeleccionado(null);
+      setModalUsarDescuento(usarDesc); // inicializar modal con ese valor si usas modal
     }
   };
+
+  useEffect(() => {
+    setCarrito((prev) =>
+      prev.map((item) => {
+        const aplicarDesc = usarDescuentoPorProducto[item.producto_id] ?? true;
+
+        const nuevoPrecio = aplicarDesc
+          ? item.precio_con_descuento ?? item.precio_original
+          : item.precio_original;
+
+        // Solo actualiza si el precio cambió para evitar renders innecesarios
+        if (item.precio !== nuevoPrecio) {
+          return {
+            ...item,
+            precio: nuevoPrecio
+          };
+        }
+
+        return item;
+      })
+    );
+  }, [usarDescuentoPorProducto]);
 
   const cambiarCantidad = (stockId, delta) =>
     setCarrito((prev) =>
@@ -693,26 +734,69 @@ export default function PuntoVenta() {
             {productos.length === 0 && (
               <p className="text-gray-400 col-span-full">Sin resultados…</p>
             )}
-            {productos.map((producto) => (
-              <div
-                key={producto.producto_id}
-                className="bg-white/5 p-4 rounded-xl shadow hover:shadow-lg transition relative flex flex-col"
-              >
-                <span className="font-bold text-lg text-white mb-1">
-                  {producto.nombre}
-                </span>
-                <span className="text-emerald-300 text-sm mt-auto">
-                  {formatearPrecio(producto.precio)}
-                </span>
-                <button
-                  onClick={() => manejarAgregarProducto(producto)}
-                  className="absolute top-2 right-2 bg-emerald-500 hover:bg-emerald-600 text-white p-2 rounded-full shadow"
-                  title="Agregar al carrito"
+            {productos.map((producto) => {
+              const tieneDescuento =
+                producto.descuento_porcentaje > 0 &&
+                producto.precio_con_descuento < producto.precio;
+
+              const usarDescuento =
+                usarDescuentoPorProducto[producto.producto_id] ?? true; // true por defecto
+
+              console.log(producto); // <-- chequeá si trae descuento y precio_con_descuento
+
+              return (
+                <div
+                  key={producto.producto_id}
+                  className="bg-white/5 p-4 rounded-xl shadow hover:shadow-lg transition relative flex flex-col"
                 >
-                  <FaPlus />
-                </button>
-              </div>
-            ))}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-lg text-white truncate max-w-[70%]">
+                      {producto.nombre}
+                    </span>
+
+                    {tieneDescuento && (
+                      <label className="flex items-center gap-1 text-xs text-green-400 select-none mr-10">
+                        <input
+                          type="checkbox"
+                          checked={usarDescuento}
+                          onChange={() => toggleDescuento(producto.producto_id)}
+                          className="accent-green-400"
+                        />
+                        Aplicar descuento
+                      </label>
+                    )}
+                  </div>
+
+                  <span className="text-emerald-300 text-sm mt-auto">
+                    {tieneDescuento && usarDescuento ? (
+                      <>
+                        <span className="line-through mr-2 text-red-400">
+                          {formatearPrecio(producto.precio)}
+                        </span>
+                        <span>
+                          {formatearPrecio(producto.precio_con_descuento)}
+                        </span>
+                        <span className="ml-2 text-xs text-green-400 font-semibold">
+                          -{producto.descuento_porcentaje.toFixed(2)}% OFF
+                        </span>
+                      </>
+                    ) : (
+                      <>{formatearPrecio(producto.precio)}</>
+                    )}
+                  </span>
+
+                  <button
+                    onClick={() =>
+                      manejarAgregarProducto(producto, usarDescuento)
+                    }
+                    className="absolute top-2 right-2 bg-emerald-500 hover:bg-emerald-600 text-white p-2 rounded-full shadow"
+                    title="Agregar al carrito"
+                  >
+                    <FaPlus />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -859,6 +943,7 @@ export default function PuntoVenta() {
           className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4"
         >
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-lg animate-fadeIn">
+            {/* Título */}
             <h3
               id="modal-title"
               className="text-2xl font-bold mb-5 text-center text-gray-800"
@@ -867,6 +952,7 @@ export default function PuntoVenta() {
               <span className="text-emerald-600">{modalProducto.nombre}</span>
             </h3>
 
+            {/* Lista talles */}
             <div className="flex flex-col gap-3 max-h-72 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-400 scrollbar-track-gray-100">
               {modalProducto.talles.map((talle) => {
                 const selected = talleSeleccionado?.id === talle.id;
@@ -909,6 +995,7 @@ export default function PuntoVenta() {
               })}
             </div>
 
+            {/* Botones */}
             <div className="mt-6 flex justify-end gap-4">
               <button
                 onClick={() => {
@@ -923,7 +1010,11 @@ export default function PuntoVenta() {
               <button
                 disabled={!talleSeleccionado}
                 onClick={() =>
-                  agregarAlCarrito(modalProducto, talleSeleccionado)
+                  agregarAlCarrito(
+                    modalProducto,
+                    talleSeleccionado,
+                    modalUsarDescuento // este estado debe existir
+                  )
                 }
                 className={`px-6 py-2 rounded-lg font-semibold text-white transition ${
                   talleSeleccionado
@@ -1069,6 +1160,7 @@ export default function PuntoVenta() {
           </div>
         </div>
       )}
+
       {/* Modal de gestión */}
       <ModalMediosPago
         show={showModal}
