@@ -13,7 +13,8 @@ import {
   FaDownload,
   FaBoxOpen,
   FaMapPin,
-  FaCircle
+  FaCircle,
+  FaPrint
 } from 'react-icons/fa';
 import ButtonBack from '../../Components/ButtonBack.jsx';
 import ParticlesBackground from '../../Components/ParticlesBackground.jsx';
@@ -22,6 +23,7 @@ import * as XLSX from 'xlsx';
 import { useAuth } from '../../AuthContext.jsx';
 import { toast, ToastContainer } from 'react-toastify';
 import { ModalFeedback } from '../Ventas/Config/ModalFeedback.jsx';
+import Barcode from 'react-barcode';
 Modal.setAppElement('#root');
 
 const CATEGORIAS_TALLES = {
@@ -221,6 +223,8 @@ const StockGet = () => {
   const [modalFeedbackType, setModalFeedbackType] = useState('info'); // success | error | info
 
   const [openConfirm, setOpenConfirm] = useState(false);
+
+  const [skuParaImprimir, setSkuParaImprimir] = useState(null);
 
   const fetchAll = async () => {
     try {
@@ -682,11 +686,9 @@ const StockGet = () => {
     group.items.push(item);
   });
 
-  const closeModal = () => {
-    setModalOpen(false);
-    setGrupoEditando(null);
+  const handleImprimirCodigoBarra = (item) => {
+    setSkuParaImprimir(item);
   };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-10 px-6 text-white">
       <ParticlesBackground />
@@ -1269,6 +1271,13 @@ const StockGet = () => {
                       >
                         <FaTrash className="inline" />
                       </button>
+                      <button
+                        className="w-full sm:w-auto flex items-center justify-center gap-1 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-sm font-semibold shadow transition"
+                        onClick={() => handleImprimirCodigoBarra(item)}
+                        title="Imprimir código de barras"
+                      >
+                        <FaPrint className="inline" />
+                      </button>
                     </div>
                   )}
                 </motion.div>
@@ -1332,6 +1341,78 @@ const StockGet = () => {
           </div>
         </div>
       )}
+
+      <Modal
+        isOpen={!!skuParaImprimir}
+        onRequestClose={() => setSkuParaImprimir(null)}
+        overlayClassName="fixed inset-0 bg-black/50 flex justify-center items-center z-50"
+        className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full"
+      >
+        <h3 className="text-xl font-bold mb-4 text-green-700 flex items-center gap-2">
+          <FaPrint className="text-green-400" /> Imprimir código de barras
+        </h3>
+        {skuParaImprimir && (
+          <div className="flex flex-col items-center gap-4">
+            {/* Nombre y talle */}
+            <div className="font-semibold text-base text-black">
+              {skuParaImprimir.producto?.nombre}
+            </div>
+            <div className="text-sm text-gray-600">
+              TALLE:{skuParaImprimir.talle?.nombre}
+            </div>
+
+            {/* Código de barras */}
+            <div
+              id="barcode-etiqueta"
+              style={{
+                width: '400px',
+                background: '#fff',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto'
+              }}
+            >
+              <Barcode
+                value={skuParaImprimir.codigo_sku}
+                format="CODE128"
+                width={2}
+                height={60}
+                displayValue={false} // <-- Oculta el texto cortado
+                margin={0}
+              />
+              {/* Texto SKU completo, centrado y sin cortes */}
+              <div
+                style={{
+                  fontSize: 13,
+                  marginTop: 4,
+                  fontWeight: 700,
+                  textAlign: 'center',
+                  wordBreak: 'break-all',
+                  maxWidth: '95%'
+                }}
+              >
+                {skuParaImprimir.codigo_sku}
+              </div>
+            </div>
+
+            {/* Botón imprimir */}
+            <button
+              onClick={() => window.print()}
+              className="mt-2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow"
+            >
+              Imprimir
+            </button>
+            <button
+              onClick={() => setSkuParaImprimir(null)}
+              className="text-gray-600 mt-2 underline"
+            >
+              Cerrar
+            </button>
+          </div>
+        )}
+      </Modal>
 
       <ModalFeedback
         open={modalFeedbackOpen}

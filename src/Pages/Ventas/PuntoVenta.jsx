@@ -1,5 +1,5 @@
 // src/Pages/Ventas/PuntoVenta.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FaCashRegister,
@@ -65,6 +65,11 @@ export default function PuntoVenta() {
   const [modalNuevoClienteOpen, setModalNuevoClienteOpen] = useState(false);
   const [aplicarDescuento, setAplicarDescuento] = useState(true);
   const [descuentoPersonalizado, setDescuentoPersonalizado] = useState('');
+  const inputRef = useRef(); // se agrega para hacer un lector de cod. barras
+
+  useEffect(() => {
+    inputRef.current && inputRef.current.focus();
+  }, []);
 
   // Traer medios de pago al montar
   useEffect(() => {
@@ -460,6 +465,59 @@ export default function PuntoVenta() {
   };
 
   const abrirModalNuevoCliente = () => setModalNuevoClienteOpen(true);
+
+  const buscarProductoPorCodigo = (codigo) => {
+    if (!codigo) return;
+
+    fetch(
+      `http://localhost:8080/buscar-productos-detallado?query=${encodeURIComponent(
+        codigo
+      )}`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          // Elegimos el primer resultado (el código debe ser único)
+          const prod = data[0];
+          // Llamamos a tu función para sumar al carrito, con la info correcta
+          agregarAlCarrito(
+            {
+              producto_id: prod.producto_id,
+              nombre: prod.nombre,
+              precio: prod.precio
+            },
+            {
+              stock_id: prod.stock_id,
+              id: prod.talle_id,
+              nombre: prod.talle_nombre,
+              cantidad: prod.cantidad_disponible
+            }
+          );
+        } else {
+          alert('Producto no encontrado o sin stock');
+        }
+      })
+      .catch((err) => {
+        console.error('Error al buscar producto por código:', err);
+        alert('Error al buscar producto');
+      });
+  };
+
+  // Si el input pierde el foco, volvelo a enfocar después de un pequeño delay
+  const handleBlur = () => {
+    setTimeout(() => {
+      inputRef.current && inputRef.current.focus();
+    }, 100);
+  };
+
+  // Cuando se presiona ENTER, procesá el valor escaneado
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && e.target.value.trim() !== '') {
+      // Aquí llamás a tu función para buscar el producto
+      buscarProductoPorCodigo(e.target.value.trim());
+      e.target.value = ''; // Limpiá el input para el próximo escaneo
+    }
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-4 sm:p-6 text-white">
       <ParticlesBackground />
@@ -540,7 +598,25 @@ export default function PuntoVenta() {
           )}
         </div>
       </div>
-
+      {/* lector de codigo de barras invicible */}
+      <div>
+        <input
+          ref={inputRef}
+          type="text"
+          style={{
+            opacity: 0,
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            width: 1,
+            height: 1,
+            pointerEvents: 'none'
+          }}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          autoFocus
+        />
+      </div>
       {/* Buscador */}
       <div className="relative w-full max-w-3xl mb-6 flex items-center gap-2">
         <div className="relative flex-grow">

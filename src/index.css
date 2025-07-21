@@ -187,3 +187,27 @@
 .animate-fade-in {
   animation: fade-in 0.23s cubic-bezier(0.4,0,0.2,1) both;
 }
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  #barcode-etiqueta, #barcode-etiqueta * {
+    visibility: visible !important;
+  }
+  #barcode-etiqueta {
+    position: absolute !important;
+    left: 50% !important;
+    top: 40mm !important;
+    transform: translateX(-50%) !important;
+    width: 400px !important;
+    background: white !important;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+}
