@@ -451,7 +451,10 @@ export default function PuntoVenta() {
     const productosRequest = carrito.map((item) => ({
       stock_id: item.stock_id,
       cantidad: item.cantidad,
-      precio_unitario: item.precio
+      precio_unitario: item.precio, // Precio base original
+      descuento: item.precio - (item.precio_con_descuento ?? item.precio), // Valor absoluto descuento
+      descuento_porcentaje: item.descuentoPorcentaje ?? 0, // % descuento por producto
+      precio_unitario_con_descuento: item.precio_con_descuento ?? item.precio // Precio final luego de descuento
     }));
 
     const ventaRequest = {
@@ -471,7 +474,7 @@ export default function PuntoVenta() {
         aplicarDescuento && totalCalculado.ajuste_porcentual > 0
           ? totalCalculado.ajuste_porcentual
           : 0,
-      aplicar_descuento: aplicarDescuento // este flag para backend
+      aplicar_descuento: aplicarDescuento // Flag para backend
     };
 
     try {
@@ -741,8 +744,6 @@ export default function PuntoVenta() {
 
               const usarDescuento =
                 usarDescuentoPorProducto[producto.producto_id] ?? true; // true por defecto
-
-              console.log(producto); // <-- chequeá si trae descuento y precio_con_descuento
 
               return (
                 <div
