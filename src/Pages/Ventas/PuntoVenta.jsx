@@ -64,6 +64,7 @@ export default function PuntoVenta() {
   const { userId, userLocalId } = useAuth();
   const [modalNuevoClienteOpen, setModalNuevoClienteOpen] = useState(false);
   const [aplicarDescuento, setAplicarDescuento] = useState(true);
+  const [descuentoPersonalizado, setDescuentoPersonalizado] = useState('');
 
   // Traer medios de pago al montar
   useEffect(() => {
@@ -191,86 +192,6 @@ export default function PuntoVenta() {
     precio_unitario: item.precio
   }));
 
-  const finalizarVenta = async () => {
-    if (carrito.length === 0) {
-      alert('Agregá productos al carrito.');
-      return;
-    }
-    if (!medioPago) {
-      alert('Seleccioná un medio de pago.');
-      return;
-    }
-    if (!window.confirm('¿Deseás registrar la venta?')) return;
-
-    const productosRequest = carrito.map((item) => ({
-      stock_id: item.stock_id,
-      cantidad: item.cantidad,
-      precio_unitario: item.precio
-    }));
-
-    const ventaRequest = {
-      cliente_id: clienteSeleccionado ? clienteSeleccionado.id : null,
-      productos: productosRequest,
-      total: totalCalculado.precio_base, // Total sin descuentos ni recargos
-      medio_pago_id: medioPago,
-      usuario_id: userId,
-      local_id: userLocalId,
-      descuento_porcentaje:
-        aplicarDescuento && totalCalculado.ajuste_porcentual < 0
-          ? Math.abs(totalCalculado.ajuste_porcentual)
-          : 0,
-      recargo_porcentaje:
-        aplicarDescuento && totalCalculado.ajuste_porcentual > 0
-          ? totalCalculado.ajuste_porcentual
-          : 0,
-      aplicar_descuento: aplicarDescuento // este flag para backend
-    };
-
-    try {
-      const response = await fetch('http://localhost:8080/ventas/pos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(ventaRequest)
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        alert(error.mensajeError || 'Error al registrar la venta');
-        return;
-      }
-
-      setCarrito([]);
-      setBusqueda('');
-      if (busqueda.trim() !== '') {
-        fetch(
-          `http://localhost:8080/buscar-productos-detallado?query=${encodeURIComponent(
-            busqueda
-          )}`
-        )
-          .then((res) => res.json())
-          .then((data) => {
-            const agrupados = agruparProductosConTalles(data);
-            setProductos(agrupados);
-          });
-      }
-      const data = await response.json();
-      const ventaId = data.venta_id;
-
-      const ventaCompleta = await fetch(
-        `http://localhost:8080/ventas/${ventaId}`
-      ).then((r) => r.json());
-      setVentaFinalizada(ventaCompleta);
-
-      setCarrito([]);
-      setClienteSeleccionado(null);
-      setBusquedaCliente('');
-    } catch (err) {
-      alert('Error de red al registrar la venta');
-      console.error('Error:', err);
-    }
-  };
-
-
   const formatearPrecio = (valor) =>
     new Intl.NumberFormat('es-AR', {
       style: 'currency',
@@ -371,6 +292,23 @@ export default function PuntoVenta() {
   const [totalCalculado, setTotalCalculado] = useState(null);
 
   useEffect(() => {
+    if (!totalCalculado) return; // 🟢 Esto lo previene
+
+    let total = totalCalculado.precio_base;
+    let ajuste = 0;
+    if (aplicarDescuento && descuentoPersonalizado !== '') {
+      ajuste = parseFloat(descuentoPersonalizado);
+      if (!isNaN(ajuste) && ajuste > 0) {
+        total = total * (1 - ajuste / 100);
+      }
+    } else if (aplicarDescuento && totalCalculado.ajuste_porcentual < 0) {
+      ajuste = Math.abs(totalCalculado.ajuste_porcentual);
+      total = total * (1 - ajuste / 100);
+    }
+    // ...
+  }, [totalCalculado, descuentoPersonalizado, aplicarDescuento]);
+
+  useEffect(() => {
     if (!medioPago) return;
 
     const cargarCuotas = async () => {
@@ -397,14 +335,25 @@ export default function PuntoVenta() {
         0
       );
 
+      // Armar el payload con descuento personalizado si corresponde
+      let payload = {
+        precio_base,
+        medio_pago_id: medioPago,
+        cuotas: cuotasSeleccionadas
+      };
+      // Si hay descuento personalizado y se está aplicando, incluilo
+      if (
+        aplicarDescuento &&
+        descuentoPersonalizado !== '' &&
+        !isNaN(Number(descuentoPersonalizado))
+      ) {
+        payload.descuento_personalizado = Number(descuentoPersonalizado);
+      }
+
       try {
         const res = await axios.post(
           'http://localhost:8080/calcular-total-final',
-          {
-            precio_base,
-            medio_pago_id: medioPago,
-            cuotas: cuotasSeleccionadas
-          }
+          payload
         );
         setTotalCalculado(res.data);
       } catch (err) {
@@ -413,14 +362,104 @@ export default function PuntoVenta() {
     };
 
     calcularTotal();
-  }, [carrito, medioPago, cuotasSeleccionadas]);
+    // Ahora dependé también de estos estados 👇
+  }, [
+    carrito,
+    medioPago,
+    cuotasSeleccionadas,
+    aplicarDescuento,
+    descuentoPersonalizado
+  ]);
 
   const cuotasUnicas = Array.from(
     new Set([1, ...cuotasDisponibles.map((c) => c.cuotas)])
   ).sort((a, b) => a - b);
 
-  const abrirModalNuevoCliente = () => setModalNuevoClienteOpen(true);
+  const finalizarVenta = async () => {
+    if (carrito.length === 0) {
+      alert('Agregá productos al carrito.');
+      return;
+    }
+    if (!medioPago) {
+      alert('Seleccioná un medio de pago.');
+      return;
+    }
+    if (!window.confirm('¿Deseás registrar la venta?')) return;
 
+    const productosRequest = carrito.map((item) => ({
+      stock_id: item.stock_id,
+      cantidad: item.cantidad,
+      precio_unitario: item.precio
+    }));
+
+    const ventaRequest = {
+      cliente_id: clienteSeleccionado ? clienteSeleccionado.id : null,
+      productos: productosRequest,
+      total: totalCalculado.precio_base, // Total sin descuentos ni recargos
+      medio_pago_id: medioPago,
+      usuario_id: userId,
+      local_id: userLocalId,
+      descuento_porcentaje:
+        aplicarDescuento && descuentoPersonalizado !== ''
+          ? parseFloat(descuentoPersonalizado)
+          : aplicarDescuento && totalCalculado.ajuste_porcentual < 0
+          ? Math.abs(totalCalculado.ajuste_porcentual)
+          : 0,
+      recargo_porcentaje:
+        aplicarDescuento && totalCalculado.ajuste_porcentual > 0
+          ? totalCalculado.ajuste_porcentual
+          : 0,
+      aplicar_descuento: aplicarDescuento // este flag para backend
+    };
+
+    try {
+      const response = await fetch('http://localhost:8080/ventas/pos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ventaRequest)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        alert(error.mensajeError || 'Error al registrar la venta');
+        return;
+      }
+
+      setCarrito([]);
+      setBusqueda('');
+      // 👇 LIMPIÁ el input de descuento y el radio
+      setDescuentoPersonalizado('');
+      setAplicarDescuento(false);
+      if (busqueda.trim() !== '') {
+        fetch(
+          `http://localhost:8080/buscar-productos-detallado?query=${encodeURIComponent(
+            busqueda
+          )}`
+        )
+          .then((res) => res.json())
+          .then((data) => {
+            const agrupados = agruparProductosConTalles(data);
+            setProductos(agrupados);
+          });
+      }
+      const data = await response.json();
+      const ventaId = data.venta_id;
+
+      const ventaCompleta = await fetch(
+        `http://localhost:8080/ventas/${ventaId}`
+      ).then((r) => r.json());
+      setVentaFinalizada(ventaCompleta);
+
+      setCarrito([]);
+      setClienteSeleccionado(null);
+      setBusquedaCliente('');
+    } catch (err) {
+      alert('Error de red al registrar la venta');
+      console.error('Error:', err);
+    }
+  };
+
+  const abrirModalNuevoCliente = () => setModalNuevoClienteOpen(true);
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-4 sm:p-6 text-white">
       <ParticlesBackground />
@@ -610,6 +649,8 @@ export default function PuntoVenta() {
               formatearPrecio={formatearPrecio}
               aplicarDescuento={aplicarDescuento}
               setAplicarDescuento={setAplicarDescuento}
+              descuentoPersonalizado={descuentoPersonalizado}
+              setDescuentoPersonalizado={setDescuentoPersonalizado}
             />
           )}
 

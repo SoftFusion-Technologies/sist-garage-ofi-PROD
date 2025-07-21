@@ -2,7 +2,9 @@ function TotalConOpciones({
   totalCalculado,
   formatearPrecio,
   aplicarDescuento,
-  setAplicarDescuento
+  setAplicarDescuento,
+  descuentoPersonalizado,
+  setDescuentoPersonalizado
 }) {
   return (
     <>
@@ -28,6 +30,19 @@ function TotalConOpciones({
           />
           No aplicar
         </label>
+        {/* Input solo si está activo */}
+        {aplicarDescuento && (
+          <input
+            type="number"
+            min={0}
+            max={100}
+            step={0.1}
+            value={descuentoPersonalizado}
+            onChange={(e) => setDescuentoPersonalizado(e.target.value)}
+            placeholder="Descuento %"
+            className="w-20 px-2 py-1 rounded bg-gray-100 text-black font-bold"
+          />
+        )}
       </div>
 
       {/* Total */}
