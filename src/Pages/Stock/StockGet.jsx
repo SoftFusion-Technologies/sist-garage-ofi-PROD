@@ -689,6 +689,17 @@ const StockGet = () => {
   const handleImprimirCodigoBarra = (item) => {
     setSkuParaImprimir(item);
   };
+
+  const handlePrint = () => {
+    const oldTitle = document.title;
+    document.title = skuParaImprimir.codigo_sku || 'Etiqueta';
+    window.print();
+    setTimeout(() => {
+      document.title = oldTitle;
+      setSkuParaImprimir(null);
+    }, 1000);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-10 px-6 text-white">
       <ParticlesBackground />
@@ -1363,10 +1374,9 @@ const StockGet = () => {
 
             {/* Código de barras */}
             <div
-              id="barcode-etiqueta"
+              className="barcode-etiqueta"
               style={{
                 width: '400px',
-                background: '#fff',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -1399,11 +1409,12 @@ const StockGet = () => {
 
             {/* Botón imprimir */}
             <button
-              onClick={() => window.print()}
+              onClick={handlePrint}
               className="mt-2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow"
             >
               Imprimir
             </button>
+
             <button
               onClick={() => setSkuParaImprimir(null)}
               className="text-gray-600 mt-2 underline"
