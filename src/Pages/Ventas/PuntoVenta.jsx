@@ -647,7 +647,7 @@ export default function PuntoVenta() {
             <input
               ref={buscadorRef}
               type="text"
-              placeholder="Buscar por nombre o SKU..."
+              placeholder="Buscar por nombre, SKU o ID..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               className="pl-10 pr-4 py-3 w-full rounded-xl bg-white/90 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-md"
@@ -718,9 +718,19 @@ export default function PuntoVenta() {
 
         {/* Carrito */}
         <div className="bg-white/10 p-4 rounded-xl sticky top-24 h-fit space-y-4">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-            <FaShoppingCart /> Carrito ({carrito.length})
-          </h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-xl font-semibold flex items-center gap-2 m-0">
+              <FaShoppingCart /> Carrito ({carrito.length})
+            </h2>
+            {/* Tuerca para abrir el modal */}
+            <button
+              className="p-2 rounded-full hover:bg-white/10 text-xl shrink-0"
+              title="Gestionar medios de pago"
+              onClick={() => setShowModal(true)}
+            >
+              <FaCog />
+            </button>
+          </div>
 
           {carrito.length === 0 ? (
             <p className="text-gray-400">Aún no hay artículos</p>
@@ -805,14 +815,6 @@ export default function PuntoVenta() {
                   ))
               )}
             </div>
-            {/* Tuerca para abrir el modal */}
-            <button
-              className="p-2 rounded-full hover:bg-white/10 text-xl shrink-0"
-              title="Gestionar medios de pago"
-              onClick={() => setShowModal(true)}
-            >
-              <FaCog />
-            </button>
           </div>
 
           {/* SELECTOR DE CUOTAS */}
