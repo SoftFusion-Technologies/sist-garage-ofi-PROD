@@ -36,14 +36,24 @@ function TotalConOpciones({
             type="number"
             min={0}
             max={100}
-            step={0.1}
             value={descuentoPersonalizado}
-            onChange={(e) => setDescuentoPersonalizado(e.target.value)}
+            onChange={(e) => {
+              let val = Number(e.target.value);
+              if (val < 0) val = 0;
+              if (val > 100) val = 100;
+              setDescuentoPersonalizado(val);
+            }}
             placeholder="Descuento %"
             className="w-20 px-2 py-1 rounded bg-gray-100 text-black font-bold"
           />
         )}
       </div>
+
+      {totalCalculado.total === 0 && (
+        <div className="text-red-500 font-bold text-center mt-2">
+          ¡Atención! Estás por registrar una venta gratuita (descuento 100%).
+        </div>
+      )}
 
       {/* Total */}
       {totalCalculado && totalCalculado.total > 0 && (

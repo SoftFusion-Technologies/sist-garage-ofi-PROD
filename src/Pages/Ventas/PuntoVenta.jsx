@@ -12,7 +12,8 @@ import {
   FaUserAlt,
   FaCheckCircle,
   FaUserPlus,
-  FaMoneyBillAlt
+  FaBarcode,
+  FaBoxOpen
 } from 'react-icons/fa';
 import ParticlesBackground from '../../Components/ParticlesBackground';
 import ModalNuevoCliente from '../../Components/Ventas/ModalNuevoCliente';
@@ -65,11 +66,19 @@ export default function PuntoVenta() {
   const [modalNuevoClienteOpen, setModalNuevoClienteOpen] = useState(false);
   const [aplicarDescuento, setAplicarDescuento] = useState(true);
   const [descuentoPersonalizado, setDescuentoPersonalizado] = useState('');
-  const inputRef = useRef(); // se agrega para hacer un lector de cod. barras
+
+  const inputRef = useRef(); // input invisible
+  const buscadorRef = useRef(); // buscador manual
+
+  const [modoEscaner, setModoEscaner] = useState(false); // Arranca en manual
 
   useEffect(() => {
-    inputRef.current && inputRef.current.focus();
-  }, []);
+    if (modoEscaner) {
+      inputRef.current && inputRef.current.focus();
+    } else {
+      buscadorRef.current && buscadorRef.current.focus();
+    }
+  }, [modoEscaner]);
 
   // Traer medios de pago al montar
   useEffect(() => {
@@ -99,10 +108,13 @@ export default function PuntoVenta() {
   const [modalVerProductosOpen, setModalVerProductosOpen] = useState(false);
   const [productosModal, setProductosModal] = useState([]);
   const [ventaFinalizada, setVentaFinalizada] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    let ignore = false;
     const delay = setTimeout(() => {
       if (busqueda.trim() !== '') {
+        setLoading(true); // Spinner pro
         fetch(
           `http://localhost:8080/buscar-productos-detallado?query=${encodeURIComponent(
             busqueda
@@ -110,23 +122,27 @@ export default function PuntoVenta() {
         )
           .then((res) => res.json())
           .then((data) => {
-            if (Array.isArray(data)) {
-              const agrupados = agruparProductosConTalles(data);
-              setProductos(agrupados);
-            } else {
-              setProductos([]);
+            if (!ignore) {
+              setProductos(
+                Array.isArray(data) ? agruparProductosConTalles(data) : []
+              );
             }
           })
-          .catch((err) => {
-            console.error('Error al buscar productos:', err);
-            setProductos([]);
+          .catch(() => {
+            if (!ignore) setProductos([]);
+          })
+          .finally(() => {
+            if (!ignore) setLoading(false);
           });
       } else {
         setProductos([]);
       }
-    }, 100);
+    }, 0); // o 350ms
 
-    return () => clearTimeout(delay);
+    return () => {
+      clearTimeout(delay);
+      ignore = true;
+    };
   }, [busqueda]);
 
   // Agregar producto al carrito
@@ -513,11 +529,15 @@ export default function PuntoVenta() {
   // Cuando se presiona ENTER, procesá el valor escaneado
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && e.target.value.trim() !== '') {
-      // Aquí llamás a tu función para buscar el producto
       buscarProductoPorCodigo(e.target.value.trim());
-      e.target.value = ''; // Limpiá el input para el próximo escaneo
+      e.target.value = ''; // Limpia el input invisible
+
+      // Si querés volver automáticamente a manual después de escanear:
+      setModoEscaner(false); // Opcional, si el flujo es escanear uno y buscar a mano
+      // O dejá en modo escáner si vas a escanear varios
     }
   };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-4 sm:p-6 text-white">
       <ParticlesBackground />
@@ -612,30 +632,57 @@ export default function PuntoVenta() {
             height: 1,
             pointerEvents: 'none'
           }}
-          onBlur={handleBlur}
+          onBlur={() => setModoEscaner(false)} // Si el input invisible pierde foco, vuelve a manual
           onKeyDown={handleKeyDown}
-          autoFocus
         />
       </div>
-      {/* Buscador */}
-      <div className="relative w-full max-w-3xl mb-6 flex items-center gap-2">
-        <div className="relative flex-grow">
-          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-emerald-500 text-lg" />
-          <input
-            type="text"
-            placeholder="Buscar por nombre o SKU..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            className="pl-10 pr-4 py-3 w-full rounded-xl bg-white/90 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-md"
-          />
+
+      {/* Buscador por fuera*/}
+      <div className="w-full max-w-3xl mb-6 sm:mx-0 mx-auto">
+        {/* Acá el truco: flex-col por defecto (mobile), flex-row en sm+ */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
+          {/* Input arriba en mobile, a la izquierda en desktop */}
+          <div className="relative flex-grow">
+            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-emerald-500 text-lg" />
+            <input
+              ref={buscadorRef}
+              type="text"
+              placeholder="Buscar por nombre o SKU..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="pl-10 pr-4 py-3 w-full rounded-xl bg-white/90 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-md"
+              onFocus={() => setModoEscaner(false)}
+            />
+          </div>
+
+          {/* Botón principal */}
+          <button
+            onClick={abrirModalVerProductos}
+            className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white w-full sm:w-auto px-5 py-2 rounded-xl font-bold shadow-md hover:scale-105 hover:from-emerald-600 hover:to-emerald-700 transition-all focus:ring-2 focus:ring-emerald-400 focus:outline-none"
+            type="button"
+          >
+            <span className="flex items-center gap-1">
+              <FaBoxOpen className="inline -ml-1" />
+              Ver Productos
+            </span>
+          </button>
+
+          {/* Botón escanear */}
+          <button
+            onClick={() => setModoEscaner(true)}
+            className={`flex items-center gap-1 w-full sm:w-auto px-4 py-2 rounded-xl border-2 font-semibold shadow-sm transition-all text-emerald-700 bg-white
+        ${
+          modoEscaner
+            ? 'border-emerald-500 ring-2 ring-emerald-300 bg-emerald-50 scale-105'
+            : 'border-gray-200 hover:bg-emerald-50 hover:border-emerald-400'
+        }
+      `}
+            type="button"
+          >
+            <FaBarcode className="inline" />
+            Escanear
+          </button>
         </div>
-        <button
-          onClick={abrirModalVerProductos}
-          className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold shadow transition"
-          type="button"
-        >
-          Ver Productos
-        </button>
       </div>
 
       {/* Productos */}
@@ -719,16 +766,18 @@ export default function PuntoVenta() {
           )}
 
           {/* Total */}
-          {carrito.length > 0 && totalCalculado && totalCalculado.total > 0 && (
-            <TotalConOpciones
-              totalCalculado={totalCalculado}
-              formatearPrecio={formatearPrecio}
-              aplicarDescuento={aplicarDescuento}
-              setAplicarDescuento={setAplicarDescuento}
-              descuentoPersonalizado={descuentoPersonalizado}
-              setDescuentoPersonalizado={setDescuentoPersonalizado}
-            />
-          )}
+          {carrito.length > 0 &&
+            totalCalculado &&
+            totalCalculado.total >= 0 && (
+              <TotalConOpciones
+                totalCalculado={totalCalculado}
+                formatearPrecio={formatearPrecio}
+                aplicarDescuento={aplicarDescuento}
+                setAplicarDescuento={setAplicarDescuento}
+                descuentoPersonalizado={descuentoPersonalizado}
+                setDescuentoPersonalizado={setDescuentoPersonalizado}
+              />
+            )}
 
           {/* Medios de pago */}
           <div className="flex flex-wrap gap-2 items-center mb-2">
@@ -930,7 +979,7 @@ export default function PuntoVenta() {
               </button>
             </div>
 
-            {/* Buscador */}
+            {/* Buscador al clickear ver productos */}
             <div className="relative mb-4">
               <input
                 type="text"
