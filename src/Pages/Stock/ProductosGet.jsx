@@ -22,6 +22,7 @@ const ProductosGet = () => {
     descripcion: '',
     categoria_id: '',
     precio: '',
+    descuento_porcentaje: '', // <-- AGREGADO
     imagen_url: '',
     estado: 'activo'
   });
@@ -99,6 +100,7 @@ const ProductosGet = () => {
         descripcion: producto.descripcion || '',
         categoria_id: producto.categoria_id || producto.categoria?.id || '',
         precio: producto.precio?.toString() ?? '',
+        descuento_porcentaje: producto.descuento_porcentaje ?? '', // <-- AGREGADO
         imagen_url: producto.imagen_url || '',
         estado: producto.estado || 'activo'
       });
@@ -307,13 +309,38 @@ const ProductosGet = () => {
                 Categoría: {p.categoria?.nombre || 'Sin categoría'}
               </p>
 
-              <p className="text-sm mt-2 text-green-300 font-semibold">
-                {new Intl.NumberFormat('es-AR', {
-                  style: 'currency',
-                  currency: 'ARS',
-                  minimumFractionDigits: 2
-                }).format(p.precio || 0)}
-              </p>
+              <div className="flex items-center gap-3 mt-2">
+                {/* Precio original */}
+                <span
+                  className={
+                    p.descuento_porcentaje > 0
+                      ? 'text-gray-400 line-through text-sm'
+                      : 'text-green-300 font-semibold'
+                  }
+                >
+                  {new Intl.NumberFormat('es-AR', {
+                    style: 'currency',
+                    currency: 'ARS',
+                    minimumFractionDigits: 2
+                  }).format(p.precio || 0)}
+                </span>
+                {/* Precio con descuento, si corresponde */}
+                {p.descuento_porcentaje > 0 && (
+                  <span className="text-green-400 font-bold text-lg drop-shadow">
+                    {new Intl.NumberFormat('es-AR', {
+                      style: 'currency',
+                      currency: 'ARS',
+                      minimumFractionDigits: 2
+                    }).format(p.precio_con_descuento)}
+                  </span>
+                )}
+                {/* Etiqueta de descuento */}
+                {p.descuento_porcentaje > 0 && (
+                  <span className="bg-rose-100 text-rose-500 rounded px-2 py-1 text-xs font-bold ml-1">
+                    -{p.descuento_porcentaje}% OFF
+                  </span>
+                )}
+              </div>
 
               <p
                 className={`mt-2 uppercase text-sm font-semibold mb-1 ${
@@ -398,6 +425,22 @@ const ProductosGet = () => {
                 })
               }
               min="0"
+              step="0.01"
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
+            />
+
+            <input
+              type="number"
+              placeholder="Descuento (%)"
+              value={formValues.descuento_porcentaje || ''}
+              onChange={(e) => {
+                let val = Number(e.target.value);
+                if (val < 0) val = 0;
+                if (val > 100) val = 100;
+                setFormValues({ ...formValues, descuento_porcentaje: val });
+              }}
+              min="0"
+              max="100"
               step="0.01"
               className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
             />
