@@ -18,7 +18,7 @@ function TotalConOpciones({
             onChange={() => setAplicarDescuento(true)}
             className="accent-emerald-400"
           />
-          Aplicar descuento
+          Aplicar
         </label>
         <label className="flex items-center gap-2 cursor-pointer">
           <input

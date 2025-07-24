@@ -736,6 +736,32 @@ export default function CajaPOS() {
                         </li>
                       );
                     })}
+                    {detalleVenta.cuotas > 1 && (
+                      <div>
+                        📆 <b className="text-emerald-300">Financiación:</b>{' '}
+                        {detalleVenta.cuotas} cuotas con recargo del{' '}
+                        <span className="text-orange-400 font-bold">
+                          {Number(
+                            detalleVenta.porcentaje_recargo_cuotas
+                          ).toFixed(2)}
+                          %
+                        </span>
+                        <br />➤ Cada cuota:{' '}
+                        <span className="text-white font-bold">
+                          $
+                          {Number(detalleVenta.monto_por_cuota).toLocaleString(
+                            'es-AR'
+                          )}
+                        </span>
+                        <br />➤ Recargo total por cuotas:{' '}
+                        <span className="text-orange-400 font-bold">
+                          +$
+                          {Number(
+                            detalleVenta.recargo_monto_cuotas
+                          ).toLocaleString('es-AR')}
+                        </span>
+                      </div>
+                    )}
                   </ul>
                 </div>
               )}

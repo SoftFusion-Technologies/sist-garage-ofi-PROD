@@ -169,24 +169,27 @@ export default function PuntoVenta() {
         );
       }
 
-return [
-  ...prev,
-  {
-    stock_id: stockId,
-    producto_id: producto.producto_id,
-    nombre: `${producto.nombre} - ${talle.nombre}`,
-    precio_original: producto.precio,
-    precio_con_descuento: producto.precio_con_descuento ?? producto.precio,
-    precio: usarDesc
-      ? producto.precio_con_descuento ?? producto.precio
-      : producto.precio,
-    descuentoPorcentaje: usarDesc ? producto.descuento_porcentaje ?? 0 : 0, // 👈 esto es clave
+      return [
+        ...prev,
+        {
+          stock_id: stockId,
+          producto_id: producto.producto_id,
+          nombre: `${producto.nombre} - ${talle.nombre}`,
+          precio_original: producto.precio,
+          precio_con_descuento:
+            producto.precio_con_descuento ?? producto.precio,
+          precio: usarDesc
+            ? producto.precio_con_descuento ?? producto.precio
+            : producto.precio,
+          descuentoPorcentaje: usarDesc
+            ? producto.descuento_porcentaje ?? 0
+            : 0, // 👈 esto es clave
 
-    talla_id: talle.id,
-    cantidad_disponible: talle.cantidad,
-    cantidad: 1
-  }
-];
+          talla_id: talle.id,
+          cantidad_disponible: talle.cantidad,
+          cantidad: 1
+        }
+      ];
     });
     setModalProducto(null);
     setTalleSeleccionado(null);
@@ -354,22 +357,22 @@ return [
   const [cuotasSeleccionadas, setCuotasSeleccionadas] = useState(1);
   const [totalCalculado, setTotalCalculado] = useState(null);
 
-  useEffect(() => {
-    if (!totalCalculado) return; // 🟢 Esto lo previene
+  // useEffect(() => {
+  //   if (!totalCalculado) return; // 🟢 Esto lo previene
 
-    let total = totalCalculado.precio_base;
-    let ajuste = 0;
-    if (aplicarDescuento && descuentoPersonalizado !== '') {
-      ajuste = parseFloat(descuentoPersonalizado);
-      if (!isNaN(ajuste) && ajuste > 0) {
-        total = total * (1 - ajuste / 100);
-      }
-    } else if (aplicarDescuento && totalCalculado.ajuste_porcentual < 0) {
-      ajuste = Math.abs(totalCalculado.ajuste_porcentual);
-      total = total * (1 - ajuste / 100);
-    }
-    // ...
-  }, [totalCalculado, descuentoPersonalizado, aplicarDescuento]);
+  //   let total = totalCalculado.precio_base;
+  //   let ajuste = 0;
+  //   if (aplicarDescuento && descuentoPersonalizado !== '') {
+  //     ajuste = parseFloat(descuentoPersonalizado);
+  //     if (!isNaN(ajuste) && ajuste > 0) {
+  //       total = total * (1 - ajuste / 100);
+  //     }
+  //   } else if (aplicarDescuento && totalCalculado.ajuste_porcentual < 0) {
+  //     ajuste = Math.abs(totalCalculado.ajuste_porcentual);
+  //     total = total * (1 - ajuste / 100);
+  //   }
+  //   // ...
+  // }, [totalCalculado, descuentoPersonalizado, aplicarDescuento]);
 
   useEffect(() => {
     if (!medioPago) return;
@@ -400,7 +403,7 @@ return [
 
       // Armar el payload con descuento personalizado si corresponde
       let payload = {
-        precio_base,
+        carrito,
         medio_pago_id: medioPago,
         cuotas: cuotasSeleccionadas
       };
@@ -449,14 +452,24 @@ return [
     }
     if (!window.confirm('¿Deseás registrar la venta?')) return;
 
-    const productosRequest = carrito.map((item) => ({
-      stock_id: item.stock_id,
-      cantidad: item.cantidad,
-      precio_unitario: item.precio, // Precio base original
-      descuento: item.precio - (item.precio_con_descuento ?? item.precio), // Valor absoluto descuento
-      descuento_porcentaje: item.descuentoPorcentaje ?? 0, // % descuento por producto
-      precio_unitario_con_descuento: item.precio_con_descuento ?? item.precio // Precio final luego de descuento
-    }));
+    const productosRequest = carrito.map((item) => {
+      const precioOriginal = item.producto?.precio || item.precio; // fallback si no tenés producto.precio
+      const precioFinal = item.precio_con_descuento ?? item.precio;
+      const descuento = precioOriginal - precioFinal;
+      const descuentoPorcentaje =
+        descuento > 0 && precioOriginal > 0
+          ? (descuento / precioOriginal) * 100
+          : 0;
+
+      return {
+        stock_id: item.stock_id,
+        cantidad: item.cantidad,
+        precio_unitario: precioOriginal,
+        descuento: descuento,
+        descuento_porcentaje: descuentoPorcentaje.toFixed(2),
+        precio_unitario_con_descuento: precioFinal
+      };
+    });
 
     // 🔢 Calcular orígenes de descuento
     const origenes_descuento = [];
@@ -485,8 +498,8 @@ return [
 
     // 2. Descuento por medio de pago (solo si NO hay manual)
     if (
+      aplicarDescuento && // esta es la condición clave
       !hayDescuentoManual &&
-      aplicarDescuento &&
       totalCalculado.ajuste_porcentual !== 0
     ) {
       origenes_descuento.push({
@@ -513,10 +526,14 @@ return [
       });
     }
 
+    const totalFinalCalculado = aplicarDescuento
+      ? totalCalculado.total
+      : totalCalculado.precio_base;
+
     const ventaRequest = {
       cliente_id: clienteSeleccionado ? clienteSeleccionado.id : null,
       productos: productosRequest,
-      total: totalCalculado.precio_base, // Total sin descuentos ni recargos
+      total: totalFinalCalculado, // Total sin descuentos ni recargos
       medio_pago_id: medioPago,
       usuario_id: userId,
       local_id: userLocalId,
@@ -531,7 +548,13 @@ return [
           ? totalCalculado.ajuste_porcentual
           : 0,
       aplicar_descuento: aplicarDescuento, // Flag para backend
-      origenes_descuento: origenes_descuento
+      origenes_descuento: origenes_descuento,
+      cuotas: totalCalculado.cuotas,
+      monto_por_cuota: totalCalculado?.monto_por_cuota ?? null,
+      porcentaje_recargo_cuotas: totalCalculado?.porcentaje_recargo_cuotas ?? 0,
+      diferencia_redondeo: totalCalculado?.diferencia_redondeo ?? 0,
+      precio_base: totalCalculado.precio_base,
+      recargo_monto_cuotas: totalCalculado?.recargo_monto_cuotas ?? 0
     };
 
     try {
