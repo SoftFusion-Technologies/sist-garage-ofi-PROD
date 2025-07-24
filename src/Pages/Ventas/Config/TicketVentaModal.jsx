@@ -51,7 +51,8 @@ export default function TicketVentaModal({ venta, onClose }) {
       0
     ) ?? 0;
 
-  const totalDescuentos =  totalDescuentoMedios;
+  const totalDescuentos =
+    venta.descuentos?.reduce((acc, d) => acc + Number(d.monto), 0) ?? 0;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
@@ -192,6 +193,31 @@ export default function TicketVentaModal({ venta, onClose }) {
               })
             )}
           </div>
+
+          {venta.descuentos?.some((d) => d.tipo === 'manual') && (
+            <div className="mb-4">
+              <div className="text-sm font-bold text-gray-700 dark:text-white mb-1">
+                Descuentos personalizados
+              </div>
+              <ul className="text-sm text-red-600 dark:text-red-400 space-y-1">
+                {venta.descuentos
+                  .filter((d) => d.tipo === 'manual')
+                  .map((d) => (
+                    <li key={d.id} className="flex justify-between">
+                      <span>
+                        🛍️ {d.detalle}{' '}
+                        <span className="text-xs text-gray-400">
+                          ({Number(d.porcentaje).toFixed(2)}%)
+                        </span>
+                      </span>
+                      <span className="font-semibold tabular-nums">
+                        -${Math.abs(Number(d.monto)).toLocaleString('es-AR')}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          )}
 
           {venta.descuentos?.some((d) => d.tipo === 'medio_pago') && (
             <div className="mb-4">
