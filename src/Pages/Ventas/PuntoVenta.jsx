@@ -168,24 +168,25 @@ export default function PuntoVenta() {
           i.stock_id === stockId ? { ...i, cantidad: i.cantidad + 1 } : i
         );
       }
-      return [
-        ...prev,
-        {
-          stock_id: stockId,
-          producto_id: producto.producto_id,
-          nombre: `${producto.nombre} - ${talle.nombre}`,
-          precio_original: producto.precio,
-          precio_con_descuento:
-            producto.precio_con_descuento ?? producto.precio,
-          precio: usarDesc
-            ? producto.precio_con_descuento ?? producto.precio
-            : producto.precio,
 
-          talla_id: talle.id,
-          cantidad_disponible: talle.cantidad,
-          cantidad: 1
-        }
-      ];
+return [
+  ...prev,
+  {
+    stock_id: stockId,
+    producto_id: producto.producto_id,
+    nombre: `${producto.nombre} - ${talle.nombre}`,
+    precio_original: producto.precio,
+    precio_con_descuento: producto.precio_con_descuento ?? producto.precio,
+    precio: usarDesc
+      ? producto.precio_con_descuento ?? producto.precio
+      : producto.precio,
+    descuentoPorcentaje: usarDesc ? producto.descuento_porcentaje ?? 0 : 0, // 👈 esto es clave
+
+    talla_id: talle.id,
+    cantidad_disponible: talle.cantidad,
+    cantidad: 1
+  }
+];
     });
     setModalProducto(null);
     setTalleSeleccionado(null);
@@ -457,6 +458,61 @@ export default function PuntoVenta() {
       precio_unitario_con_descuento: item.precio_con_descuento ?? item.precio // Precio final luego de descuento
     }));
 
+    // 🔢 Calcular orígenes de descuento
+    const origenes_descuento = [];
+
+    // 1. Descuentos por producto
+    carrito.forEach((item) => {
+      if (item.descuentoPorcentaje && item.descuentoPorcentaje > 0) {
+        origenes_descuento.push({
+          tipo: 'producto',
+          referencia_id: item.producto_id ?? null,
+          detalle: item.nombre ?? 'Producto sin nombre',
+          porcentaje: item.descuentoPorcentaje,
+          monto:
+            item.descuentoPorcentaje > 0
+              ? (item.precio_original * item.descuentoPorcentaje) / 100
+              : 0
+        });
+      }
+    });
+
+    // Bandera si hay descuento manual
+    const hayDescuentoManual =
+      aplicarDescuento &&
+      descuentoPersonalizado !== '' &&
+      parseFloat(descuentoPersonalizado) > 0;
+
+    // 2. Descuento por medio de pago (solo si NO hay manual)
+    if (
+      !hayDescuentoManual &&
+      aplicarDescuento &&
+      totalCalculado.ajuste_porcentual !== 0
+    ) {
+      origenes_descuento.push({
+        tipo: 'medio_pago',
+        referencia_id: medioPago,
+        detalle:
+          mediosPago.find((m) => m.id === medioPago)?.nombre || 'Medio de pago',
+        porcentaje: totalCalculado.ajuste_porcentual,
+        monto:
+          (totalCalculado.precio_base * totalCalculado.ajuste_porcentual) / 100
+      });
+    }
+
+    // 3. Descuento manual (tiene prioridad)
+    if (hayDescuentoManual) {
+      origenes_descuento.push({
+        tipo: 'manual',
+        referencia_id: null,
+        detalle: 'Descuento personalizado',
+        porcentaje: parseFloat(descuentoPersonalizado),
+        monto:
+          (totalCalculado.precio_base * parseFloat(descuentoPersonalizado)) /
+          100
+      });
+    }
+
     const ventaRequest = {
       cliente_id: clienteSeleccionado ? clienteSeleccionado.id : null,
       productos: productosRequest,
@@ -474,7 +530,8 @@ export default function PuntoVenta() {
         aplicarDescuento && totalCalculado.ajuste_porcentual > 0
           ? totalCalculado.ajuste_porcentual
           : 0,
-      aplicar_descuento: aplicarDescuento // Flag para backend
+      aplicar_descuento: aplicarDescuento, // Flag para backend
+      origenes_descuento: origenes_descuento
     };
 
     try {

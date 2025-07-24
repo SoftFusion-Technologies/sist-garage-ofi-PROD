@@ -21,7 +21,8 @@ import {
   FaMoneyBillWave,
   FaStore,
   FaCalendarCheck,
-  FaTimesCircle
+  FaTimesCircle,
+  FaPercentage
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import ParticlesBackground from '../../Components/ParticlesBackground';
@@ -586,6 +587,7 @@ export default function CajaPOS() {
                   Venta #{detalleVenta.id}
                 </h2>
               </div>
+
               {/* Info básica */}
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div className="flex items-center gap-2 text-sm">
@@ -597,6 +599,7 @@ export default function CajaPOS() {
                   {detalleVenta.usuario?.nombre}
                 </div>
               </div>
+
               <div className="flex items-center gap-2 text-sm mb-3">
                 <FaUser className="text-emerald-300" />
                 <span>
@@ -611,6 +614,7 @@ export default function CajaPOS() {
                   )}
                 </span>
               </div>
+
               <div className="flex items-center gap-2 text-sm mb-3">
                 <FaMapMarkerAlt className="text-emerald-300" />
                 <span>
@@ -620,6 +624,7 @@ export default function CajaPOS() {
                   </b>
                 </span>
               </div>
+
               {/* Medio de pago */}
               <div className="mb-4 flex gap-2 items-center">
                 <FaMoneyBillAlt className="text-emerald-300" />
@@ -638,45 +643,121 @@ export default function CajaPOS() {
                   <FaBarcode /> Detalle productos
                 </h4>
                 <ul className="space-y-3 max-h-52 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-400">
-                  {detalleVenta.detalles.map((d) => (
-                    <li
-                      key={d.id}
-                      className="bg-emerald-900/10 rounded-xl px-4 py-3 flex items-center justify-between shadow-sm"
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-bold">
-                          {d.stock.producto?.nombre || 'Producto'}
-                        </span>
-                        <span className="text-xs text-gray-400">
-                          Talle: {d.stock.talle?.nombre || 'Sin talle'}
-                          <span className="ml-2">
-                            SKU: {d.stock.codigo_sku}
+                  {detalleVenta.detalles.map((d) => {
+                    const precioOriginal =
+                      Number(d.stock.producto?.precio) ||
+                      Number(d.precio_unitario);
+                    const precioFinal = Number(d.precio_unitario);
+                    const cantidad = d.cantidad;
+
+                    return (
+                      <li
+                        key={d.id}
+                        className="bg-emerald-900/10 rounded-xl px-4 py-3 flex items-center justify-between shadow-sm"
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-bold">
+                            {d.stock.producto?.nombre || 'Producto'}
                           </span>
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="block font-bold text-emerald-200 text-base">
-                          x{d.cantidad}
-                        </span>
-                        <span className="block text-emerald-400 font-semibold text-base">
-                          $
-                          {Number(
-                            d.precio_unitario * d.cantidad
-                          ).toLocaleString('es-AR')}
-                        </span>
-                      </div>
-                    </li>
-                  ))}
+                          <span className="text-xs text-gray-400">
+                            Talle: {d.stock.talle?.nombre || 'Sin talle'}
+                            <span className="ml-2">
+                              SKU: {d.stock.codigo_sku}
+                            </span>
+                          </span>
+                        </div>
+                        <div className="text-right text-sm">
+                          <div className="text-emerald-200 font-bold">
+                            x{cantidad}
+                          </div>
+
+                          {precioOriginal > precioFinal ? (
+                            <>
+                              <div className="line-through text-gray-400">
+                                $
+                                {Number(
+                                  precioOriginal * cantidad
+                                ).toLocaleString('es-AR')}
+                              </div>
+                              <div className="text-emerald-400 font-semibold text-base">
+                                $
+                                {Number(precioFinal * cantidad).toLocaleString(
+                                  'es-AR'
+                                )}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-emerald-400 font-semibold text-base">
+                              $
+                              {Number(precioFinal * cantidad).toLocaleString(
+                                'es-AR'
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
-              {/* Total */}
-              <div className="text-right mt-6 text-2xl font-bold text-emerald-400 border-t pt-4 border-emerald-900">
-                Total: ${Number(detalleVenta.total).toLocaleString('es-AR')}
+
+              {/* Descuentos aplicados */}
+              {detalleVenta.descuentos?.length > 0 && (
+                <div className="mt-5">
+                  <h4 className="text-lg font-bold mb-2 text-emerald-300 flex gap-2 items-center">
+                    <FaPercentage /> Descuentos aplicados
+                  </h4>
+                  <ul className="space-y-2 text-sm text-gray-300">
+                    {detalleVenta.descuentos.map((d, i) => (
+                      <li
+                        key={i}
+                        className="flex justify-between border-b border-emerald-800 pb-1"
+                      >
+                        <span>
+                          {d.tipo === 'producto' && '🛍️ '}
+                          {d.tipo === 'medio_pago' && '💵 '}
+                          {d.tipo === 'manual' && '✏️ '}
+                          {d.detalle} ({d.porcentaje}%)
+                        </span>
+                        <span className="text-emerald-400 font-bold">
+                          {Number(d.monto) < 0 ? '- ' : '- '}$
+                          {Math.abs(Number(d.monto)).toLocaleString('es-AR')}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Totales */}
+              <div className="mt-6 text-right">
+                {detalleVenta.total_sin_descuentos > detalleVenta.total && (
+                  <div className="text-sm text-gray-400 mb-1">
+                    Precio original:{' '}
+                    <span className="font-semibold text-white">
+                      $
+                      {Number(detalleVenta.total_sin_descuentos).toLocaleString(
+                        'es-AR'
+                      )}
+                    </span>
+                    <br />
+                    <span className="text-emerald-300 text-sm font-semibold">
+                      Descuento: $
+                      {Number(
+                        detalleVenta.total_sin_descuentos - detalleVenta.total
+                      ).toLocaleString('es-AR')}
+                    </span>
+                  </div>
+                )}
+                <div className="text-2xl font-bold text-emerald-400 border-t pt-4 border-emerald-900">
+                  Total: ${Number(detalleVenta.total).toLocaleString('es-AR')}
+                </div>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
       <AnimatePresence>
         {detalleCaja && (
           <motion.div
