@@ -708,23 +708,34 @@ export default function CajaPOS() {
                     <FaPercentage /> Descuentos aplicados
                   </h4>
                   <ul className="space-y-2 text-sm text-gray-300">
-                    {detalleVenta.descuentos.map((d, i) => (
-                      <li
-                        key={i}
-                        className="flex justify-between border-b border-emerald-800 pb-1"
-                      >
-                        <span>
-                          {d.tipo === 'producto' && '🛍️ '}
-                          {d.tipo === 'medio_pago' && '💵 '}
-                          {d.tipo === 'manual' && '✏️ '}
-                          {d.detalle} ({d.porcentaje}%)
-                        </span>
-                        <span className="text-emerald-400 font-bold">
-                          {Number(d.monto) < 0 ? '- ' : '- '}$
-                          {Math.abs(Number(d.monto)).toLocaleString('es-AR')}
-                        </span>
-                      </li>
-                    ))}
+                    {detalleVenta.descuentos.map((d, i) => {
+                      const esRecargo =
+                        d.porcentaje > 0 &&
+                        (d.tipo === 'medio_pago' || d.tipo === 'cuotas');
+                      return (
+                        <li
+                          key={i}
+                          className="flex justify-between border-b border-emerald-800 pb-1"
+                        >
+                          <span>
+                            {d.tipo === 'producto' && '🛍️ '}
+                            {d.tipo === 'medio_pago' && '💳 '}
+                            {d.tipo === 'manual' && '✏️ '}
+                            {d.tipo === 'cuotas' && '📆 '}
+                            {d.detalle} ({esRecargo ? '+' : '-'}
+                            {Number(d.porcentaje).toFixed(2)}%)
+                          </span>
+                          <span
+                            className={`font-bold ${
+                              esRecargo ? 'text-orange-400' : 'text-emerald-400'
+                            }`}
+                          >
+                            {esRecargo ? '+ ' : '- '}$
+                            {Math.abs(Number(d.monto)).toLocaleString('es-AR')}
+                          </span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               )}
