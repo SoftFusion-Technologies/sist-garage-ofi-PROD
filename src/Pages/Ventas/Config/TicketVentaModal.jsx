@@ -2,9 +2,11 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 export default function TicketVentaModal({ venta, onClose }) {
   const ref = useRef();
+  const navigate = useNavigate();
   const [config, setConfig] = useState(null);
 
   // Traer configuración del ticket solo una vez al abrir
@@ -233,6 +235,12 @@ export default function TicketVentaModal({ venta, onClose }) {
           className="mt-2 w-full py-2 rounded-lg font-bold bg-zinc-700 hover:bg-zinc-900 text-white shadow-md transition"
         >
           Imprimir directo
+        </button>
+        <button
+          onClick={() => navigate('/dashboard/ventas/caja')}
+          className="mt-2 w-full py-2 rounded-lg font-bold bg-emerald-900 hover:bg-emerald-800 text-white shadow-md transition"
+        >
+          Ir a Caja
         </button>
       </div>
     </div>
