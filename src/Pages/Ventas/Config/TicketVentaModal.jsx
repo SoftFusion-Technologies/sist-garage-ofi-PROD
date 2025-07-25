@@ -4,6 +4,132 @@ import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+/* ------------------------ Utils ------------------------ */
+
+const formatCurrency = (n) =>
+  Number(n || 0).toLocaleString('es-AR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
+/**
+ * Convierte un número a letras en español (monto en pesos argentinos).
+ * Soporta hasta miles de millones, con centavos.
+ */
+function numeroALetras(num) {
+  const UNIDADES = [
+    '',
+    'uno',
+    'dos',
+    'tres',
+    'cuatro',
+    'cinco',
+    'seis',
+    'siete',
+    'ocho',
+    'nueve',
+    'diez',
+    'once',
+    'doce',
+    'trece',
+    'catorce',
+    'quince',
+    'dieciseis',
+    'diecisiete',
+    'dieciocho',
+    'diecinueve',
+    'veinte'
+  ];
+
+  const DECENAS = [
+    '',
+    'diez',
+    'veinte',
+    'treinta',
+    'cuarenta',
+    'cincuenta',
+    'sesenta',
+    'setenta',
+    'ochenta',
+    'noventa'
+  ];
+
+  const CENTENAS = [
+    '',
+    'cien',
+    'doscientos',
+    'trescientos',
+    'cuatrocientos',
+    'quinientos',
+    'seiscientos',
+    'setecientos',
+    'ochocientos',
+    'novecientos'
+  ];
+
+  const secciones = (num) => {
+    const millones = Math.floor(num / 1000000);
+    const miles = Math.floor((num - millones * 1000000) / 1000);
+    const cientos = num - millones * 1000000 - miles * 1000;
+    return { millones, miles, cientos };
+  };
+
+  const centenas = (num) => {
+    if (num === 0) return '';
+    if (num === 100) return 'cien';
+    const c = Math.floor(num / 100);
+    const resto = num % 100;
+    return `${CENTENAS[c]}${resto > 0 ? ' ' + decenas(resto) : ''}`;
+  };
+
+  const decenas = (num) => {
+    if (num === 0) return '';
+    if (num <= 20) return UNIDADES[num];
+    const d = Math.floor(num / 10);
+    const u = num % 10;
+    if (num >= 21 && num <= 29) {
+      return `veinti${UNIDADES[u]}`;
+    }
+    return `${DECENAS[d]}${u > 0 ? ' y ' + UNIDADES[u] : ''}`;
+  };
+
+  const miles = (num) => {
+    if (num === 0) return '';
+    if (num < 1000) return centenas(num);
+    const m = Math.floor(num / 1000);
+    const resto = num % 1000;
+    const milesTxt = m === 1 ? 'mil' : `${centenas(m)} mil`;
+    return `${milesTxt}${resto > 0 ? ' ' + centenas(resto) : ''}`;
+  };
+
+  const millones = (num) => {
+    if (num < 1000000) return miles(num);
+    const mill = Math.floor(num / 1000000);
+    const resto = num % 1000000;
+    const millTxt = mill === 1 ? 'un millon' : `${miles(mill)} millones`;
+    return `${millTxt}${resto > 0 ? ' ' + miles(resto) : ''}`;
+  };
+
+  const entero = Math.floor(Math.abs(num));
+  const cent = Math.round((Math.abs(num) - entero) * 100);
+
+  const letrasEntero = entero === 0 ? 'cero' : millones(entero);
+
+  const letrasCentavos =
+    cent > 0 ? ` con ${cent.toString().padStart(2, '0')}/100` : '';
+
+  // Ajustes de género y casos especiales
+  const final =
+    letrasEntero
+      .replace(' uno ', ' un ')
+      .replace(/ uno$/, ' un')
+      .replace(/^uno$/, 'un') + letrasCentavos;
+
+  return `${final.toUpperCase()} PESOS`;
+}
+
+/* ------------------------------------------------------ */
+
 export default function TicketVentaModal({ venta, onClose }) {
   const ref = useRef();
   const navigate = useNavigate();
@@ -17,7 +143,50 @@ export default function TicketVentaModal({ venta, onClose }) {
   }, []);
 
   if (!venta) return null;
+
   const detalles = Array.isArray(venta.detalles) ? venta.detalles : [];
+  const descuentos = Array.isArray(venta.descuentos) ? venta.descuentos : [];
+
+  // Totales (más consistentes y claros)
+  const subtotalBruto = detalles.reduce((acc, d) => {
+    const p = Number(d.stock?.producto?.precio ?? 0);
+    return acc + p * d.cantidad;
+  }, 0);
+
+  const totalCobradoProductos = detalles.reduce((acc, d) => {
+    const p = Number(d.precio_unitario ?? 0);
+    return acc + p * d.cantidad;
+  }, 0);
+
+  const totalDescuentoProductos = Math.max(
+    0,
+    subtotalBruto - totalCobradoProductos
+  );
+
+  // Solo 1 medio de pago (según confirmaste)
+  const descuentoMedioPago = descuentos
+    .filter((d) => d.tipo === 'medio_pago')
+    .reduce((acc, d) => acc + Math.abs(Number(d.monto || 0)), 0);
+
+  const descuentoManual = descuentos
+    .filter((d) => d.tipo === 'manual')
+    .reduce((acc, d) => acc + Math.abs(Number(d.monto || 0)), 0);
+
+  const subtotal = totalCobradoProductos; // luego de aplicar descuento por productos
+
+  const recargoPorcentaje = Number(venta.recargo_porcentaje || 0);
+  const recargoMonto =
+    recargoPorcentaje > 0
+      ? (Number(venta.precio_base || subtotal) * recargoPorcentaje) / 100
+      : 0;
+
+  const totalCalculado =
+    subtotal - descuentoMedioPago - descuentoManual + recargoMonto;
+
+  const totalFinal = Number(venta.total ?? totalCalculado);
+  const totalEnLetras = numeroALetras(totalFinal);
+
+  const medioPago = descuentos.find((d) => d.tipo === 'medio_pago');
 
   const exportPDF = async () => {
     const canvas = await html2canvas(ref.current, { scale: 2 });
@@ -33,30 +202,10 @@ export default function TicketVentaModal({ venta, onClose }) {
     pdf.save(`ticket-venta-${venta.id}.pdf`);
   };
 
-  const subtotal = detalles.reduce(
-    (acc, d) => acc + Number(d.precio_unitario ?? 0) * d.cantidad,
-    0
-  );
-
-  const totalDescuentoProductos = detalles.reduce((acc, d) => {
-    const precioOriginal = Number(d.stock?.producto?.precio ?? 0);
-    const precioCobrado = Number(d.precio_unitario ?? 0);
-    const descuentoUnitario = precioOriginal - precioCobrado;
-    return acc + descuentoUnitario * d.cantidad;
-  }, 0);
-
-  const totalDescuentoMedios =
-    venta.descuentos?.reduce(
-      (acc, d) => (d.tipo === 'medio_pago' ? acc + Number(d.monto) : acc),
-      0
-    ) ?? 0;
-
-  const totalDescuentos =
-    venta.descuentos?.reduce((acc, d) => acc + Number(d.monto), 0) ?? 0;
-
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-md w-full shadow-2xl relative border border-[#059669] animate-fade-in overflow-auto max-h-[90vh]">
+        {/* Cerrar */}
         <button
           onClick={onClose}
           className="absolute top-3 right-4 text-3xl text-gray-400 hover:text-[#059669] dark:hover:text-emerald-400"
@@ -65,12 +214,19 @@ export default function TicketVentaModal({ venta, onClose }) {
           ×
         </button>
 
+        {/* TICKET */}
         <div
           ref={ref}
           className="ticket-pdf font-mono text-sm text-black dark:text-white p-4"
           style={{ background: 'white', borderRadius: '12px', minWidth: 260 }}
         >
+          {/* Encabezado */}
           <div className="text-center mb-4">
+            {/* Ticket simple */}
+            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">
+              TICKET SIMPLE
+            </div>
+
             {config?.logo_url && (
               <img
                 src={config.logo_url}
@@ -79,27 +235,36 @@ export default function TicketVentaModal({ venta, onClose }) {
                 style={{ maxWidth: 120 }}
               />
             )}
+
             <div
               className="font-extrabold text-2xl tracking-widest mb-1 uppercase"
               style={{ color: '#6d28d9', letterSpacing: 2 }}
             >
               {config?.nombre_tienda || ''}
             </div>
-            <div
-              className="text-xs font-bold tracking-widest mb-1"
-              style={{ color: '#059669' }}
-            >
-              {config?.lema || ''}
-            </div>
-            <div className="text-xs text-gray-600 dark:text-gray-300 font-medium mb-1">
-              {config?.direccion}
-              {config?.telefono && <span> • {config.telefono}</span>}
-            </div>
+
+            {config?.lema && (
+              <div
+                className="text-xs font-bold tracking-widest mb-1"
+                style={{ color: '#059669' }}
+              >
+                {config.lema}
+              </div>
+            )}
+
+            {(config?.direccion || config?.telefono) && (
+              <div className="text-xs text-gray-600 dark:text-gray-300 font-medium mb-1">
+                {config?.direccion}
+                {config?.telefono && <span> • {config.telefono}</span>}
+              </div>
+            )}
+
             {config?.email && (
               <div className="text-xs text-gray-500">{config.email}</div>
             )}
           </div>
 
+          {/* Info Venta */}
           <div className="flex justify-between mb-3 font-semibold text-gray-700 dark:text-gray-200 text-lg">
             <span>Venta #{venta.id}</span>
             <span className="text-xs text-gray-400 dark:text-gray-300">
@@ -109,25 +274,20 @@ export default function TicketVentaModal({ venta, onClose }) {
 
           <div className="grid grid-cols-1 gap-1 mb-3 text-gray-800 dark:text-gray-200 text-sm">
             <div>
-              <span className="font-bold text-gray-900 dark:text-white">
-                Vendedor:
-              </span>{' '}
+              <span className="font-bold">Vendedor:</span>{' '}
               <span>{venta.usuario?.nombre || '-'}</span>
             </div>
             <div>
-              <span className="font-bold text-gray-900 dark:text-white">
-                Local:
-              </span>{' '}
+              <span className="font-bold">Local:</span>{' '}
               <span>{venta.locale?.nombre || '-'}</span>
             </div>
             <div>
-              <span className="font-bold text-gray-900 dark:text-white">
-                Cliente:
-              </span>{' '}
+              <span className="font-bold">Cliente:</span>{' '}
               <span>{venta.cliente?.nombre || 'Consumidor Final'}</span>
             </div>
           </div>
 
+          {/* Artículos */}
           <div
             className="mb-2 mt-5 text-sm font-bold tracking-widest text-center"
             style={{ color: '#059669' }}
@@ -135,7 +295,7 @@ export default function TicketVentaModal({ venta, onClose }) {
             ARTÍCULOS
           </div>
 
-          <div className="mb-4">
+          <div className="mb-4 space-y-3">
             {detalles.length === 0 ? (
               <div className="text-center text-gray-400 py-2">
                 Cargando productos...
@@ -148,45 +308,59 @@ export default function TicketVentaModal({ venta, onClose }) {
                   : '';
                 const cantidad = d.cantidad;
 
-                const precioOriginalUnitario = Number(
+                const precioOriginalUnit = Number(
                   d.stock?.producto?.precio ?? 0
                 );
-                const precioOriginalTotal = precioOriginalUnitario * cantidad;
+                const precioCobradoUnit = Number(d.precio_unitario ?? 0);
 
-                const precioCobradoUnitario = Number(d.precio_unitario ?? 0);
-                const precioCobradoTotal = precioCobradoUnitario * cantidad;
+                const precioOriginalTotal = precioOriginalUnit * cantidad;
+                const precioCobradoTotal = precioCobradoUnit * cantidad;
 
-                const diferencia = precioOriginalTotal - precioCobradoTotal;
+                const diferencia = Math.max(
+                  0,
+                  precioOriginalTotal - precioCobradoTotal
+                );
+                const porcentaje =
+                  precioOriginalTotal > 0
+                    ? ((diferencia / precioOriginalTotal) * 100).toFixed(2)
+                    : 0;
 
                 return (
                   <div
                     key={d.id}
-                    className="flex justify-between items-center py-1 px-0.5 border-b border-dashed border-emerald-200 dark:border-emerald-800"
+                    className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800"
                   >
-                    <span>
-                      <span className="font-bold">
+                    <div className="flex justify-between text-sm font-semibold">
+                      <span>
                         {nombre}
-                        {talle}
+                        {talle}{' '}
+                        <span className="text-xs text-gray-400">
+                          ×{cantidad}
+                        </span>
                       </span>
-                      <span className="ml-1 text-xs text-gray-400">
-                        x{cantidad}
+                      <span className="tabular-nums">
+                        ${formatCurrency(precioCobradoTotal)}
                       </span>
-                    </span>
-                    <div className="flex flex-col items-end">
+                    </div>
+
+                    {/* Precio unitario + descuento */}
+                    <div className="mt-1 text-[11px] text-gray-500 flex justify-between">
+                      <span>
+                        Unit: ${formatCurrency(precioCobradoUnit)}
+                        {diferencia > 0 && (
+                          <>
+                            {' '}
+                            <del className="text-gray-400">
+                              ${formatCurrency(precioOriginalUnit)}
+                            </del>
+                          </>
+                        )}
+                      </span>
                       {diferencia > 0 && (
-                        <>
-                          <del className="text-xs text-gray-400">
-                            ${precioOriginalTotal.toLocaleString('es-AR')}
-                          </del>
-                          <span className="text-red-500 text-xs font-medium">
-                            -${diferencia.toLocaleString('es-AR')} (
-                            {Number(d.descuento_porcentaje).toFixed(2)}%)
-                          </span>
-                        </>
-                      )}{' '}
-                      <span className="font-bold tabular-nums text-gray-800 dark:text-white">
-                        ${precioCobradoTotal.toLocaleString('es-AR')}
-                      </span>
+                        <span className="text-red-500">
+                          -${formatCurrency(diferencia)} ({porcentaje}%)
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
@@ -194,24 +368,25 @@ export default function TicketVentaModal({ venta, onClose }) {
             )}
           </div>
 
-          {venta.descuentos?.some((d) => d.tipo === 'manual') && (
-            <div className="mb-4">
+          {/* Descuentos manuales */}
+          {descuentoManual > 0 && (
+            <div className="mb-4 mt-2">
               <div className="text-sm font-bold text-gray-700 dark:text-white mb-1">
                 Descuentos personalizados
               </div>
-              <ul className="text-sm text-red-600 dark:text-red-400 space-y-1">
-                {venta.descuentos
+              <ul className="space-y-1 text-sm text-red-600 dark:text-red-400">
+                {descuentos
                   .filter((d) => d.tipo === 'manual')
                   .map((d) => (
                     <li key={d.id} className="flex justify-between">
                       <span>
                         🛍️ {d.detalle}{' '}
                         <span className="text-xs text-gray-400">
-                          ({Number(d.porcentaje).toFixed(2)}%)
+                          ({Number(d.porcentaje || 0).toFixed(2)}%)
                         </span>
                       </span>
                       <span className="font-semibold tabular-nums">
-                        -${Math.abs(Number(d.monto)).toLocaleString('es-AR')}
+                        -${formatCurrency(Math.abs(Number(d.monto)))}
                       </span>
                     </li>
                   ))}
@@ -219,63 +394,77 @@ export default function TicketVentaModal({ venta, onClose }) {
             </div>
           )}
 
-          {venta.descuentos?.some((d) => d.tipo === 'medio_pago') && (
-            <div className="mb-4">
+          {/* Descuento por medio de pago */}
+          {medioPago && (
+            <div className="mb-4 mt-2">
               <div className="text-sm font-bold text-gray-700 dark:text-white mb-1">
-                Descuentos aplicados
+                Descuento por medio de pago
               </div>
-              <ul className="text-sm text-red-600 dark:text-red-400 space-y-1">
-                {venta.descuentos
-                  .filter((d) => d.tipo === 'medio_pago')
-                  .map((d) => (
-                    <li key={d.id} className="flex justify-between">
-                      <span>
-                        💳 {d.detalle}{' '}
-                        <span className="text-xs text-gray-400">
-                          ({Number(d.porcentaje).toFixed(2)}%)
-                        </span>
-                      </span>
-                      <span className="font-semibold tabular-nums">
-                        -${Math.abs(Number(d.monto)).toLocaleString('es-AR')}
-                      </span>
-                    </li>
-                  ))}
-              </ul>
+              <div className="flex justify-between text-sm text-red-600 dark:text-red-400">
+                <span>
+                  💳 {medioPago.detalle}{' '}
+                  <span className="text-xs text-gray-400">
+                    ({Number(medioPago.porcentaje || 0).toFixed(2)}%)
+                  </span>
+                </span>
+                <span className="font-semibold tabular-nums">
+                  -${formatCurrency(Math.abs(Number(medioPago.monto || 0)))}
+                </span>
+              </div>
             </div>
           )}
 
-          <div className="flex justify-between text-gray-700 dark:text-gray-200 mb-1">
-            <span>Subtotal</span>
-            <span>${subtotal.toLocaleString('es-AR')}</span>
-          </div>
-
-          <div className="flex justify-between text-rose-500 font-semibold mb-1">
-            <span>Total descuentos</span>
-            <span>-${Math.abs(totalDescuentos).toLocaleString('es-AR')}</span>
-          </div>
-
-          {Number(venta.recargo_porcentaje) > 0 && (
-            <div className="flex justify-between text-orange-600 font-medium mb-1">
-              <span>
-                +{Number(venta.recargo_porcentaje).toFixed(2)}% por método de
-                pago
-              </span>
-              <span>
-                +$
-                {(
-                  (Number(venta.precio_base) *
-                    Number(venta.recargo_porcentaje)) /
-                  100
-                ).toLocaleString('es-AR')}
-              </span>
+          {/* Resumen de totales */}
+          <div className="border-t border-dotted border-gray-300 mt-4 pt-2 space-y-1">
+            <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+              <span>Subtotal bruto</span>
+              <span>${formatCurrency(subtotalBruto)}</span>
             </div>
-          )}
 
-          <div className="flex justify-between text-lg font-black text-emerald-700 dark:text-emerald-400 mt-2">
-            <span>Total</span>
-            <span>${Number(venta.total).toLocaleString('es-AR')}</span>
+            {totalDescuentoProductos > 0 && (
+              <div className="flex justify-between text-sm text-rose-500 font-semibold">
+                <span>Descuento productos</span>
+                <span>-${formatCurrency(totalDescuentoProductos)}</span>
+              </div>
+            )}
+
+            <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+              <span>Subtotal</span>
+              <span>${formatCurrency(subtotal)}</span>
+            </div>
+
+            {descuentoManual > 0 && (
+              <div className="flex justify-between text-sm text-rose-500 font-semibold">
+                <span>Descuento manual</span>
+                <span>-${formatCurrency(descuentoManual)}</span>
+              </div>
+            )}
+
+            {descuentoMedioPago > 0 && (
+              <div className="flex justify-between text-sm text-rose-500 font-semibold">
+                <span>Descuento medio de pago</span>
+                <span>-${formatCurrency(descuentoMedioPago)}</span>
+              </div>
+            )}
+
+            {recargoPorcentaje > 0 && (
+              <div className="flex justify-between text-sm text-orange-500 font-semibold">
+                <span>Recargo {recargoPorcentaje.toFixed(2)}%</span>
+                <span>+${formatCurrency(recargoMonto)}</span>
+              </div>
+            )}
+
+            <div className="flex justify-between text-lg font-extrabold text-emerald-700 dark:text-emerald-400 mt-3">
+              <span>Total</span>
+              <span>${formatCurrency(totalFinal)}</span>
+            </div>
+
+            <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 text-right">
+              {totalEnLetras}
+            </div>
           </div>
 
+          {/* Footer */}
           {config?.mensaje_footer ? (
             <div
               className="text-center text-[11px] mt-3 font-medium tracking-wider"
@@ -284,27 +473,27 @@ export default function TicketVentaModal({ venta, onClose }) {
               {config.mensaje_footer}
             </div>
           ) : (
-            <div
-              className="text-center text-[11px] mt-3 font-medium tracking-wider"
-              style={{ color: '#64748b' }}
-            >
+            <div className="text-center text-[11px] mt-3 font-medium tracking-wider text-gray-500">
               ¡Gracias por su compra!
             </div>
           )}
         </div>
 
+        {/* Acciones */}
         <button
           onClick={exportPDF}
           className="mt-5 w-full py-2 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition"
         >
           Descargar PDF
         </button>
+
         <button
           onClick={() => window.print()}
           className="mt-2 w-full py-2 rounded-lg font-bold bg-zinc-700 hover:bg-zinc-900 text-white shadow-md transition"
         >
           Imprimir directo
         </button>
+
         <button
           onClick={() => navigate('/dashboard/ventas/caja')}
           className="mt-2 w-full py-2 rounded-lg font-bold bg-emerald-900 hover:bg-emerald-800 text-white shadow-md transition"
