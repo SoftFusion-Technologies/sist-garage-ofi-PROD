@@ -12,6 +12,7 @@ import {
 import { format } from 'date-fns';
 import clsx from 'clsx';
 import ParticlesBackground from '../../Components/ParticlesBackground';
+import { useAuth } from '../../AuthContext'; // Ajustá el path si es necesario
 
 export default function VentasTimeline() {
   const [ventas, setVentas] = useState([]);
@@ -23,6 +24,10 @@ export default function VentasTimeline() {
   const [page, setPage] = useState(1);
   const [limit] = useState(10); // filas por página fijas o hacer dinámico si quieres
   const [total, setTotal] = useState(0);
+  const [showDevolucionModal, setShowDevolucionModal] = useState(false);
+  const [motivo, setMotivo] = useState('');
+  const { userId, userLocalId } = useAuth();
+
   const totalPages = Math.ceil(total / limit);
 
   // Función para cargar datos con filtros y paginación
@@ -73,6 +78,46 @@ export default function VentasTimeline() {
     } catch (error) {
       console.error(error);
       setDetalle(null);
+    }
+  };
+
+  const handleConfirmarDevolucion = async () => {
+    const productosADevolver = detalle.detalles
+      .filter((d) => d.cantidadADevolver && d.cantidadADevolver > 0)
+      .map((d) => ({
+        detalle_venta_id: d.id,
+        stock_id: d.stock_id,
+        cantidad: d.cantidadADevolver
+      }));
+
+    if (productosADevolver.length === 0) {
+      alert('Seleccioná al menos un producto a devolver.');
+      return;
+    }
+
+    const confirm = window.confirm('¿Confirmás la devolución seleccionada?');
+    if (!confirm) return;
+
+    const res = await fetch('http://localhost:8080/devoluciones', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        venta_id: detalle.id,
+        usuario_id: userId,
+        local_id: detalle.local?.id || userLocalId, // según tu estructura
+        detalles: productosADevolver,
+        motivo // asumí que viene del state `motivo`
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      alert('Devolución registrada exitosamente.');
+      setShowDevolucionModal(false);
+      setDetalle(null);
+      cargarVentas(); // refrescar historial
+    } else {
+      alert(`Error: ${data.mensajeError}`);
     }
   };
 
@@ -168,75 +213,101 @@ export default function VentasTimeline() {
           </div>
         ) : (
           <ol className="relative border-l-4 border-emerald-500/30 pl-6 space-y-10">
-            {ventas.map((venta, i) => (
-              <motion.li
-                key={venta.venta_id}
-                initial={{ x: 100, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ delay: i * 0.04 }}
-                className={clsx(
-                  'group relative bg-gradient-to-r',
-                  `from-emerald-900/${80 - i * 4} to-[#232942]`,
-                  'hover:scale-105 transition-transform rounded-xl px-5 py-4 shadow-xl border border-[#252b3f] cursor-pointer'
-                )}
-                onClick={() => cargarDetalleVenta(venta.venta_id)}
-              >
-                <span
+            {ventas.map((venta, i) => {
+              const totalVendidos = Number(venta.total_productos ?? 0);
+              const totalDevueltos = Number(venta.total_devueltos ?? 0);
+
+              let estadoVisual = 'confirmada';
+
+              if (venta.estado === 'anulada') {
+                estadoVisual = 'anulada';
+              } else if (totalVendidos === 0) {
+                estadoVisual = 'confirmada'; // ventas sin productos
+              } else if (totalDevueltos >= totalVendidos) {
+                estadoVisual = 'devuelta';
+              } else if (totalDevueltos > 0) {
+                estadoVisual = 'parcial';
+              }
+
+              return (
+                <motion.li
+                  key={venta.venta_id}
+                  initial={{ x: 100, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: i * 0.04 }}
                   className={clsx(
-                    'absolute -left-8 top-4 w-6 h-6 rounded-full border-4',
-                    `border-emerald-500/80 bg-emerald-800 shadow-lg animate-pulse`
+                    'group relative bg-gradient-to-r',
+                    `from-emerald-900/${80 - i * 4} to-[#232942]`,
+                    'hover:scale-105 transition-transform rounded-xl px-5 py-4 shadow-xl border border-[#252b3f] cursor-pointer'
                   )}
-                ></span>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-emerald-300">
-                    {format(new Date(venta.fecha), 'dd/MM/yyyy HH:mm')}
-                  </span>
+                  onClick={() => cargarDetalleVenta(venta.venta_id)}
+                >
                   <span
-                    className="font-bold text-lg text-white tracking-wider"
-                    style={{ letterSpacing: 2 }}
-                  >
-                    #{venta.venta_id}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 mt-2">
-                  <div className="w-10 h-10 bg-emerald-400/90 rounded-full flex items-center justify-center font-bold text-black shadow-lg text-xl uppercase">
-                    {venta.cliente?.[0] || 'C'}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-white">
-                      {venta.cliente}
-                    </div>
-                    <div className="text-xs text-gray-300 flex gap-2">
-                      {venta.vendedor}{' '}
-                      <span className="mx-1 text-emerald-400">|</span>{' '}
-                      {venta.local}
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-2 flex items-center justify-between">
-                  <span className="text-sm text-gray-400">
-                    Estado:{' '}
-                    <span
-                      className={clsx(
-                        venta.estado === 'anulada'
-                          ? 'text-red-400'
-                          : 'text-emerald-300'
-                      )}
-                    >
-                      {venta.estado}
+                    className={clsx(
+                      'absolute -left-8 top-4 w-6 h-6 rounded-full border-4',
+                      `border-emerald-500/80 bg-emerald-800 shadow-lg animate-pulse`
+                    )}
+                  ></span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-300">
+                      {format(new Date(venta.fecha), 'dd/MM/yyyy HH:mm')}
                     </span>
-                  </span>
-                  <span className="font-mono text-lg font-bold text-emerald-300">
-                    ${Number(venta.total).toLocaleString('es-AR')}
-                  </span>
-                </div>
-                <div className="absolute hidden group-hover:flex top-1/2 right-5 -translate-y-1/2 gap-1 animate-fade-in">
-                  <span className="px-3 py-1 text-xs rounded-full bg-emerald-700/90 text-white font-bold">
-                    Ver detalle
-                  </span>
-                </div>
-              </motion.li>
-            ))}
+                    <span
+                      className="font-bold text-lg text-white tracking-wider"
+                      style={{ letterSpacing: 2 }}
+                    >
+                      #{venta.venta_id}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="w-10 h-10 bg-emerald-400/90 rounded-full flex items-center justify-center font-bold text-black shadow-lg text-xl uppercase">
+                      {venta.cliente?.[0] || 'C'}
+                    </div>
+                    <div>
+                      <div className="font-semibold text-white">
+                        {venta.cliente}
+                      </div>
+                      <div className="text-xs text-gray-300 flex gap-2">
+                        {venta.vendedor}
+                        <span className="mx-1 text-emerald-400">|</span>
+                        {venta.local}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-sm text-gray-400">
+                      Estado:{' '}
+                      <span
+                        className={clsx(
+                          estadoVisual === 'anulada'
+                            ? 'text-red-400'
+                            : estadoVisual === 'devuelta'
+                            ? 'text-orange-400'
+                            : estadoVisual === 'parcial'
+                            ? 'text-yellow-400'
+                            : 'text-emerald-300'
+                        )}
+                      >
+                        {estadoVisual === 'parcial'
+                          ? `Confirmada • ${totalDevueltos} devuelto${
+                              totalDevueltos > 1 ? 's' : ''
+                            }`
+                          : estadoVisual.charAt(0).toUpperCase() +
+                            estadoVisual.slice(1)}
+                      </span>
+                    </span>
+                    <span className="font-mono text-lg font-bold text-emerald-300">
+                      ${Number(venta.total).toLocaleString('es-AR')}
+                    </span>
+                  </div>
+                  <div className="absolute hidden group-hover:flex top-1/2 right-5 -translate-y-1/2 gap-1 animate-fade-in">
+                    <span className="px-3 py-1 text-xs rounded-full bg-emerald-700/90 text-white font-bold">
+                      Ver detalle
+                    </span>
+                  </div>
+                </motion.li>
+              );
+            })}
           </ol>
         )}
       </div>
@@ -443,10 +514,120 @@ export default function VentasTimeline() {
                   </span>
                 </div>
               </div>
+              <button
+                onClick={() => setShowDevolucionModal(true)}
+                className="w-full mt-4 py-2 rounded-lg bg-red-600 hover:bg-red-800 text-white font-bold transition"
+              >
+                DEVOLVER
+              </button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {showDevolucionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#121a22] rounded-2xl shadow-2xl w-full max-w-2xl p-6 border border-emerald-600">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-emerald-400 flex items-center gap-2">
+                <span>📦</span> Devolución de productos
+              </h2>
+              <button
+                onClick={() => setShowDevolucionModal(false)}
+                className="text-gray-400 hover:text-white text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="max-h-[400px] overflow-y-auto space-y-4 pr-1">
+              {detalle.detalles.map((item) => {
+                const yaDevuelto = detalle.devoluciones
+                  ?.flatMap((d) => d.detalles || [])
+                  .filter((d) => Number(d.detalle_venta_id) === Number(item.id))
+                  .reduce((acc, d) => acc + (Number(d.cantidad) || 0), 0);
+
+                const maxDisponible = item.cantidad - yaDevuelto;
+
+                // ❌ Si ya se devolvió todo, no mostrar
+                if (maxDisponible <= 0) return null;
+
+                const valorActual = Number(item.cantidadADevolver) || 0;
+
+                return (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between bg-[#1f2a25] border border-gray-700 rounded-lg px-4 py-3 shadow hover:bg-[#2a433a] transition-colors"
+                  >
+                    <div>
+                      <div className="text-white font-semibold">
+                        {item.stock?.producto?.nombre}
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        Talle: {item.stock?.talle?.nombre} • Vendido:{' '}
+                        {item.cantidad} • Ya devuelto:{' '}
+                        {yaDevuelto > 0 ? yaDevuelto : 'NO'}
+                      </div>
+                    </div>
+
+                    <input
+                      type="number"
+                      min={0}
+                      max={maxDisponible}
+                      value={valorActual}
+                      onChange={(e) => {
+                        let val = Number(e.target.value);
+                        if (isNaN(val)) val = 0;
+                        val = Math.max(0, Math.min(val, maxDisponible));
+
+                        setDetalle((prev) => ({
+                          ...prev,
+                          detalles: prev.detalles.map((d) =>
+                            d.id === item.id
+                              ? { ...d, cantidadADevolver: val }
+                              : d
+                          )
+                        }));
+                      }}
+                      className="w-24 px-3 py-1 text-right rounded-lg bg-white text-black font-mono shadow-inner outline-none focus:ring-2 focus:ring-emerald-400"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Motivo */}
+            <div className="mt-6">
+              <label className="text-sm text-gray-300 block mb-1">
+                Motivo de la devolución (opcional)
+              </label>
+              <textarea
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
+                placeholder="Ej. Producto fallado, error de talla, etc."
+                className="w-full p-3 rounded-md bg-[#222b34] text-white resize-none border border-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                rows={3}
+              />
+            </div>
+
+            {/* Botones */}
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setShowDevolucionModal(false)}
+                className="px-4 py-2 rounded bg-zinc-600 text-white hover:bg-zinc-700"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmarDevolucion}
+                className="px-5 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-bold shadow-md"
+              >
+                Confirmar devolución
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
