@@ -398,17 +398,26 @@ export default function TicketVentaModal({ venta, onClose }) {
           {medioPago && (
             <div className="mb-4 mt-2">
               <div className="text-sm font-bold text-gray-700 dark:text-white mb-1">
-                Descuento por medio de pago
+                {Number(medioPago.porcentaje) < 0
+                  ? 'Descuento por medio de pago'
+                  : 'Recargo por medio de pago'}
               </div>
-              <div className="flex justify-between text-sm text-red-600 dark:text-red-400">
+              <div
+                className={`flex justify-between text-sm ${
+                  Number(medioPago.porcentaje) < 0
+                    ? 'text-red-600 dark:text-red-400'
+                    : 'text-orange-600 dark:text-orange-400'
+                }`}
+              >
                 <span>
                   💳 {medioPago.detalle}{' '}
                   <span className="text-xs text-gray-400">
-                    ({Number(medioPago.porcentaje || 0).toFixed(2)}%)
+                    ({Number(medioPago.porcentaje).toFixed(2)}%)
                   </span>
                 </span>
                 <span className="font-semibold tabular-nums">
-                  -${formatCurrency(Math.abs(Number(medioPago.monto || 0)))}
+                  {Number(medioPago.porcentaje) < 0 ? '-' : '+'}$
+                  {formatCurrency(Math.abs(Number(medioPago.monto)))}
                 </span>
               </div>
             </div>
@@ -440,17 +449,38 @@ export default function TicketVentaModal({ venta, onClose }) {
               </div>
             )}
 
-            {descuentoMedioPago > 0 && (
+            {medioPago && Number(medioPago.porcentaje) < 0 && (
               <div className="flex justify-between text-sm text-rose-500 font-semibold">
                 <span>Descuento medio de pago</span>
-                <span>-${formatCurrency(descuentoMedioPago)}</span>
+                <span>
+                  -${formatCurrency(Math.abs(Number(medioPago.monto)))}
+                </span>
               </div>
             )}
 
             {recargoPorcentaje > 0 && (
               <div className="flex justify-between text-sm text-orange-500 font-semibold">
-                <span>Recargo {recargoPorcentaje.toFixed(2)}%</span>
+                <span>
+                  Recargo método pago ({recargoPorcentaje.toFixed(2)}%)
+                </span>
                 <span>+${formatCurrency(recargoMonto)}</span>
+              </div>
+            )}
+
+            {Number(venta.recargo_cuotas_porcentaje) > 0 && (
+              <div className="flex justify-between text-sm text-orange-500 font-semibold">
+                <span>
+                  Recargo por cuotas (
+                  {Number(venta.recargo_cuotas_porcentaje).toFixed(2)}%)
+                </span>
+                <span>
+                  +$
+                  {formatCurrency(
+                    (Number(venta.precio_base) *
+                      Number(venta.recargo_cuotas_porcentaje)) /
+                      100
+                  )}
+                </span>
               </div>
             )}
 
@@ -459,6 +489,30 @@ export default function TicketVentaModal({ venta, onClose }) {
               <span>${formatCurrency(totalFinal)}</span>
             </div>
 
+            {/* Cuotas si aplica */}
+            {venta.cuotas > 1 && (
+              <div className="text-[13px] font-semibold text-right text-gray-600 dark:text-gray-300 mt-1">
+                {venta.cuotas} cuotas de $
+                {formatCurrency(totalFinal / venta.cuotas)}
+              </div>
+            )}
+
+            {/* Línea resumen de recargos */}
+            {(recargoPorcentaje > 0 || venta.recargo_cuotas_porcentaje > 0) && (
+              <div className="text-xs text-orange-600 text-right font-medium mt-1">
+                {recargoPorcentaje > 0 &&
+                  `+${recargoPorcentaje.toFixed(2)}% por método de pago`}
+                {recargoPorcentaje > 0 &&
+                  venta.recargo_cuotas_porcentaje > 0 &&
+                  ' + '}
+                {venta.recargo_cuotas_porcentaje > 0 &&
+                  `+${Number(venta.recargo_cuotas_porcentaje).toFixed(
+                    2
+                  )}% por ${venta.cuotas} cuotas`}
+              </div>
+            )}
+
+            {/* Monto en letras */}
             <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 text-right">
               {totalEnLetras}
             </div>
