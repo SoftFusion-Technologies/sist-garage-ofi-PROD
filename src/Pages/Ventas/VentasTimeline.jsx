@@ -127,7 +127,7 @@ export default function VentasTimeline() {
           >
             <option value="">Todos</option>
             {locales.map((l) => (
-              <option key={l.id} value={l.nombre}>
+              <option key={l.id} value={l.id}>
                 {l.nombre}
               </option>
             ))}
@@ -307,7 +307,7 @@ export default function VentasTimeline() {
               </div>
             </div>
             <div className="px-7 py-4">
-              {detalle.detalles && detalle.detalles.length > 0 ? (
+              {detalle.detalles && detalle?.detalles?.length > 0 ? (
                 <div className="overflow-x-auto rounded-lg border border-gray-700 bg-[#1f2a25] p-2">
                   <table className="w-full min-w-[700px] text-sm text-gray-300 border-separate border-spacing-y-2">
                     <thead>
