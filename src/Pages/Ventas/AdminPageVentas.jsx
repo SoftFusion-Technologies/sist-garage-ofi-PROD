@@ -17,7 +17,8 @@ import {
   FaUndoAlt,
   FaPercentage,
   FaCog,
-  FaCashRegister
+  FaCashRegister,
+  FaTruckMoving
 } from 'react-icons/fa';
 import { LiaCashRegisterSolid } from 'react-icons/lia';
 
@@ -51,6 +52,12 @@ const ventasLinks = [
     to: '/dashboard/ventas/historial',
     label: 'Historial de Ventas',
     icon: <FaHistory />,
+    desc: 'Listado completo con filtros'
+  },
+  {
+    to: '/dashboard/ventas/historico-movimientos',
+    label: 'Historico de Movimientos',
+    icon: <FaTruckMoving />,
     desc: 'Listado completo con filtros'
   },
   {
