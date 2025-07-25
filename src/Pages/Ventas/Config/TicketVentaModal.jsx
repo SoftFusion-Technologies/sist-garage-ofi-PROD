@@ -189,17 +189,146 @@ export default function TicketVentaModal({ venta, onClose }) {
   const medioPago = descuentos.find((d) => d.tipo === 'medio_pago');
 
   const exportPDF = async () => {
-    const canvas = await html2canvas(ref.current, { scale: 2 });
+    const element = ref.current;
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true
+    });
+
     const imgData = canvas.toDataURL('image/png');
+
     const pdf = new jsPDF({
       orientation: 'portrait',
-      unit: 'mm',
-      format: 'a6'
+      unit: 'px', // usamos píxeles para mayor control
+      format: [canvas.width, canvas.height] // se adapta a la altura real
     });
-    const width = pdf.internal.pageSize.getWidth();
-    const height = (canvas.height * width) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+
+    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
     pdf.save(`ticket-venta-${venta.id}.pdf`);
+  };
+
+  const printTicket = () => {
+    const printContents = ref.current.innerHTML;
+    const win = window.open('', '', 'width=600,height=800');
+
+    win.document.write(`
+    <html>
+      <head>
+        <title>Ticket de Venta</title>
+        <style>
+          @media print {
+            body {
+              width: 58mm;
+              margin: 0 auto;
+            }
+          }
+
+          body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-size: 13px;
+            color: #1f2937;
+            padding: 16px 12px;
+            line-height: 1.6;
+            text-align: center;
+          }
+
+          h1 {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            letter-spacing: 1px;
+            color: #059669;
+          }
+
+          .ticket-header {
+            margin-bottom: 8px;
+          }
+
+          .ticket-header div {
+            font-size: 12px;
+            color: #6b7280;
+          }
+
+          .section-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #059669;
+            margin: 16px 0 6px;
+            padding-top: 6px;
+            border-top: 1px dashed #ccc;
+          }
+
+          .line {
+            display: flex;
+            justify-content: space-between;
+            margin: 2px 0;
+            text-align: left;
+          }
+
+          .line-center {
+            justify-content: center;
+            text-align: center;
+          }
+
+          .bold {
+            font-weight: bold;
+          }
+
+          .total {
+            font-size: 16px;
+            font-weight: 800;
+            color: #047857;
+            margin-top: 10px;
+          }
+
+          .cuotas {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+          }
+
+          .footer {
+            margin-top: 16px;
+            font-size: 11px;
+            text-align: center;
+            color: #6b7280;
+            line-height: 1.4;
+          }
+
+          del {
+            color: #9ca3af;
+            font-size: 11px;
+          }
+
+          .tabular-nums {
+            font-variant-numeric: tabular-nums;
+          }
+
+          .spacer {
+            margin: 8px 0;
+          }
+
+          img {
+            max-height: 50px;
+            margin: 0 auto 8px;
+            display: block;
+          }
+        </style>
+      </head>
+      <body>
+        ${printContents}
+      </body>
+    </html>
+  `);
+
+    win.document.close();
+    win.focus();
+
+    setTimeout(() => {
+      win.print();
+      win.close();
+    }, 500);
   };
 
   return (
@@ -542,7 +671,7 @@ export default function TicketVentaModal({ venta, onClose }) {
         </button>
 
         <button
-          onClick={() => window.print()}
+          onClick={printTicket}
           className="mt-2 w-full py-2 rounded-lg font-bold bg-zinc-700 hover:bg-zinc-900 text-white shadow-md transition"
         >
           Imprimir directo
