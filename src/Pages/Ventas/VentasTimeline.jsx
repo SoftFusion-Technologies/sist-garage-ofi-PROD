@@ -349,6 +349,7 @@ export default function VentasTimeline() {
                               'es-AR'
                             )}
                           </td>
+
                           <td className="py-3 px-4 text-right font-mono">
                             $
                             {(
@@ -356,10 +357,18 @@ export default function VentasTimeline() {
                             ).toLocaleString('es-AR')}
                           </td>
                           <td className="py-3 px-4 text-right font-mono">
-                            {Number(item.descuento) > 0 ? (
+                            <span className="text-xs text-emerald-300 block">
+                              ({item.stock.producto.descuento_porcentaje}%)
+                            </span>
+
+                            {Number(item.stock?.producto?.precio ?? 0) >
+                            Number(item.precio_unitario) ? (
                               <span className="text-emerald-400 font-semibold">
                                 -$
-                                {Number(item.descuento).toLocaleString('es-AR')}
+                                {(
+                                  Number(item.stock.producto.precio) -
+                                  Number(item.precio_unitario)
+                                ).toLocaleString('es-AR')}
                               </span>
                             ) : (
                               <span className="text-gray-500">-</span>
@@ -378,35 +387,61 @@ export default function VentasTimeline() {
 
               {/* Totales y medios de pago */}
               <div className="mt-4 border-t border-gray-700 pt-3 text-right space-y-1 text-white font-semibold">
+                {/* Subtotal */}
                 <div>
-                  Subtotal: $
-                  {Number(detalle.total_bruto ?? detalle.total).toLocaleString(
-                    'es-AR'
-                  )}
+                  Subtotal bruto: $
+                  {Number(detalle.precio_base ?? 0).toLocaleString('es-AR')}
                 </div>
-                {Number(detalle.descuento_porcentaje) > 0 && (
-                  <div className="text-emerald-400">
-                    Descuento: -{detalle.descuento_porcentaje}%
-                  </div>
-                )}
+
+                {/* Recargo por método de pago */}
                 {Number(detalle.recargo_porcentaje) > 0 && (
                   <div className="text-orange-400">
-                    Recargo: +{detalle.recargo_porcentaje}%
+                    Recargo por método de pago: +{detalle.recargo_porcentaje}% (
+                    +$
+                    {(
+                      Number(detalle.precio_base) *
+                      (Number(detalle.recargo_porcentaje) / 100)
+                    ).toLocaleString('es-AR')}
+                    )
                   </div>
                 )}
-                <div className="text-xl font-bold text-emerald-300">
-                  Total final: $
-                  {Number(detalle.total_final ?? detalle.total).toLocaleString(
-                    'es-AR'
-                  )}
-                </div>
-              </div>
 
-              <div className="mt-3 text-gray-400 text-sm text-right">
-                Medio de pago:{' '}
-                <span className="text-white">
-                  {detalle.venta_medios_pago?.[0]?.medios_pago?.nombre || '-'}
-                </span>
+                {/* Recargo por cuotas */}
+                {Number(detalle.porcentaje_recargo_cuotas) > 0 && (
+                  <div className="text-orange-400">
+                    Recargo por {detalle.cuotas} cuotas: +
+                    {detalle.porcentaje_recargo_cuotas}% ( +$
+                    {(
+                      Number(detalle.precio_base) *
+                      (1 + Number(detalle.recargo_porcentaje) / 100) *
+                      (Number(detalle.porcentaje_recargo_cuotas) / 100)
+                    ).toLocaleString('es-AR')}
+                    )
+                  </div>
+                )}
+
+                {/* Total final */}
+                <div className="text-xl font-bold text-emerald-300">
+                  Total final: ${Number(detalle.total).toLocaleString('es-AR')}
+                </div>
+
+                {/* Cuotas (si existen) */}
+                {Number(detalle.cuotas) > 1 && (
+                  <div className="text-sm text-gray-300 font-normal">
+                    {detalle.cuotas} cuotas de{' '}
+                    <span className="text-white font-semibold">
+                      ${Number(detalle.monto_por_cuota).toLocaleString('es-AR')}
+                    </span>
+                  </div>
+                )}
+
+                {/* Medio de pago */}
+                <div className="text-gray-400 text-sm">
+                  Medio de pago:{' '}
+                  <span className="text-white">
+                    {detalle.venta_medios_pago?.[0]?.medios_pago?.nombre || '-'}
+                  </span>
+                </div>
               </div>
             </div>
           </motion.div>
