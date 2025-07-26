@@ -147,7 +147,7 @@ export default function VentasTimeline() {
       setShowDevolucionModal(false);
       setDetalle(null);
       cargarVentas(); // refrescar historial
-      cargarDetalleVenta()
+      cargarDetalleVenta();
     } else {
       alert(`Error: ${data.mensajeError}`);
     }
@@ -374,7 +374,9 @@ export default function VentasTimeline() {
                     </span>
                   </div>
 
-                  {estadoVisual === 'devuelta' || estadoVisual === 'parcial' ? (
+                  {estadoVisual === 'devuelta' ||
+                  estadoVisual === 'parcial' ||
+                  estadoVisual === 'anulada' ? (
                     <button
                       disabled
                       className="w-full mt-4 py-2 rounded-lg bg-gray-600 text-white font-bold opacity-50 cursor-not-allowed"
