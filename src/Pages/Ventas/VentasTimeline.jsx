@@ -128,8 +128,6 @@ export default function VentasTimeline() {
       };
     });
 
-    console.log('DETALLES CALCULADOS:', detallesFormateados);
-
     const res = await fetch('http://localhost:8080/devoluciones', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -149,8 +147,40 @@ export default function VentasTimeline() {
       setShowDevolucionModal(false);
       setDetalle(null);
       cargarVentas(); // refrescar historial
+      cargarDetalleVenta()
     } else {
       alert(`Error: ${data.mensajeError}`);
+    }
+  };
+
+  const anularVenta = async (idVenta) => {
+    if (
+      !window.confirm(
+        '¿Seguro que querés anular esta venta? Esta acción no se puede deshacer.'
+      )
+    )
+      return;
+
+    try {
+      const response = await fetch(
+        `http://localhost:8080/ventas/${idVenta}/anular`,
+        {
+          method: 'PUT'
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.mensajeError || 'Error al anular la venta');
+      }
+
+      const data = await response.json();
+      cargarVentas();
+      cargarDetalleVenta(idVenta);
+      alert('Venta anulada correctamente');
+    } catch (error) {
+      alert(`Error: ${error.message}`);
+      console.error('Error anulando venta:', error);
     }
   };
 
@@ -255,7 +285,7 @@ export default function VentasTimeline() {
               if (venta.estado === 'anulada') {
                 estadoVisual = 'anulada';
               } else if (totalVendidos === 0) {
-                estadoVisual = 'confirmada'; // ventas sin productos
+                estadoVisual = 'confirmada'; // ventas sin productos cargados (raro, pero válido)
               } else if (totalDevueltos >= totalVendidos) {
                 estadoVisual = 'devuelta';
               } else if (totalDevueltos > 0) {
@@ -313,7 +343,7 @@ export default function VentasTimeline() {
                       <span
                         className={clsx(
                           estadoVisual === 'anulada'
-                            ? 'text-red-400'
+                            ? 'text-red-500'
                             : estadoVisual === 'devuelta'
                             ? 'text-orange-400'
                             : estadoVisual === 'parcial'
@@ -325,15 +355,43 @@ export default function VentasTimeline() {
                           ? `Confirmada • ${totalDevueltos} devuelto${
                               totalDevueltos > 1 ? 's' : ''
                             }`
+                          : estadoVisual === 'anulada'
+                          ? 'ANULADA'
                           : estadoVisual.charAt(0).toUpperCase() +
                             estadoVisual.slice(1)}
                       </span>
                     </span>
-                    <span className="font-mono text-lg font-bold text-emerald-300">
+
+                    <span
+                      className={clsx(
+                        'font-mono text-lg font-bold',
+                        estadoVisual === 'anulada'
+                          ? 'text-red-500 line-through'
+                          : 'text-emerald-300'
+                      )}
+                    >
                       ${Number(venta.total).toLocaleString('es-AR')}
                     </span>
                   </div>
-                  <div className="absolute hidden group-hover:flex top-1/2 right-5 -translate-y-1/2 gap-1 animate-fade-in">
+
+                  {estadoVisual === 'devuelta' || estadoVisual === 'parcial' ? (
+                    <button
+                      disabled
+                      className="w-full mt-4 py-2 rounded-lg bg-gray-600 text-white font-bold opacity-50 cursor-not-allowed"
+                      title="No se puede anular una venta que ya fue devuelta"
+                    >
+                      ANULAR
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => anularVenta(venta.venta_id)}
+                      className="w-full mt-2 py-2 rounded-lg bg-red-500 hover:bg-red-700 text-white font-bold transition"
+                    >
+                      ANULAR VENTA
+                    </button>
+                  )}
+
+                  <div className="-mt-5 absolute hidden group-hover:flex top-1/2 right-5 -translate-y-1/2 gap-1 animate-fade-in">
                     <span className="px-3 py-1 text-xs rounded-full bg-emerald-700/90 text-white font-bold">
                       Ver detalle
                     </span>
@@ -549,13 +607,19 @@ export default function VentasTimeline() {
                     {detalle.venta_medios_pago?.[0]?.medios_pago?.nombre || '-'}
                   </span>
                 </div>
+                {detalle?.estado === 'anulada' ? (
+                  <div className="mt-4 py-2 rounded-lg bg-gray-600 text-white font-bold text-center opacity-50 cursor-not-allowed">
+                    Venta anulada
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowDevolucionModal(true)}
+                    className="w-full mt-4 py-2 rounded-lg bg-red-600 hover:bg-red-800 text-white font-bold transition"
+                  >
+                    DEVOLVER
+                  </button>
+                )}
               </div>
-              <button
-                onClick={() => setShowDevolucionModal(true)}
-                className="w-full mt-4 py-2 rounded-lg bg-red-600 hover:bg-red-800 text-white font-bold transition"
-              >
-                DEVOLVER
-              </button>
             </div>
           </motion.div>
         )}
@@ -576,63 +640,88 @@ export default function VentasTimeline() {
               </button>
             </div>
 
-            <div className="max-h-[400px] overflow-y-auto space-y-4 pr-1">
-              {detalle.detalles.map((item) => {
+            {/* 📦 Lista de productos a devolver */}
+            {(() => {
+              const itemsDisponibles = detalle.detalles.filter((item) => {
                 const yaDevuelto = detalle.devoluciones
                   ?.flatMap((d) => d.detalles || [])
                   .filter((d) => Number(d.detalle_venta_id) === Number(item.id))
                   .reduce((acc, d) => acc + (Number(d.cantidad) || 0), 0);
 
                 const maxDisponible = item.cantidad - yaDevuelto;
+                return maxDisponible > 0;
+              });
 
-                // ❌ Si ya se devolvió todo, no mostrar
-                if (maxDisponible <= 0) return null;
-
-                const valorActual = Number(item.cantidadADevolver) || 0;
-
-                return (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between bg-[#1f2a25] border border-gray-700 rounded-lg px-4 py-3 shadow hover:bg-[#2a433a] transition-colors"
-                  >
-                    <div>
-                      <div className="text-white font-semibold">
-                        {item.stock?.producto?.nombre}
+              return (
+                <div className="max-h-[400px] overflow-y-auto space-y-4 pr-1">
+                  {itemsDisponibles.length === 0 ? (
+                    <div className="text-center text-gray-400 p-10 border border-gray-700 rounded-lg bg-[#1e293b] shadow-md">
+                      <div className="text-4xl mb-2">✅</div>
+                      <div className="text-lg font-semibold">
+                        No hay productos para devolver
                       </div>
-                      <div className="text-sm text-gray-400">
-                        Talle: {item.stock?.talle?.nombre} • Vendido:{' '}
-                        {item.cantidad} • Ya devuelto:{' '}
-                        {yaDevuelto > 0 ? yaDevuelto : 'NO'}
+                      <div className="text-sm mt-1 text-gray-500">
+                        Ya se devolvieron todos los artículos de esta venta.
                       </div>
                     </div>
+                  ) : (
+                    itemsDisponibles.map((item) => {
+                      const yaDevuelto = detalle.devoluciones
+                        ?.flatMap((d) => d.detalles || [])
+                        .filter(
+                          (d) => Number(d.detalle_venta_id) === Number(item.id)
+                        )
+                        .reduce((acc, d) => acc + (Number(d.cantidad) || 0), 0);
 
-                    <input
-                      type="number"
-                      min={0}
-                      max={maxDisponible}
-                      value={valorActual}
-                      onChange={(e) => {
-                        let val = Number(e.target.value);
-                        if (isNaN(val)) val = 0;
-                        val = Math.max(0, Math.min(val, maxDisponible));
+                      const maxDisponible = item.cantidad - yaDevuelto;
+                      const valorActual = Number(item.cantidadADevolver) || 0;
 
-                        setDetalle((prev) => ({
-                          ...prev,
-                          detalles: prev.detalles.map((d) =>
-                            d.id === item.id
-                              ? { ...d, cantidadADevolver: val }
-                              : d
-                          )
-                        }));
-                      }}
-                      className="w-24 px-3 py-1 text-right rounded-lg bg-white text-black font-mono shadow-inner outline-none focus:ring-2 focus:ring-emerald-400"
-                    />
-                  </div>
-                );
-              })}
-            </div>
+                      return (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between bg-[#1f2a25] border border-gray-700 rounded-lg px-4 py-3 shadow hover:bg-[#2a433a] transition-colors"
+                        >
+                          <div>
+                            <div className="text-white font-semibold">
+                              {item.stock?.producto?.nombre}
+                            </div>
+                            <div className="text-sm text-gray-400">
+                              Talle: {item.stock?.talle?.nombre} • Vendido:{' '}
+                              {item.cantidad} • Ya devuelto:{' '}
+                              {yaDevuelto > 0 ? yaDevuelto : 'NO'}
+                            </div>
+                          </div>
 
-            {/* Motivo */}
+                          <input
+                            type="number"
+                            min={0}
+                            max={maxDisponible}
+                            value={valorActual}
+                            onChange={(e) => {
+                              let val = Number(e.target.value);
+                              if (isNaN(val)) val = 0;
+                              val = Math.max(0, Math.min(val, maxDisponible));
+
+                              setDetalle((prev) => ({
+                                ...prev,
+                                detalles: prev.detalles.map((d) =>
+                                  d.id === item.id
+                                    ? { ...d, cantidadADevolver: val }
+                                    : d
+                                )
+                              }));
+                            }}
+                            className="w-24 px-3 py-1 text-right rounded-lg bg-white text-black font-mono shadow-inner outline-none focus:ring-2 focus:ring-emerald-400"
+                          />
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* 📝 Motivo */}
             <div className="mt-6">
               <label className="text-sm text-gray-300 block mb-1">
                 Motivo de la devolución (opcional)
@@ -646,7 +735,7 @@ export default function VentasTimeline() {
               />
             </div>
 
-            {/* Botones */}
+            {/* 🎯 Botones */}
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowDevolucionModal(false)}
@@ -656,7 +745,18 @@ export default function VentasTimeline() {
               </button>
               <button
                 onClick={handleConfirmarDevolucion}
-                className="px-5 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-bold shadow-md"
+                className="px-5 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-bold shadow-md disabled:opacity-50"
+                disabled={
+                  detalle.detalles.filter((item) => {
+                    const yaDevuelto = detalle.devoluciones
+                      ?.flatMap((d) => d.detalles || [])
+                      .filter(
+                        (d) => Number(d.detalle_venta_id) === Number(item.id)
+                      )
+                      .reduce((acc, d) => acc + (Number(d.cantidad) || 0), 0);
+                    return item.cantidad - yaDevuelto > 0;
+                  }).length === 0
+                }
               >
                 Confirmar devolución
               </button>
