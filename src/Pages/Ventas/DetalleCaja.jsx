@@ -11,6 +11,7 @@ import {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import ParticlesBackground from '../../Components/ParticlesBackground';
+import { Link } from 'react-router-dom';
 
 export default function DetalleCaja() {
   const { id } = useParams();
@@ -118,7 +119,7 @@ export default function DetalleCaja() {
         <select
           value={filtro}
           onChange={(e) => setFiltro(e.target.value)}
-          className="px-4 py-2 rounded-xl bg-white/20 text-white"
+          className="px-4 py-2 rounded-xl bg-white/30 text-gray-900 font-semibold backdrop-blur-md shadow-md hover:bg-white/50 transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 w-full sm:w-auto"
         >
           <option value="todos">Todos</option>
           <option value="ingreso">Ingresos</option>
@@ -150,7 +151,7 @@ export default function DetalleCaja() {
                 m.tipo === 'ingreso' ? 'text-green-400' : 'text-red-400'
               }`}
             >
-              {m.tipo === 'ingreso' ? '+' : '-'}$
+              {m.tipo === 'ingreso' ? '+' : '-'}
               {parseFloat(m.monto).toLocaleString('es-AR', {
                 style: 'currency',
                 currency: 'ARS',
@@ -167,37 +168,86 @@ export default function DetalleCaja() {
             initial={{ opacity: 0, y: 100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 100 }}
-            className="fixed bottom-0 left-0 right-0 p-6 bg-white/90 backdrop-blur-2xl shadow-2xl border-t border-white/20 rounded-t-3xl z-50"
+            transition={{ type: 'spring', damping: 20, stiffness: 100 }}
+            className={`fixed bottom-0 left-0 right-0 p-6 sm:p-8 bg-gradient-to-br from-white/80 to-white/60 backdrop-blur-2xl shadow-2xl border-t-4 ${
+              detalle.tipo === 'ingreso' ? 'border-green-400' : 'border-red-400'
+            } rounded-t-3xl z-50`}
           >
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800">
-                Detalle del Movimiento
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-extrabold tracking-wide text-gray-900 flex items-center gap-3">
+                {detalle.tipo === 'ingreso' ? '🟢 Ingreso' : '🔴 Egreso'}
               </h2>
               <button
-                className="text-gray-500 hover:text-black"
                 onClick={() => setDetalle(null)}
+                className="text-gray-600 hover:text-black text-xl font-bold transition"
               >
                 ✕
               </button>
             </div>
-            <div className="space-y-2 text-gray-800">
-              <p>
-                <strong>Tipo:</strong> {detalle.tipo}
-              </p>
-              <p>
-                <strong>Monto:</strong> $
-                {parseFloat(detalle.monto).toLocaleString('es-AR')}
-              </p>
-              <p>
-                <strong>Descripción:</strong> {detalle.descripcion}
-              </p>
-              <p>
-                <strong>Referencia:</strong>{' '}
-                {detalle.referencia || 'Sin referencia'}
-              </p>
-              <p>
-                <strong>Fecha:</strong> {getFormatoFecha(detalle.fecha)}
-              </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-800">
+              <div className="bg-white/40 rounded-xl p-4 shadow-inner border border-white/60">
+                <p className="text-xs font-semibold text-gray-500 mb-1">
+                  Monto
+                </p>
+                <p
+                  className={`text-2xl font-bold ${
+                    detalle.tipo === 'ingreso'
+                      ? 'text-green-600'
+                      : 'text-red-600'
+                  }`}
+                >
+                  {parseFloat(detalle.monto).toLocaleString('es-AR', {
+                    style: 'currency',
+                    currency: 'ARS'
+                  })}
+                </p>
+              </div>
+
+              <div className="bg-white/40 rounded-xl p-4 shadow-inner border border-white/60">
+                <p className="text-xs font-semibold text-gray-500 mb-1">
+                  Fecha
+                </p>
+                <p className="text-base font-medium">
+                  {getFormatoFecha(detalle.fecha)}
+                </p>
+              </div>
+
+              <div className="bg-white/40 rounded-xl p-4 shadow-inner border border-white/60 sm:col-span-2">
+                <p className="text-xs font-semibold text-gray-500 mb-1">
+                  Descripción
+                </p>
+                <p className="text-base">
+                  {detalle.descripcion || 'Sin descripción'}
+                </p>
+              </div>
+
+              <div className="bg-white/40 rounded-xl p-4 shadow-inner border border-white/60 sm:col-span-2">
+                <p className="text-xs font-semibold text-gray-500 mb-1">
+                  Referencia
+                </p>
+                <p className="text-base">
+                  {detalle.referencia || 'Sin referencia'}
+                </p>
+              </div>
+              {detalle.referencia && (
+                <div
+                  onClick={() =>
+                    navigate(
+                      `/dashboard/ventas/historial?id=${detalle.referencia}`
+                    )
+                  }
+                  className="cursor-pointer bg-blue-100 border border-blue-300 text-blue-900 rounded-xl p-4 shadow-inner sm:col-span-2 hover:bg-blue-200 transition-all"
+                >
+                  <p className="text-xs font-semibold text-blue-600 mb-1">
+                    Origen
+                  </p>
+                  <p className="text-base font-medium flex items-center gap-2">
+                    Generado por Venta #{detalle.referencia}
+                    <span className="text-blue-600 text-lg">↗</span>
+                  </p>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
