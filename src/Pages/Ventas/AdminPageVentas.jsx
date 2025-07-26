@@ -48,12 +48,7 @@ const ventasLinks = [
     icon: <LiaCashRegisterSolid />,
     desc: 'Movimientos de caja'
   },
-  {
-    to: '/dashboard/ventas/vendidos',
-    label: 'Más Vendidos',
-    icon: <FaStar />,
-    desc: 'Ranking de productos top'
-  },
+
   {
     to: '/dashboard/ventas/historial',
     label: 'Historial de Ventas',
@@ -71,6 +66,12 @@ const ventasLinks = [
     label: 'Analíticas',
     icon: <FaChartBar />,
     desc: 'Reportes y métricas'
+  },
+  {
+    to: '/dashboard/ventas/vendidos',
+    label: 'Más Vendidos',
+    icon: <FaStar />,
+    desc: 'Ranking de productos top'
   },
   {
     to: '/dashboard/ventas/clientes',

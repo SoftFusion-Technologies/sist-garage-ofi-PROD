@@ -52,6 +52,7 @@ import DevolucionesPage from './Pages/Ventas/DevolucionesGet';
 import HistorialCajasPorLocal from './Pages/Ventas/HistorialCajasPorLocal';
 import DetalleCaja from './Pages/Ventas/DetalleCaja';
 import AdminCajasAbiertas from './Pages/Ventas/AdminCajasAbiertas';
+import AnaliticasCaja from './Pages/Ventas/AnaliticasCaja';
 
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
@@ -207,6 +208,14 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <AdminCajasAbiertas />
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/ventas/analiticas"
+            element={
+              <ProtectedRoute>
+                <AnaliticasCaja />
               </ProtectedRoute>
             }
           />
