@@ -49,6 +49,8 @@ import MovimientosGlobal from './Pages/Ventas/MovimientosGlobal';
 import VentasTimeline from './Pages/Ventas/VentasTimeline';
 import EstadisticaVentasMes from './Pages/Ventas/EstadisticaVentasMes';
 import DevolucionesPage from './Pages/Ventas/DevolucionesGet';
+import HistorialCajasPorLocal from './Pages/Ventas/HistorialCajasPorLocal';
+import DetalleCaja from './Pages/Ventas/DetalleCaja';
 
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
@@ -232,6 +234,24 @@ function AppContent() {
               <ProtectedRoute>
                 {' '}
                 <DevolucionesPage />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/ventas/historico-movimientos"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <HistorialCajasPorLocal />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/ventas/historico-movimientos/caja/:id"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <DetalleCaja />{' '}
               </ProtectedRoute>
             }
           />

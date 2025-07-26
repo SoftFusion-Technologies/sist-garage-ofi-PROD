@@ -79,12 +79,6 @@ const ventasLinks = [
     desc: 'Registrar cambios y anulaciones'
   },
   {
-    to: '/dashboard/ventas/descuentos',
-    label: 'Promos / Descuentos',
-    icon: <FaPercentage />,
-    desc: 'Configurar promociones'
-  },
-  {
     to: '/dashboard/ventas/configuracion',
     label: 'Configuración',
     icon: <FaCog />,
