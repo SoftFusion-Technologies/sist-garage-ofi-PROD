@@ -37,6 +37,12 @@ const ventasLinks = [
     desc: 'Resumen y arqueo diario'
   },
   {
+    to: '/dashboard/ventas/cajas-abiertas',
+    label: 'Cajas Abiertas',
+    icon: <FaFileInvoiceDollar />,
+    desc: 'Resumen de Cajas'
+  },
+  {
     to: '/dashboard/ventas/movimientos',
     label: 'Movimientos',
     icon: <LiaCashRegisterSolid />,
