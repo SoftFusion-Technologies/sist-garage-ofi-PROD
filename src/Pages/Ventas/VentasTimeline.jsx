@@ -82,13 +82,9 @@ export default function VentasTimeline() {
   };
 
   const handleConfirmarDevolucion = async () => {
-    const productosADevolver = detalle.detalles
-      .filter((d) => d.cantidadADevolver && d.cantidadADevolver > 0)
-      .map((d) => ({
-        detalle_venta_id: d.id,
-        stock_id: d.stock_id,
-        cantidad: d.cantidadADevolver
-      }));
+    const productosADevolver = detalle.detalles.filter(
+      (d) => d.cantidadADevolver && d.cantidadADevolver > 0
+    );
 
     if (productosADevolver.length === 0) {
       alert('Seleccioná al menos un producto a devolver.');
@@ -98,15 +94,51 @@ export default function VentasTimeline() {
     const confirm = window.confirm('¿Confirmás la devolución seleccionada?');
     if (!confirm) return;
 
+    const totalFinalPagado = Number(detalle.total); // $16.200 por ejemplo
+    const totalOriginalVenta = detalle.detalles.reduce(
+      (acc, d) =>
+        acc +
+        Number(d.precio_unitario ?? d.stock?.producto?.precio ?? 0) *
+          d.cantidad,
+      0
+    );
+
+    // Calcular el porcentaje que representa cada detalle
+    const detallesFormateados = productosADevolver.map((d) => {
+      const precioOriginalUnitario = Number(
+        d.precio_unitario ?? d.stock?.producto?.precio ?? 0
+      );
+      const totalDetalle = precioOriginalUnitario * d.cantidad;
+
+      const proporcionDelTotal = totalDetalle / totalOriginalVenta;
+      const montoCorrespondiente = Number(
+        (
+          totalFinalPagado *
+          proporcionDelTotal *
+          (d.cantidadADevolver / d.cantidad)
+        ).toFixed(2)
+      );
+
+      return {
+        detalle_venta_id: d.id,
+        stock_id: d.stock_id,
+        cantidad: d.cantidadADevolver,
+        monto: montoCorrespondiente
+      };
+    });
+
+    console.log('DETALLES CALCULADOS:', detallesFormateados);
+
     const res = await fetch('http://localhost:8080/devoluciones', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         venta_id: detalle.id,
         usuario_id: userId,
-        local_id: detalle.local?.id || userLocalId, // según tu estructura
-        detalles: productosADevolver,
-        motivo // asumí que viene del state `motivo`
+        local_id: detalle.local?.id || userLocalId,
+        motivo,
+        detalles: detallesFormateados,
+        ajuste_aplicado: detalle.aplicarDescuento === true
       })
     });
 
