@@ -48,6 +48,7 @@ import CajaPOS from './Pages/Ventas/CajaPos';
 import MovimientosGlobal from './Pages/Ventas/MovimientosGlobal';
 import VentasTimeline from './Pages/Ventas/VentasTimeline';
 import EstadisticaVentasMes from './Pages/Ventas/EstadisticaVentasMes';
+import DevolucionesPage from './Pages/Ventas/DevolucionesGet';
 
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
@@ -222,6 +223,15 @@ function AppContent() {
               <ProtectedRoute>
                 {' '}
                 <EstadisticaVentasMes />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/ventas/devoluciones"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <DevolucionesPage />{' '}
               </ProtectedRoute>
             }
           />
