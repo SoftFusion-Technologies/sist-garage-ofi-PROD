@@ -161,8 +161,9 @@ export default function CajaPOS() {
         monto: Number(nuevoMovimiento.monto)
       });
       const mov = await axios.get(
-        `http://localhost:8080/movimientos_caja?caja_id=${cajaActual.id}`
+        `http://localhost:8080/movimientos/caja/${cajaActual.id}`
       );
+
       setMovimientos(mov.data);
       setNuevoMovimiento({ tipo: 'ingreso', monto: '', descripcion: '' });
     } catch (err) {
