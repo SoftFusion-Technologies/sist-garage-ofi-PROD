@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import clsx from 'clsx';
 import ParticlesBackground from '../../Components/ParticlesBackground';
 import { useAuth } from '../../AuthContext'; // Ajustá el path si es necesario
+import { es } from 'date-fns/locale'; // agregá solo esto, sin volver a declarar `format`
 
 export default function VentasTimeline() {
   const [ventas, setVentas] = useState([]);
@@ -391,8 +392,11 @@ export default function VentasTimeline() {
             {/* Info principal */}
             <div className="px-7 pt-6 pb-3">
               <div className="text-xs text-gray-400 mb-2">
-                {format(new Date(detalle.fecha), 'EEEE dd/MM/yyyy HH:mm')}
+                {format(new Date(detalle.fecha), 'EEEE dd/MM/yyyy HH:mm', {
+                  locale: es
+                }).replace(/^./, (str) => str.toUpperCase())}
               </div>
+
               <div className="mb-3">
                 <div className="text-lg font-bold text-white">
                   Cliente:{' '}
