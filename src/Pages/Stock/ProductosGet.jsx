@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Modal from 'react-modal';
-import { FaBox, FaPlus, FaEdit, FaTrash, FaDownload } from 'react-icons/fa';
+import {
+  FaBox,
+  FaPlus,
+  FaPercentage,
+  FaTrash,
+  FaDownload
+} from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import ButtonBack from '../../Components/ButtonBack.jsx';
 import ParticlesBackground from '../../Components/ParticlesBackground.jsx';
@@ -9,7 +15,7 @@ import DropdownCategoriasConFiltro from '../../Components/DropdownCategoriasConF
 import BulkUploadButton from '../../Components/BulkUploadButton.jsx';
 import * as XLSX from 'xlsx';
 import AdminActions from '../../Components/AdminActions';
-
+import AjustePreciosModal from './Components/AjustePreciosModal.jsx';
 Modal.setAppElement('#root');
 
 const ProductosGet = () => {
@@ -38,6 +44,9 @@ const ProductosGet = () => {
   const [precioMax, setPrecioMax] = useState('');
   const [ordenCampo, setOrdenCampo] = useState('nombre');
   const [categoriaFiltro, setCategoriaFiltro] = useState(null);
+
+  const [showAjustePrecios, setShowAjustePrecios] = useState(false);
+
   // RELACION AL FILTRADO BENJAMIN ORELLANA 23-04-25
 
   const fetchData = async () => {
@@ -150,6 +159,7 @@ const ProductosGet = () => {
       console.error('Error al guardar producto:', err);
     }
   };
+
   const handleDelete = async (id) => {
     try {
       await axios.delete(`http://localhost:8080/productos/${id}`);
@@ -211,6 +221,13 @@ const ProductosGet = () => {
 
             {/* Botones */}
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <button
+                onClick={() => setShowAjustePrecios(true)}
+                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-xl font-semibold flex items-center gap-2 text-white"
+              >
+                <FaPercentage /> Ajustar Precios
+              </button>
+
               <BulkUploadButton
                 tabla="productos"
                 onSuccess={() => fetchData()} // refrescar lista si lo necesitas
@@ -515,6 +532,11 @@ const ProductosGet = () => {
           </div>
         </Modal>
       </div>
+      <AjustePreciosModal
+        open={showAjustePrecios}
+        onClose={() => setShowAjustePrecios(false)}
+        onSuccess={() => fetchData()} // refrescar productos
+      />
     </div>
   );
 };
