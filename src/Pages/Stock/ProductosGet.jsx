@@ -16,9 +16,12 @@ import BulkUploadButton from '../../Components/BulkUploadButton.jsx';
 import * as XLSX from 'xlsx';
 import AdminActions from '../../Components/AdminActions';
 import AjustePreciosModal from './Components/AjustePreciosModal.jsx';
+import { useAuth } from '../../AuthContext.jsx';
+
 Modal.setAppElement('#root');
 
 const ProductosGet = () => {
+    const { userLevel } = useAuth();
   const [productos, setProductos] = useState([]);
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -221,12 +224,14 @@ const ProductosGet = () => {
 
             {/* Botones */}
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <button
-                onClick={() => setShowAjustePrecios(true)}
-                className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-xl font-semibold flex items-center gap-2 text-white"
-              >
-                <FaPercentage /> Ajustar Precios
-              </button>
+              {userLevel === 'admin' && (
+                <button
+                  onClick={() => setShowAjustePrecios(true)}
+                  className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-xl font-semibold flex items-center gap-2 text-white"
+                >
+                  <FaPercentage /> Ajustar Precios
+                </button>
+              )}
 
               <BulkUploadButton
                 tabla="productos"

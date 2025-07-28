@@ -30,6 +30,9 @@ import {
   fetchUsuarios,
   getNombreLocal
 } from '../../utils/utils.js';
+import ParticlesBackground from '../../Components/ParticlesBackground.jsx';
+import formatearFechaARG from '../../Components/formatearFechaARG';
+
 Modal.setAppElement('#root');
 
 // --- Función para formatear teléfono:
@@ -302,6 +305,7 @@ export default function ClientesGet() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-800 to-emerald-900 py-10 px-3 md:px-6 relative font-sans">
+      <ParticlesBackground></ParticlesBackground>
       <ButtonBack />
       {/* Header */}
       <div className="max-w-5xl mx-auto flex flex-col gap-4">
@@ -355,74 +359,98 @@ export default function ClientesGet() {
           </div>
         </div>
       </div>
-      {/* Tabla para desktop */}
-      <div className="hidden md:block max-w-5xl mx-auto">
-        <div className="overflow-auto rounded-2xl shadow-2xl bg-white/10 backdrop-blur-sm">
-          <table className="w-full text-sm text-left text-white">
-            <thead className="bg-emerald-700/90">
-              <tr>
-                <th className="px-6 py-4 uppercase">Nombre</th>
-                <th className="px-6 py-4 uppercase">Teléfono</th>
-                <th className="px-6 py-4 uppercase">Email</th>
-                <th className="px-6 py-4 uppercase">DNI</th>
-                <th className="px-6 py-4 uppercase">Dirección</th>
-                <th className="px-6 py-4 uppercase">Última compra</th>
-                <th className="px-6 py-4 uppercase">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="text-center py-8 text-emerald-300">
-                    No hay clientes para mostrar.
-                  </td>
-                </tr>
-              )}
-              {filtered.map((c) => (
-                <motion.tr
-                  key={c.id}
-                  className="border-b border-white/10 hover:bg-emerald-700/10 transition"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <td className="px-6 py-3 font-semibold">{c.nombre}</td>
-                  <td className="px-6 py-3">
-                    {c.telefono ? (
-                      <TelCell telefono={c.telefono} />
-                    ) : (
-                      <span className="text-emerald-300">-</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-3">{c.email || '-'}</td>
-                  <td className="px-6 py-3 font-semibold">{c.dni}</td>
-                  <td className="px-6 py-3 font-semibold">{c.direccion}</td>
+      {/* Cards-table para desktop */}
+      <div className="hidden md:block">
+        <div className="grid grid-cols-1 gap-4 max-w-6xl mx-auto mt-6">
+          {filtered.length === 0 ? (
+            <div className="text-center text-emerald-200 py-12 rounded-2xl bg-white/5 shadow-xl">
+              No hay clientes para mostrar.
+            </div>
+          ) : (
+            filtered.map((c) => (
+              <motion.div
+                key={c.id}
+                className="flex w-full min-h-[140px] bg-white/70 shadow-xl rounded-3xl border-l-8 transition-all border-emerald-500/80 hover:scale-[1.012] hover:shadow-2xl overflow-hidden"
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.28 }}
+              >
+                {/* Identidad */}
+                <div className="flex flex-col justify-between items-start p-7 w-64 bg-gradient-to-br from-emerald-700/90 to-emerald-900/90 text-white">
+                  <div>
+                    <div className="text-xl font-extrabold flex items-center gap-2 drop-shadow-sm">
+                      {c.nombre}
+                      {c.pagado === 'SI' ? (
+                        <span className="ml-2 flex items-center bg-emerald-200 text-emerald-900 rounded-full px-3 py-0.5 text-xs font-bold shadow animate-pulse">
+                          <svg
+                            className="w-4 h-4 mr-1 inline"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="3"
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                          Pagado
+                        </span>
+                      ) : (
+                        <span className="ml-2 flex items-center bg-rose-500 text-white rounded-full px-3 py-0.5 text-xs font-bold shadow animate-pulse">
+                          <svg
+                            className="w-4 h-4 mr-1 inline"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="15" y1="9" x2="9" y2="15" />
+                            <line x1="9" y1="9" x2="15" y2="15" />
+                          </svg>
+                          Pendiente
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1 opacity-90 text-base">{c.email}</div>
+                    <div className="flex items-center gap-2 mt-1 text-sm opacity-90">
+                      {c.telefono}
+                    </div>
+                    <div className="text-xs text-emerald-200 mt-2">
+                      <span className="opacity-80">DNI:</span> {c.dni}
+                    </div>
+                  </div>
+                </div>
 
-                  <td className="px-6 py-3">
-                    {c.fecha_ultima_compra ? (
-                      new Date(c.fecha_ultima_compra).toLocaleDateString()
-                    ) : (
-                      <span className="italic text-emerald-200/60">Nunca</span>
-                    )}
-                  </td>
+                {/* Detalle */}
+                <div className="flex-1 grid grid-cols-4 gap-6 px-8 py-6 bg-white/80 backdrop-blur-lg text-gray-800 items-center text-sm">
+                  <div>
+                    <div className="text-xs text-gray-500 font-semibold">
+                      Fecha Alta
+                    </div>
+                    <div className="text-base mb-5">
+                      {formatearFechaARG(c.fecha_alta)}
+                    </div>
+                    <div className="text-xs text-gray-500 font-semibold">
+                      Fecha Última Compra
+                    </div>
+                    <div className="text-base">
+                      {formatearFechaARG(c.fecha_ultima_compra)}
+                    </div>
+                  </div>
+                </div>
 
-                  <td className="px-6 py-3 flex gap-2">
-                    <button
-                      className="text-emerald-400 mt-4 text-xs font-semibold hover:text-emerald-300 transition"
-                      onClick={() => openDetalleCliente(c)}
-                      title="Ver detalle del cliente"
-                    >
-                      Ver detalle
-                    </button>
-                    <AdminActions
-                      onEdit={() => openModal(c)}
-                      onDelete={() => handleDelete(c.id)}
-                    />
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
+                {/* Acciones */}
+                <div className="flex flex-col items-center justify-center px-6 gap-3 bg-white/60 backdrop-blur-xl">
+                  <AdminActions
+                    onEdit={() => openModal(c)}
+                    onDelete={() => handleDelete(c.id)}
+                  />
+                </div>
+              </motion.div>
+            ))
+          )}
         </div>
       </div>
       {/* Tarjetas para mobile */}
