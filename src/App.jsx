@@ -54,6 +54,10 @@ import DetalleCaja from './Pages/Ventas/DetalleCaja';
 import AdminCajasAbiertas from './Pages/Ventas/AdminCajasAbiertas';
 import AnaliticasCaja from './Pages/Ventas/AnaliticasCaja';
 import AdminPageRecaptacion from './Pages/Recaptacion/AdminPageRecaptacion';
+import CampanasGet from './Pages/Recaptacion/CampanasGet';
+import ClientesInactivos from './Pages/Recaptacion/ClientesInactivos';
+import AsignadosGet from './Pages/Recaptacion/AsignadosGet';
+import EstadisticasRecaptacion from './Pages/Recaptacion/EstadisticasRecaptacion';
 
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
@@ -282,6 +286,42 @@ function AppContent() {
               <ProtectedRoute>
                 {' '}
                 <AdminPageRecaptacion />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/recaptacion/campanas"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <CampanasGet />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/recaptacion/clientes-inactivos"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <ClientesInactivos />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/recaptacion/asignados"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <AsignadosGet />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/recaptacion/estadisticas"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <EstadisticasRecaptacion />{' '}
               </ProtectedRoute>
             }
           />

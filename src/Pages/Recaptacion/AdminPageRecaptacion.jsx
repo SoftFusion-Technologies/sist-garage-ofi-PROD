@@ -22,7 +22,7 @@ const recaptacionLinks = [
     icon: <FaBullhorn />
   },
   {
-    to: '/dashboard/recaptacion/inactivos',
+    to: '/dashboard/recaptacion/clientes-inactivos',
     label: 'Clientes inactivos',
     icon: <FaUserClock />
   },
@@ -32,7 +32,10 @@ const recaptacionLinks = [
     icon: <FaList />
   },
   {
-    to: '/dashboard/recaptacion/crear',
+    to: {
+      pathname: '/dashboard/recaptacion/campanas',
+      state: { abrirModal: true }
+    },
     label: 'Crear campaña',
     icon: <FaPlusCircle />
   },
@@ -53,7 +56,7 @@ const AdminPageRecaptacion = () => {
         <div className="min-h-screen bg-gradient-to-b from-[#0a0a0f] via-[#12121b] to-[#1a1a2e]">
           <ParticlesBackground />
           <ButtonBack />
-          <div className="text-center pt-24">
+          <div className="text-center pt-24 px-4">
             <motion.h1
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -64,20 +67,27 @@ const AdminPageRecaptacion = () => {
             </motion.h1>
           </div>
 
-          <div className="xl:px-0 sm:px-16 px-6 max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-8 py-12">
-            {recaptacionLinks.map(({ to, label, icon }, index) => (
-              <Link to={to} key={label}>
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5, delay: index * 0.2 }}
-                  className="bg-white shadow-xl hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:border-orange-400 transition-all duration-300 font-semibold text-lg lg:text-xl text-gray-800 rounded-2xl flex justify-center items-center h-40 cursor-pointer border border-white/20 hover:scale-[1.02] flex-col gap-2"
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 justify-center">
+              {recaptacionLinks.map(({ to, label, icon }, index) => (
+                <Link
+                  to={typeof to === 'string' ? to : to.pathname}
+                  state={to.state || {}}
+                  key={label}
+                  className="flex justify-center"
                 >
-                  <span className="text-4xl text-orange-500">{icon}</span>
-                  <span>{label}</span>
-                </motion.div>
-              </Link>
-            ))}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.4, delay: index * 0.1 }}
+                    className="bg-white/90 backdrop-blur-xl shadow-lg hover:shadow-orange-300 transition-all duration-300 text-gray-800 font-semibold text-lg rounded-2xl w-full max-w-xs p-6 flex flex-col items-center justify-center border border-white/20 hover:scale-[1.03] gap-3"
+                  >
+                    <span className="text-4xl text-orange-500">{icon}</span>
+                    <span className="text-center">{label}</span>
+                  </motion.div>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </section>

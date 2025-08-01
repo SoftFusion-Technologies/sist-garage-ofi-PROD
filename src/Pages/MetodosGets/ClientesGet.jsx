@@ -441,6 +441,14 @@ export default function ClientesGet() {
                   </div>
                 </div>
 
+                <button
+                  className="text-red-500 mt-4 text-xs font-semibold hover:text-red-600 transition"
+                  onClick={() => openDetalleCliente(c)}
+                  title="Ver detalle del cliente"
+                >
+                  Ver detalle
+                </button>
+              
                 {/* Acciones */}
                 <div className="flex flex-col items-center justify-center px-6 gap-3 bg-white/60 backdrop-blur-xl">
                   <AdminActions
