@@ -258,6 +258,8 @@ export default function PuntoVenta() {
     precio_unitario: item.precio
   }));
 
+  const [mostrarValorTicket, setMostrarValorTicket] = useState(true);
+
   const formatearPrecio = (valor) =>
     new Intl.NumberFormat('es-AR', {
       style: 'currency',
@@ -951,6 +953,8 @@ export default function PuntoVenta() {
                 setAplicarDescuento={setAplicarDescuento}
                 descuentoPersonalizado={descuentoPersonalizado}
                 setDescuentoPersonalizado={setDescuentoPersonalizado}
+                mostrarValorTicket={mostrarValorTicket}
+                setMostrarValorTicket={setMostrarValorTicket}
               />
             )}
 
@@ -1253,6 +1257,7 @@ export default function PuntoVenta() {
         <TicketVentaModal
           venta={ventaFinalizada}
           onClose={() => setVentaFinalizada(null)}
+          mostrarValorTicket={mostrarValorTicket}
         />
       )}
       <ModalNuevoCliente

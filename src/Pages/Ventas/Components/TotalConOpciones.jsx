@@ -4,7 +4,9 @@ function TotalConOpciones({
   aplicarDescuento,
   setAplicarDescuento,
   descuentoPersonalizado,
-  setDescuentoPersonalizado
+  setDescuentoPersonalizado,
+  mostrarValorTicket,
+  setMostrarValorTicket
 }) {
   return (
     <>
@@ -47,6 +49,19 @@ function TotalConOpciones({
             className="w-20 px-2 py-1 rounded bg-gray-100 text-black font-bold"
           />
         )}
+      </div>
+
+      {/* Toggle mostrar valor ticket */}
+      <div className="flex justify-end items-center gap-3 mt-4 text-white select-none text-sm">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={mostrarValorTicket}
+            onChange={() => setMostrarValorTicket((prev) => !prev)}
+            className="accent-emerald-400"
+          />
+          Mostrar valor del ticket
+        </label>
       </div>
 
       {totalCalculado.total === 0 && (

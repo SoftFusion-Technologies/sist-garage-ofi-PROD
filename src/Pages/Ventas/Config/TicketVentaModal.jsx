@@ -130,7 +130,7 @@ function numeroALetras(num) {
 
 /* ------------------------------------------------------ */
 
-export default function TicketVentaModal({ venta, onClose }) {
+export default function TicketVentaModal({ venta, onClose, mostrarValorTicket }) {
   const ref = useRef();
   const navigate = useNavigate();
   const [config, setConfig] = useState(null);
@@ -467,30 +467,36 @@ export default function TicketVentaModal({ venta, onClose }) {
                           ×{cantidad}
                         </span>
                       </span>
-                      <span className="tabular-nums">
-                        ${formatCurrency(precioCobradoTotal)}
-                      </span>
-                    </div>
-
-                    {/* Precio unitario + descuento */}
-                    <div className="mt-1 text-[11px] text-gray-500 flex justify-between">
-                      <span>
-                        Unit: ${formatCurrency(precioCobradoUnit)}
-                        {diferencia > 0 && (
-                          <>
-                            {' '}
-                            <del className="text-gray-400">
-                              ${formatCurrency(precioOriginalUnit)}
-                            </del>
-                          </>
-                        )}
-                      </span>
-                      {diferencia > 0 && (
-                        <span className="text-red-500">
-                          -${formatCurrency(diferencia)} ({porcentaje}%)
+                      {/* Ocultar precios si el toggle está apagado */}
+                      {mostrarValorTicket && (
+                        <span className="tabular-nums">
+                          ${formatCurrency(precioCobradoTotal)}
                         </span>
                       )}
                     </div>
+
+                    {/* Precio unitario + descuento */}
+                    {/* Mostrar info de precio unitario y descuentos solo si está activo */}
+                    {mostrarValorTicket && (
+                      <div className="mt-1 text-[11px] text-gray-500 flex justify-between">
+                        <span>
+                          Unit: ${formatCurrency(precioCobradoUnit)}
+                          {diferencia > 0 && (
+                            <>
+                              {' '}
+                              <del className="text-gray-400">
+                                ${formatCurrency(precioOriginalUnit)}
+                              </del>
+                            </>
+                          )}
+                        </span>
+                        {diferencia > 0 && (
+                          <span className="text-red-500">
+                            -${formatCurrency(diferencia)} ({porcentaje}%)
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })

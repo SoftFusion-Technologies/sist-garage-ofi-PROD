@@ -53,6 +53,7 @@ import HistorialCajasPorLocal from './Pages/Ventas/HistorialCajasPorLocal';
 import DetalleCaja from './Pages/Ventas/DetalleCaja';
 import AdminCajasAbiertas from './Pages/Ventas/AdminCajasAbiertas';
 import AnaliticasCaja from './Pages/Ventas/AnaliticasCaja';
+import AdminPageRecaptacion from './Pages/Recaptacion/AdminPageRecaptacion';
 
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
@@ -274,6 +275,17 @@ function AppContent() {
             }
           />
           {/* MODULO DENTRO DE VENTAS FINAL BENJAMIN ORELLANA 22 06 25 */}
+          {/* MODULO DENTRO DE RECAPTACION INICIO BENJAMIN ORELLANA 28 07 25 */}
+          <Ruta
+            path="/dashboard/recaptacion"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <AdminPageRecaptacion />{' '}
+              </ProtectedRoute>
+            }
+          />
+          {/* MODULO DENTRO DE RECAPTACION FINAL BENJAMIN ORELLANA 28 07 25 */}
           {/* componentes del staff y login FINAL */}
           {/* <Ruta path="/*" element={<NotFound />} /> */}
           {/* 🔁 Redirección automática al login si se accede a "/" */}
