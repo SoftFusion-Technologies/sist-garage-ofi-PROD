@@ -1,19 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import { FaUserTie, FaEnvelope, FaMapMarkerAlt, FaStore } from 'react-icons/fa';
+import {
+  FaUserTie,
+  FaEnvelope,
+  FaMapMarkerAlt,
+  FaStore,
+  FaPlusCircle,
+  FaEdit,
+  FaTrash
+} from 'react-icons/fa';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import ParticlesBackground from '../../Components/ParticlesBackground';
 import ButtonBack from '../../Components/ButtonBack';
-
+import VendedorModal from '../../Components/VendedorModal';
+import { useAuth } from '../../AuthContext';
 const VendedoresGet = () => {
   const [vendedores, setVendedores] = useState([]);
   const [filtro, setFiltro] = useState('');
-
+  const [modalData, setModalData] = useState(null);
+  const { userLevel } = useAuth();
+  // Listar vendedores
   const fetchVendedores = async () => {
     try {
       const res = await axios.get('http://localhost:8080/usuarios');
-      const soloVendedores = res.data.filter((u) => u.rol === 'vendedor');
-      setVendedores(soloVendedores);
+      setVendedores(res.data.filter((u) => u.rol === 'vendedor'));
     } catch (err) {
       console.error('Error al obtener vendedores:', err);
     }
@@ -23,19 +33,46 @@ const VendedoresGet = () => {
     fetchVendedores();
   }, []);
 
+  // Abrir modal: null para nuevo, o el vendedor para editar
+  const abrirModal = (vendedor = null) => setModalData(vendedor || {});
+
+  const cerrarModal = () => {
+    setModalData(null);
+    fetchVendedores();
+  };
+
+  // Eliminar vendedor
+  const eliminarVendedor = async (id) => {
+    if (!window.confirm('¿Eliminar este vendedor?')) return;
+    try {
+      await axios.delete(`http://localhost:8080/usuarios/${id}`);
+      fetchVendedores();
+    } catch (err) {
+      alert('Error al eliminar');
+    }
+  };
+
+  // Filtro
   const vendedoresFiltrados = vendedores.filter((v) =>
     v.nombre.toLowerCase().includes(filtro.toLowerCase())
   );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-950 via-purple-900 to-purple-800 text-white px-4 py-10">
-          <ParticlesBackground></ParticlesBackground>
-          <ButtonBack></ButtonBack>
-          <div className="max-w-6xl mx-auto">
-        <h1 className="titulo text-4xl font-extrabold text-center mb-10 drop-shadow-md uppercase">
-          <FaUserTie className="inline-block mr-2" />
-          Vendedores
-        </h1>
+      <ParticlesBackground />
+      <ButtonBack />
+      <div className="max-w-6xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="titulo text-4xl font-extrabold text-center drop-shadow-md uppercase">
+            <FaUserTie className="inline-block mr-2" /> Vendedores
+          </h1>
+          <button
+            onClick={() => abrirModal()}
+            className="flex items-center gap-2 bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-full shadow-lg transition"
+          >
+            <FaPlusCircle /> Nuevo Vendedor
+          </button>
+        </div>
 
         <div className="flex justify-center mb-8">
           <input
@@ -76,11 +113,30 @@ const VendedoresGet = () => {
                   <FaMapMarkerAlt className="inline mr-2 text-purple-500" />
                   {vendedor.locale?.direccion || 'Sin dirección'}
                 </p>
+                {userLevel === 'admin' && (
+                  <div className="flex gap-2 mt-4">
+                    <button
+                      onClick={() => abrirModal(vendedor)}
+                      className="flex items-center gap-2 px-3 py-1 text-sm bg-blue-500 hover:bg-blue-600 rounded-full text-white"
+                    >
+                      <FaEdit /> Editar
+                    </button>
+                    <button
+                      onClick={() => eliminarVendedor(vendedor.id)}
+                      className="flex items-center gap-2 px-3 py-1 text-sm bg-red-600 hover:bg-red-700 rounded-full text-white"
+                    >
+                      <FaTrash /> Eliminar
+                    </button>
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>
         )}
       </div>
+      {modalData && (
+        <VendedorModal vendedor={modalData} onClose={cerrarModal} />
+      )}
     </div>
   );
 };
