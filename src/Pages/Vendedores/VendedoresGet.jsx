@@ -14,11 +14,21 @@ import ParticlesBackground from '../../Components/ParticlesBackground';
 import ButtonBack from '../../Components/ButtonBack';
 import VendedorModal from '../../Components/VendedorModal';
 import { useAuth } from '../../AuthContext';
+import { useLocation } from 'react-router-dom';
+
 const VendedoresGet = () => {
   const [vendedores, setVendedores] = useState([]);
   const [filtro, setFiltro] = useState('');
   const [modalData, setModalData] = useState(null);
   const { userLevel } = useAuth();
+
+    const location = useLocation();
+  
+    useEffect(() => {
+      if (location.state?.abrirModal) {
+        abrirModal(); // Abre el modal automáticamente
+      }
+    }, [location.state]);
   // Listar vendedores
   const fetchVendedores = async () => {
     try {

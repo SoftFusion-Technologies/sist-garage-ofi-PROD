@@ -61,6 +61,7 @@ import EstadisticasRecaptacion from './Pages/Recaptacion/EstadisticasRecaptacion
 import AdminPageVendedores from './Pages/Vendedores/AdminPageVendedores';
 import VendedoresGet from './Pages/Vendedores/VendedoresGet';
 import VentasPorVendedor from './Pages/Vendedores/VentasPorVendedor';
+import DashboardEstadisticasVendedores from './Pages/Vendedores/DashboardEstadisticasVendedores';
 
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
@@ -354,6 +355,15 @@ function AppContent() {
               <ProtectedRoute>
                 {' '}
                 <VentasPorVendedor />{' '}
+              </ProtectedRoute>
+            }
+          />{' '}
+          <Ruta
+            path="/dashboard/vendedores/estadisticas"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <DashboardEstadisticasVendedores />{' '}
               </ProtectedRoute>
             }
           />

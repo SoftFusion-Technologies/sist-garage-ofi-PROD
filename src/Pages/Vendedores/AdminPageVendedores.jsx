@@ -27,11 +27,6 @@ const vendedoresLinks = [
     icon: <FaChartBar />
   },
   {
-    to: '/dashboard/vendedores/ranking',
-    label: 'Ranking de Vendedores',
-    icon: <FaMedal />
-  },
-  {
     to: {
       pathname: '/dashboard/vendedores/listado',
       state: { abrirModal: true }
