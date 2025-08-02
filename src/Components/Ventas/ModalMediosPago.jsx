@@ -12,6 +12,7 @@ import {
 
 import { dynamicIcon } from '../../utils/dynamicIcon';
 import axios from 'axios';
+import { useAuth } from '../../AuthContext';
 
 export default function ModalMediosPago({
   show,
@@ -19,6 +20,7 @@ export default function ModalMediosPago({
   mediosPago,
   setMediosPago
 }) {
+  const {userLevel} = useAuth()
   const [busqueda, setBusqueda] = useState('');
   const [editando, setEditando] = useState(null);
   const [modoCrear, setModoCrear] = useState(false);
@@ -387,20 +389,24 @@ export default function ModalMediosPago({
                 {m.ajuste_porcentual > 0 && '+'}
                 {m.ajuste_porcentual}%
               </span>
-              <button
-                className="p-1 sm:p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-zinc-700 rounded-full transition"
-                title="Editar"
-                onClick={() => comenzarEdicion(m)}
-              >
-                <FaEdit />
-              </button>
-              <button
-                className="p-1 sm:p-2 text-red-500 hover:bg-red-100 dark:hover:bg-zinc-800 rounded-full transition"
-                title="Eliminar"
-                onClick={() => borrar(m.id)}
-              >
-                <FaTrash />
-              </button>
+              {userLevel === 'admin' && (
+                <>
+                  <button
+                    className="p-1 sm:p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-zinc-700 rounded-full transition"
+                    title="Editar"
+                    onClick={() => comenzarEdicion(m)}
+                  >
+                    <FaEdit />
+                  </button>
+                  <button
+                    className="p-1 sm:p-2 text-red-500 hover:bg-red-100 dark:hover:bg-zinc-800 rounded-full transition"
+                    title="Eliminar"
+                    onClick={() => borrar(m.id)}
+                  >
+                    <FaTrash />
+                  </button>
+                </>
+              )}
             </div>
           ))}
         </div>
