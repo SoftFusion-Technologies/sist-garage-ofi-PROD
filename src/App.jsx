@@ -62,6 +62,8 @@ import AdminPageVendedores from './Pages/Vendedores/AdminPageVendedores';
 import VendedoresGet from './Pages/Vendedores/VendedoresGet';
 import VentasPorVendedor from './Pages/Vendedores/VentasPorVendedor';
 import DashboardEstadisticasVendedores from './Pages/Vendedores/DashboardEstadisticasVendedores';
+import CombosGet from './Pages/Stock/Combos/CombosGet';
+import ComboEditarPermitidos from './Pages/Stock/Combos/ComboEditarPermitidos';
 
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
@@ -162,6 +164,23 @@ function AppContent() {
               <ProtectedRoute>
                 {' '}
                 <EstadosGet />{' '}
+              </ProtectedRoute>
+            }
+          />{' '}
+          <Ruta
+            path="/dashboard/stock/combos"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <CombosGet />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/stock/combos/:id/permitidos"
+            element={
+              <ProtectedRoute>
+                <ComboEditarPermitidos />
               </ProtectedRoute>
             }
           />

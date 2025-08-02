@@ -14,7 +14,8 @@ import clsx from 'clsx';
 import ParticlesBackground from '../../Components/ParticlesBackground';
 import { useAuth } from '../../AuthContext'; // Ajustá el path si es necesario
 import { es } from 'date-fns/locale'; // agregá solo esto, sin volver a declarar `format`
-
+import ModalDetalleCombo from '../../Components/ModalDetalleCombo'; // ajusta el path
+import { formatearPeso } from '../../utils/formatearPeso';
 export default function VentasTimeline() {
   const [ventas, setVentas] = useState([]);
   const [busqueda, setBusqueda] = useState('');
@@ -28,6 +29,9 @@ export default function VentasTimeline() {
   const [showDevolucionModal, setShowDevolucionModal] = useState(false);
   const [motivo, setMotivo] = useState('');
   const { userId, userLocalId } = useAuth();
+
+  const [comboSeleccionado, setComboSeleccionado] = useState(null);
+  const [modalDetalleCombo, setModalDetalleCombo] = useState(false);
 
   const totalPages = Math.ceil(total / limit);
 
@@ -392,6 +396,29 @@ export default function VentasTimeline() {
                       ANULAR VENTA
                     </button>
                   )}
+
+                  {venta.detalle_venta_combos?.map((comboVenta, idx) => (
+                    <div
+                      key={idx}
+                      className="mt-4 border-t border-gray-600 pt-4"
+                    >
+                      <p className="font-semibold text-purple-400">
+                        Combo: {comboVenta.combo.nombre} × {comboVenta.cantidad}
+                      </p>
+                      {/* <p className="text-sm text-gray-300">
+                        Precio: {formatearPeso(comboVenta.precio_fijo)}
+                      </p> */}
+                      <button
+                        onClick={() => {
+                          setComboSeleccionado(comboVenta);
+                          setModalDetalleCombo(true);
+                        }}
+                        className="mt-1 text-sm text-purple-300 hover:underline"
+                      >
+                        Ver detalles del combo
+                      </button>
+                    </div>
+                  ))}
 
                   <div className="-mt-5 absolute hidden group-hover:flex top-1/2 right-5 -translate-y-1/2 gap-1 animate-fade-in">
                     <span className="px-3 py-1 text-xs rounded-full bg-emerald-700/90 text-white font-bold">
@@ -766,6 +793,11 @@ export default function VentasTimeline() {
           </div>
         </div>
       )}
+      <ModalDetalleCombo
+        comboVenta={comboSeleccionado}
+        isOpen={modalDetalleCombo}
+        onClose={() => setModalDetalleCombo(false)}
+      />
     </div>
   );
 }

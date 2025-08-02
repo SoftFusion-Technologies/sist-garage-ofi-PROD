@@ -13,7 +13,8 @@ import {
   FaCheckCircle,
   FaUserPlus,
   FaBarcode,
-  FaBoxOpen
+  FaBoxOpen,
+  FaCubes
 } from 'react-icons/fa';
 import ParticlesBackground from '../../Components/ParticlesBackground';
 import ModalNuevoCliente from '../../Components/Ventas/ModalNuevoCliente';
@@ -81,6 +82,13 @@ export default function PuntoVenta() {
   const buscadorRef = useRef(); // buscador manual
 
   const [modoEscaner, setModoEscaner] = useState(false); // Arranca en manual
+
+  const [modalVerCombosOpen, setModalVerCombosOpen] = useState(false);
+  const [combosModal, setCombosModal] = useState([]);
+  const [modalComboSearch, setModalComboSearch] = useState('');
+
+  const [comboSeleccionado, setComboSeleccionado] = useState(null);
+  const [combosSeleccionados, setCombosSeleccionados] = useState([]);
 
   useEffect(() => {
     if (modoEscaner) {
@@ -285,6 +293,21 @@ export default function PuntoVenta() {
     }
   };
 
+  const abrirModalVerCombos = async () => {
+    setModalVerCombosOpen(true);
+    try {
+      const res = await fetch('http://localhost:8080/combos');
+      const data = await res.json();
+      setCombosModal(data);
+    } catch (error) {
+      console.error('Error al cargar combos para el modal:', error);
+    }
+  };
+
+  const filteredCombosModal = combosModal.filter((combo) =>
+    combo.nombre.toLowerCase().includes(modalComboSearch.toLowerCase())
+  );
+
   const seleccionarProductoModal = (productoConTalle) => {
     // productoConTalle tiene todas las propiedades de producto + talle
     // Construimos un "producto" y "talle" para pasar a agregarAlCarrito
@@ -304,6 +327,68 @@ export default function PuntoVenta() {
 
     agregarAlCarrito(producto, talle);
     setModalVerProductosOpen(false);
+  };
+  const seleccionarCombo = async (combo) => {
+    try {
+      const res = await fetch(
+        `http://localhost:8080/combo-productos-permitidos/${combo.id}`
+      );
+      const permitidos = await res.json();
+
+      const productosDirectos = permitidos.filter((p) => p.producto);
+
+      const productosSeleccionados = [];
+
+      for (const item of productosDirectos) {
+        const producto = item.producto;
+
+        const resStock = await fetch(
+          `http://localhost:8080/buscar-productos-detallado?query=${producto.id}`
+        );
+        const stockData = await resStock.json();
+
+        if (stockData.length > 0) {
+          const talleDisponible = stockData[0];
+
+          const productoData = {
+            producto_id: producto.id,
+            nombre: producto.nombre,
+            precio: parseFloat(combo.precio_fijo) / combo.cantidad_items // Reparto proporcional
+          };
+
+          const talle = {
+            id: talleDisponible.talle_id,
+            nombre: talleDisponible.talle_nombre,
+            cantidad: talleDisponible.cantidad_disponible,
+            stock_id: talleDisponible.stock_id
+          };
+
+          // 👇 Agregar al carrito
+          agregarAlCarrito(productoData, talle, false);
+
+          // 👇 Agregar al listado para combosSeleccionados
+          productosSeleccionados.push({
+            stock_id: talleDisponible.stock_id
+          });
+        }
+      }
+
+      // 🔥 Guardar combo seleccionado con sus productos usados
+      if (productosSeleccionados.length > 0) {
+        setCombosSeleccionados((prev) => [
+          ...prev,
+          {
+            combo_id: combo.id,
+            precio_combo: parseFloat(combo.precio_fijo),
+            productos: productosSeleccionados
+          }
+        ]);
+      }
+
+      setModalVerCombosOpen(false);
+    } catch (error) {
+      console.error('Error al seleccionar combo:', error);
+    }
   };
 
   const [modalSearch, setModalSearch] = useState('');
@@ -540,6 +625,7 @@ export default function PuntoVenta() {
     const ventaRequest = {
       cliente_id: clienteSeleccionado ? clienteSeleccionado.id : null,
       productos: productosRequest,
+      combos: combosSeleccionados,
       total: totalFinalCalculado, // Total sin descuentos ni recargos
       medio_pago_id: medioPago,
       usuario_id: userId,
@@ -641,7 +727,6 @@ export default function PuntoVenta() {
       return false;
     }
   };
-  
 
   const abrirModalNuevoCliente = () => setModalNuevoClienteOpen(true);
 
@@ -821,12 +906,23 @@ export default function PuntoVenta() {
           {/* Botón principal */}
           <button
             onClick={abrirModalVerProductos}
-            className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white w-full sm:w-auto px-5 py-2 rounded-xl font-bold shadow-md hover:scale-105 hover:from-emerald-600 hover:to-emerald-700 transition-all focus:ring-2 focus:ring-emerald-400 focus:outline-none"
+            className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white w-full sm:w-auto px-2 py-2 rounded-xl font-bold shadow-md hover:scale-105 hover:from-emerald-600 hover:to-emerald-700 transition-all focus:ring-2 focus:ring-emerald-400 focus:outline-none"
             type="button"
           >
             <span className="flex items-center gap-1">
               <FaBoxOpen className="inline -ml-1" />
               Ver Productos
+            </span>
+          </button>
+
+          <button
+            onClick={abrirModalVerCombos}
+            className="bg-gradient-to-br from-purple-500 to-purple-600 text-white w-full sm:w-auto px-2 py-2 rounded-xl font-bold shadow-md hover:scale-105 hover:from-purple-600 hover:to-purple-700 transition-all focus:ring-2 focus:ring-purple-400 focus:outline-none"
+            type="button"
+          >
+            <span className="flex items-center gap-1">
+              <FaCubes className="inline -ml-1" />
+              Ver Combos
             </span>
           </button>
 
@@ -1273,6 +1369,125 @@ export default function PuntoVenta() {
               </button>
               <button
                 onClick={() => setModalVerProductosOpen(false)}
+                className="px-5 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg font-semibold text-gray-800 transition"
+                type="button"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalVerCombosOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modalCombosTitle"
+          className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-6"
+        >
+          <div
+            className="bg-white rounded-2xl p-6 max-w-xl w-full shadow-xl max-h-[70vh] flex flex-col"
+            tabIndex={-1}
+          >
+            {/* Header */}
+            <div className="flex justify-between items-center mb-4">
+              <h3
+                id="modalCombosTitle"
+                className="text-2xl font-semibold text-gray-900 select-none"
+              >
+                Seleccioná un combo
+              </h3>
+              <button
+                aria-label="Cerrar modal"
+                onClick={() => setModalVerCombosOpen(false)}
+                className="text-gray-400 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
+                type="button"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Buscador */}
+            <div className="relative mb-4">
+              <input
+                type="text"
+                placeholder="Filtrar combos..."
+                className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm transition"
+                value={modalComboSearch}
+                onChange={(e) => setModalComboSearch(e.target.value)}
+                autoFocus
+                aria-label="Buscar combos"
+              />
+              <svg
+                className="w-5 h-5 text-gray-400 absolute left-3 top-3 pointer-events-none"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 103.75 10.5a7.5 7.5 0 0012.9 6.15z"
+                />
+              </svg>
+            </div>
+
+            {/* Lista */}
+            {filteredCombosModal.length === 0 ? (
+              <p className="text-center text-gray-500 mt-8">
+                No se encontraron combos.
+              </p>
+            ) : (
+              <ul
+                className="overflow-y-auto max-h-[50vh] space-y-2 scrollbar-thin scrollbar-thumb-purple-400 scrollbar-track-gray-100"
+                tabIndex={0}
+                aria-label="Lista de combos"
+              >
+                {filteredCombosModal.map((combo) => (
+                  <li key={combo.id}>
+                    <button
+                      onClick={() => {
+                        seleccionarCombo(combo); // lo definimos abajo
+                      }}
+                      className="flex flex-col items-start w-full p-4 bg-gray-50 rounded-lg shadow-sm hover:bg-purple-50 focus:bg-purple-100 focus:outline-none transition"
+                      type="button"
+                    >
+                      <span className="font-semibold text-gray-900 text-left">
+                        {combo.nombre}
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        {combo.descripcion}
+                      </span>
+                      <span className="text-sm mt-1 text-gray-500">
+                        {combo.cantidad_items} items por $
+                        {parseFloat(combo.precio_fijo).toLocaleString()}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* Footer */}
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setModalVerCombosOpen(false)}
                 className="px-5 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg font-semibold text-gray-800 transition"
                 type="button"
               >

@@ -13,7 +13,8 @@ import {
   FaRulerCombined,
   FaBoxes,
   FaStore,
-  FaFolderOpen
+  FaFolderOpen,
+  FaGift
 } from 'react-icons/fa';
 
 const stockLinks = [
@@ -26,7 +27,12 @@ const stockLinks = [
     icon: <FaFolderOpen />
   },
   { to: '/dashboard/stock/productos', label: 'Productos', icon: <FaBoxes /> },
-  { to: '/dashboard/stock/stock', label: 'Stock', icon: <FaStore /> }
+  { to: '/dashboard/stock/stock', label: 'Stock', icon: <FaStore /> },
+  {
+    to: '/dashboard/stock/combos',
+    label: 'Combos',
+    icon: <FaGift />
+  }
 ];
 
 const AdminPageStock = () => {
