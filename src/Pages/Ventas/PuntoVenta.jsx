@@ -72,6 +72,11 @@ export default function PuntoVenta() {
   const [usarDescuentoPorProducto, setUsarDescuentoPorProducto] = useState({});
   const [modalUsarDescuento, setModalUsarDescuento] = useState(true);
 
+  const [mostrarModalCaja, setMostrarModalCaja] = useState(false);
+  const [mensajeCaja, setMensajeCaja] = useState('');
+  const [saldoInicial, setSaldoInicial] = useState('');
+  const [confirmarAbrirCaja, setConfirmarAbrirCaja] = useState(false);
+
   const inputRef = useRef(); // input invisible
   const buscadorRef = useRef(); // buscador manual
 
@@ -568,7 +573,14 @@ export default function PuntoVenta() {
 
       if (!response.ok) {
         const error = await response.json();
-        alert(error.mensajeError || 'Error al registrar la venta');
+        const msg = error.mensajeError || 'Error al registrar la venta';
+
+        if (msg.toLowerCase().includes('caja abierta')) {
+          setMensajeCaja(msg);
+          setMostrarModalCaja(true);
+        } else {
+          alert(msg);
+        }
         return;
       }
 
@@ -596,6 +608,7 @@ export default function PuntoVenta() {
         `http://localhost:8080/ventas/${ventaId}`
       ).then((r) => r.json());
       setVentaFinalizada(ventaCompleta);
+      alert('✅ Venta registrada correctamente');
 
       setCarrito([]);
       setClienteSeleccionado(null);
@@ -605,6 +618,30 @@ export default function PuntoVenta() {
       console.error('Error:', err);
     }
   };
+
+  const abrirCaja = async () => {
+    if (
+      !saldoInicial ||
+      isNaN(parseFloat(saldoInicial)) ||
+      parseFloat(saldoInicial) < 0
+    ) {
+      alert('Ingresá un saldo inicial válido');
+      return false;
+    }
+    try {
+      const res = await axios.post(`http://localhost:8080/caja`, {
+        usuario_id: userId,
+        local_id: userLocalId,
+        saldo_inicial: parseFloat(saldoInicial)
+      });
+      setSaldoInicial('');
+      return true; // ✅ apertura exitosa
+    } catch (err) {
+      alert(err.response?.data?.mensajeError || 'Error al abrir caja');
+      return false;
+    }
+  };
+  
 
   const abrirModalNuevoCliente = () => setModalNuevoClienteOpen(true);
 
@@ -1264,6 +1301,80 @@ export default function PuntoVenta() {
         open={modalNuevoClienteOpen}
         onClose={() => setModalNuevoClienteOpen(false)}
       />
+      {mostrarModalCaja && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md relative border-t-4 border-pink-500">
+            <h2 className="text-xl font-bold text-pink-600 mb-4 text-center">
+              ¡Atención!
+            </h2>
+            <p className="text-gray-700 text-center mb-4">{mensajeCaja}</p>
+
+            {!confirmarAbrirCaja ? (
+              <div className="flex flex-col items-center gap-4">
+                <p className="text-center text-gray-700">
+                  ¿Deseás abrir una nueva caja para continuar con la venta?
+                </p>
+                <div className="flex justify-center gap-4 mt-2">
+                  <button
+                    onClick={() => setMostrarModalCaja(false)}
+                    className="text-black px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={() => setConfirmarAbrirCaja(true)}
+                    className="px-4 py-2 rounded-lg bg-pink-500 text-white hover:bg-pink-600 transition"
+                  >
+                    Sí, abrir caja
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Campo de saldo inicial */}
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">
+                    Ingresá el saldo inicial
+                  </label>
+                  <input
+                    type="number"
+                    value={saldoInicial}
+                    onChange={(e) => setSaldoInicial(e.target.value)}
+                    className="text-black w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-pink-400"
+                    placeholder="Ej: 1000"
+                  />
+                </div>
+
+                {/* Botones */}
+                <div className="flex justify-end gap-2 mt-6">
+                  <button
+                    onClick={() => {
+                      setConfirmarAbrirCaja(false);
+                      setMostrarModalCaja(false);
+                    }}
+                    className="text-black px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const exito = await abrirCaja();
+                      if (exito) {
+                        setMostrarModalCaja(false);
+                        setConfirmarAbrirCaja(false);
+                        finalizarVenta(); // Reintenta la venta
+                      }
+                    }}
+                    className="px-4 py-2 rounded-lg bg-pink-500 text-white hover:bg-pink-600 transition"
+                  >
+                    Abrir Caja
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

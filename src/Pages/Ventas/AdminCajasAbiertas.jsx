@@ -79,13 +79,38 @@ export default function AdminCajasAbiertas() {
       </div>
     );
   }
-  
+
+  const [saldosActuales, setSaldosActuales] = useState({});
+
+  useEffect(() => {
+    const fetchSaldos = async () => {
+      const nuevosSaldos = {};
+      for (const caja of cajasAbiertas) {
+        try {
+          const res = await fetch(
+            `http://localhost:8080/caja/${caja.id}/saldo-actual`
+          );
+          const data = await res.json();
+          nuevosSaldos[caja.id] = data.saldo_actual;
+        } catch (err) {
+          console.error('Error obteniendo saldo actual', err);
+          nuevosSaldos[caja.id] = null;
+        }
+      }
+      setSaldosActuales(nuevosSaldos);
+    };
+
+    if (cajasAbiertas.length > 0) {
+      fetchSaldos();
+    }
+  }, [cajasAbiertas]);
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <ParticlesBackground></ParticlesBackground>
       <ButtonBack></ButtonBack>
-      <h1 className="text-3xl font-bold text-white text-center mb-10">
-        🟢 Cajas Abiertas por Local
+      <h1 className="titulo text-4xl uppercase font-bold text-white text-center mb-10">
+        Cajas Abiertas por Local
       </h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -99,10 +124,14 @@ export default function AdminCajasAbiertas() {
               key={caja.id}
               className="rounded-2xl bg-gradient-to-br from-green-600/30 via-green-500/10 to-white/10 text-white p-5 border border-white/20 backdrop-blur-2xl shadow-2xl transition hover:scale-[1.01] cursor-default"
             >
-              <div className="flex justify-between items-center mb-3">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  <FaCashRegister /> Caja #{caja.id}
+              {/* Encabezado */}
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-2xl font-extrabold tracking-wide flex items-center gap-2 text-white drop-shadow-md">
+                  <FaCashRegister className="text-yellow-300" /> Caja #{caja.id}
                 </h2>
+                <span className="text-xs bg-white/20 px-3 py-1 rounded-full uppercase font-semibold tracking-widest">
+                  Activa
+                </span>
               </div>
               <p className="mb-1">
                 <FaStore className="inline mr-2 text-sm" />
@@ -123,6 +152,16 @@ export default function AdminCajasAbiertas() {
                   currency: 'ARS'
                 })}
               </p>
+              <p className="text-lg font-bold text-emerald-300 mt-1">
+                💸 Saldo actual:{' '}
+                {saldosActuales[caja.id] != null
+                  ? saldosActuales[caja.id].toLocaleString('es-AR', {
+                      style: 'currency',
+                      currency: 'ARS'
+                    })
+                  : 'Cargando...'}
+              </p>
+
               <button
                 onClick={() => cerrarCaja(caja.id)}
                 className="mt-4 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold shadow-md transition-all"

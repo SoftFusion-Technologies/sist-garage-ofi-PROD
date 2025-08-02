@@ -58,6 +58,7 @@ import CampanasGet from './Pages/Recaptacion/CampanasGet';
 import ClientesInactivos from './Pages/Recaptacion/ClientesInactivos';
 import AsignadosGet from './Pages/Recaptacion/AsignadosGet';
 import EstadisticasRecaptacion from './Pages/Recaptacion/EstadisticasRecaptacion';
+import AdminPageVendedores from './Pages/Vendedores/AdminPageVendedores';
 
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
@@ -326,6 +327,17 @@ function AppContent() {
             }
           />
           {/* MODULO DENTRO DE RECAPTACION FINAL BENJAMIN ORELLANA 28 07 25 */}
+          {/* MODULO DENTRO DE VENDEDORES INICIO BENJAMIN ORELLANA 01 08 25 */}
+          <Ruta
+            path="/dashboard/vendedores"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <AdminPageVendedores />{' '}
+              </ProtectedRoute>
+            }
+          />
+          {/* MODULO DENTRO DE VENDEDORES FINAL BENJAMIN ORELLANA 01 08 25 */}
           {/* componentes del staff y login FINAL */}
           {/* <Ruta path="/*" element={<NotFound />} /> */}
           {/* 🔁 Redirección automática al login si se accede a "/" */}

@@ -154,6 +154,7 @@ export default function UsuariosGet() {
                 <option value="todos">Todos</option>
                 <option value="admin">Admin</option>
                 <option value="empleado">Empleado</option>
+                <option value="vendedor">Vendedor</option>
               </select>
             </div>
 
@@ -273,8 +274,9 @@ export default function UsuariosGet() {
               className="w-full px-4 py-2 rounded-lg border border-gray-300"
               required
             >
-              <option value="empleado">Empleado</option>
               <option value="admin">Admin</option>
+              <option value="empleado">Empleado</option>
+              <option value="vendedor">Vendedor</option>
             </select>
             <select
               value={formData.local_id || ''}

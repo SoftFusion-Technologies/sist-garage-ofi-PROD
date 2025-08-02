@@ -81,7 +81,12 @@ const LoginForm = () => {
               res.data.rol,
               res.data.local_id
             );
-            navigate('/dashboard');
+
+            if (res.data.rol === 'vendedor') {
+              navigate('/dashboard/ventas/pos');
+            } else {
+              navigate('/dashboard');
+            }
           } else {
             setModalMessage('Usuario o contraseña incorrectos');
             setIsModalOpen(true);
