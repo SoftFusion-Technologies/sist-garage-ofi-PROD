@@ -7,11 +7,14 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import ParticlesBackground from '../../Components/ParticlesBackground';
 import ButtonBack from '../../Components/ButtonBack';
+import { useAuth } from '../../AuthContext';
 
 export default function HistorialCajasPorLocal() {
   const [locales, setLocales] = useState([]);
   const [localSeleccionado, setLocalSeleccionado] = useState(null);
   const [cajas, setCajas] = useState([]);
+  const { userLevel } = useAuth();
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,6 +41,25 @@ export default function HistorialCajasPorLocal() {
       locale: es
     });
   };
+
+  if (userLevel !== 'admin') {
+    return (
+      <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] text-white px-4">
+        <ParticlesBackground />
+        <ButtonBack />
+
+        <div className="backdrop-blur-lg bg-white/5 border border-white/20 shadow-2xl rounded-3xl p-8 max-w-md text-center space-y-6 animate-fade-in">
+          <div className="text-red-500 text-5xl animate-bounce">🚫</div>
+          <h1 className="uppercase text-3xl font-extrabold tracking-tight">
+            Acceso Denegado
+          </h1>
+          <p className="text-sm text-white/80">
+            No tenés permiso para acceder a este panel.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-6xl mx-auto">

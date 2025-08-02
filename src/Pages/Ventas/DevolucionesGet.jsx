@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../AuthContext';
 import ParticlesBackground from '../../Components/ParticlesBackground';
+import ButtonBack from '../../Components/ButtonBack';
 
 export default function DevolucionesPage() {
   const [devoluciones, setDevoluciones] = useState([]);
@@ -153,10 +154,11 @@ export default function DevolucionesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] p-6 text-white">
       <ParticlesBackground></ParticlesBackground>
+      <ButtonBack></ButtonBack>
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="bg-[#1f1b3a] shadow-2xl rounded-3xl p-6 border border-violet-600">
-          <h1 className="titulo uppercase text-4xl font-extrabold tracking-wide text-violet-300 mb-4">
-            🚀 Gestión de Devoluciones
+          <h1 className="titulo text-center uppercase text-4xl font-extrabold tracking-wide text-violet-300 mb-4">
+            Gestión de Devoluciones
           </h1>
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <input

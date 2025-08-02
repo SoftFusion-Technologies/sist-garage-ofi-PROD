@@ -9,6 +9,7 @@ import {
   FaEye
 } from 'react-icons/fa';
 import axios from 'axios';
+import { useAuth } from '../../../AuthContext';
 
 const API_URL = 'http://localhost:8080/ticket-config';
 
@@ -33,6 +34,7 @@ export default function TicketConfigCard() {
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const [showPreview, setShowPreview] = useState(true);
+  const { userLevel } = useAuth(); // ✅ Obtené el nivel de usuario
 
   // Cargar configuración
   useEffect(() => {
@@ -158,58 +160,61 @@ export default function TicketConfigCard() {
             )}
 
             {/* Botones */}
-            <div className="col-span-2 flex flex-wrap gap-3 mt-2">
-              {!edit && config && (
+            {userLevel === 'admin' && (
+              <div className="col-span-2 flex flex-wrap gap-3 mt-2">
+                {!edit && config && (
+                  <button
+                    type="button"
+                    onClick={() => setEdit(true)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold bg-violet-500 hover:bg-violet-600 text-white transition focus:ring-2 focus:ring-violet-400 disabled:opacity-60"
+                    disabled={loading}
+                  >
+                    <FaEdit /> Editar
+                  </button>
+                )}
+                {(edit || !config) && (
+                  <button
+                    type="submit"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold bg-emerald-500 hover:bg-emerald-600 text-white transition focus:ring-2 focus:ring-emerald-400 disabled:opacity-60"
+                    disabled={loading}
+                  >
+                    <FaSave /> Guardar
+                  </button>
+                )}
+                {edit && config && (
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold bg-zinc-300 hover:bg-zinc-400 text-zinc-800 transition focus:ring-2 focus:ring-zinc-200 disabled:opacity-60"
+                    onClick={() => {
+                      setEdit(false);
+                      setForm(config);
+                    }}
+                    disabled={loading}
+                  >
+                    <FaTimes /> Cancelar
+                  </button>
+                )}
+                {config && (
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold bg-red-500 hover:bg-red-600 text-white transition focus:ring-2 focus:ring-red-400 disabled:opacity-60"
+                    onClick={handleDelete}
+                    disabled={loading}
+                  >
+                    <FaTrash /> Eliminar
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => setEdit(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold bg-violet-500 hover:bg-violet-600 text-white transition focus:ring-2 focus:ring-violet-400 disabled:opacity-60"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold border border-violet-300 dark:border-violet-500 text-violet-700 dark:text-violet-300 bg-white dark:bg-zinc-900 hover:bg-violet-100 dark:hover:bg-violet-900 transition focus:ring-2 focus:ring-violet-400 disabled:opacity-60"
+                  onClick={() => setShowPreview((v) => !v)}
                   disabled={loading}
                 >
-                  <FaEdit /> Editar
+                  <FaEye /> {showPreview ? 'Ocultar Previa' : 'Ver Previa'}
                 </button>
-              )}
-              {(edit || !config) && (
-                <button
-                  type="submit"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold bg-emerald-500 hover:bg-emerald-600 text-white transition focus:ring-2 focus:ring-emerald-400 disabled:opacity-60"
-                  disabled={loading}
-                >
-                  <FaSave /> Guardar
-                </button>
-              )}
-              {edit && config && (
-                <button
-                  type="button"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold bg-zinc-300 hover:bg-zinc-400 text-zinc-800 transition focus:ring-2 focus:ring-zinc-200 disabled:opacity-60"
-                  onClick={() => {
-                    setEdit(false);
-                    setForm(config);
-                  }}
-                  disabled={loading}
-                >
-                  <FaTimes /> Cancelar
-                </button>
-              )}
-              {config && (
-                <button
-                  type="button"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold bg-red-500 hover:bg-red-600 text-white transition focus:ring-2 focus:ring-red-400 disabled:opacity-60"
-                  onClick={handleDelete}
-                  disabled={loading}
-                >
-                  <FaTrash /> Eliminar
-                </button>
-              )}
-              <button
-                type="button"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold border border-violet-300 dark:border-violet-500 text-violet-700 dark:text-violet-300 bg-white dark:bg-zinc-900 hover:bg-violet-100 dark:hover:bg-violet-900 transition focus:ring-2 focus:ring-violet-400 disabled:opacity-60"
-                onClick={() => setShowPreview((v) => !v)}
-                disabled={loading}
-              >
-                <FaEye /> {showPreview ? 'Ocultar Previa' : 'Ver Previa'}
-              </button>
-            </div>
+              </div>
+            )}
+
             <div className="col-span-2 mt-2">
               {msg && (
                 <div className="text-emerald-500 dark:text-emerald-400 font-bold flex items-center gap-2">

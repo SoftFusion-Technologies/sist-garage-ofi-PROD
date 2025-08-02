@@ -14,6 +14,7 @@ import {
   Legend
 } from 'recharts';
 import ParticlesBackground from '../../Components/ParticlesBackground';
+import ButtonBack from '../../Components/ButtonBack';
 
 const formatearFecha = (fecha) =>
   format(new Date(fecha), "dd 'de' MMMM yyyy", { locale: es });
@@ -58,9 +59,9 @@ export default function AnaliticasCaja() {
   return (
     <div className="relative p-6 max-w-7xl mx-auto text-white">
       <ParticlesBackground />
-
-      <h1 className="text-4xl font-black mb-10 text-center tracking-wide drop-shadow-xl">
-        📊 Analíticas del Negocio
+      <ButtonBack></ButtonBack>
+      <h1 className="titulo uppercase text-4xl font-black mb-10 text-center tracking-wide drop-shadow-xl">
+         Analíticas del Negocio
       </h1>
 
       {/* 🔵 Gráfico de ventas por mes */}
