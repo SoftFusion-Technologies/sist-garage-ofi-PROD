@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import ParticlesBackground from '../../Components/ParticlesBackground';
 import ButtonBack from '../../Components/ButtonBack';
 import DetalleMovimientoModal from './Config/DetalleMovimientoModal';
+import { useAuth } from '../../AuthContext';
 const tipoIcons = {
   ingreso: <FaArrowUp className="text-emerald-400" />,
   egreso: <FaArrowDown className="text-red-400" />
@@ -20,24 +21,51 @@ export default function MovimientosGlobal() {
   const [movimientos, setMovimientos] = useState([]);
   const [busqueda, setBusqueda] = useState('');
   const [tipoFiltro, setTipoFiltro] = useState('todos');
+  const [localFiltro, setLocalFiltro] = useState('todos');
+
   const [loading, setLoading] = useState(true);
   const [detalle, setDetalle] = useState(null);
-
+  const { userLevel, userLocalId } = useAuth();
   useEffect(() => {
     setLoading(true);
-    fetch('http://localhost:8080/movimientos_caja')
+
+    const endpoint =
+      userLevel === 'admin'
+        ? 'http://localhost:8080/movimientos_caja'
+        : `http://localhost:8080/movimientos_caja?local_id=${userLocalId}`;
+
+    fetch(endpoint)
       .then((res) => res.json())
       .then((data) => setMovimientos(data))
       .finally(() => setLoading(false));
-  }, []);
+  }, [userLevel, userLocalId]);
+
+  // NUEVOS STATES
+  const [paginaActual, setPaginaActual] = useState(1);
+  const itemsPorPagina = 20;
 
   const movimientosFiltrados = movimientos.filter(
     (mov) =>
       (tipoFiltro === 'todos' || mov.tipo === tipoFiltro) &&
+      (localFiltro === 'todos' || mov.local_id == localFiltro) &&
       (mov.descripcion.toLowerCase().includes(busqueda.toLowerCase()) ||
         (mov.referencia && mov.referencia.toString().includes(busqueda)) ||
         (mov.caja_id && mov.caja_id.toString().includes(busqueda)))
   );
+
+  // CALCULO DE PAGINACIÓN
+  const totalPaginas = Math.ceil(movimientosFiltrados.length / itemsPorPagina);
+  const movimientosPaginados = movimientosFiltrados.slice(
+    (paginaActual - 1) * itemsPorPagina,
+    paginaActual * itemsPorPagina
+  );
+
+  // HANDLER PARA CAMBIO DE PÁGINA
+  const cambiarPagina = (nuevaPagina) => {
+    if (nuevaPagina >= 1 && nuevaPagina <= totalPaginas) {
+      setPaginaActual(nuevaPagina);
+    }
+  };
 
   // Exportar a CSV
   const exportarCSV = () => {
@@ -118,6 +146,29 @@ export default function MovimientosGlobal() {
             <option value="ingreso">Ingresos</option>
             <option value="egreso">Egresos</option>
           </select>
+          {userLevel === 'admin' && (
+            <select
+              className="rounded-lg px-3 py-2 bg-[#23253a] text-white text-sm"
+              value={localFiltro}
+              onChange={(e) => setLocalFiltro(e.target.value)}
+            >
+              <option value="todos">Todos los locales</option>
+              {[
+                ...new Map(
+                  movimientos
+                    .filter((m) => m.local_id !== null)
+                    .map((m) => [
+                      m.local_id,
+                      m.local_nombre || `Local #${m.local_id}`
+                    ])
+                ).entries()
+              ].map(([id, nombre]) => (
+                <option key={id} value={id}>
+                  {nombre}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         {loading ? (
@@ -142,7 +193,7 @@ export default function MovimientosGlobal() {
                 </tr>
               </thead>
               <tbody>
-                {movimientosFiltrados.map((mov) => (
+                {movimientosPaginados.map((mov) => (
                   <tr
                     key={mov.id}
                     className="hover:bg-emerald-900/10 transition cursor-pointer"
@@ -200,6 +251,27 @@ export default function MovimientosGlobal() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+        {totalPaginas > 1 && (
+          <div className="mt-4 flex justify-center items-center gap-2 text-white">
+            <button
+              onClick={() => cambiarPagina(paginaActual - 1)}
+              disabled={paginaActual === 1}
+              className="px-3 py-1 rounded bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50"
+            >
+              Anterior
+            </button>
+            <span className="text-sm mx-2">
+              Página {paginaActual} de {totalPaginas}
+            </span>
+            <button
+              onClick={() => cambiarPagina(paginaActual + 1)}
+              disabled={paginaActual === totalPaginas}
+              className="px-3 py-1 rounded bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50"
+            >
+              Siguiente
+            </button>
           </div>
         )}
       </div>
