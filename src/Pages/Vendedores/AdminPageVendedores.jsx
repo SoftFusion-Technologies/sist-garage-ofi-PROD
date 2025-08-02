@@ -22,7 +22,7 @@ const vendedoresLinks = [
     icon: <FaUserTie />
   },
   {
-    to: '/dashboard/vendedores/ventas',
+    to: '/dashboard/vendedores/masventas',
     label: 'Ventas por Vendedor',
     icon: <FaChartBar />
   },

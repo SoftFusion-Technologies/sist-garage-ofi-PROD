@@ -59,6 +59,8 @@ import ClientesInactivos from './Pages/Recaptacion/ClientesInactivos';
 import AsignadosGet from './Pages/Recaptacion/AsignadosGet';
 import EstadisticasRecaptacion from './Pages/Recaptacion/EstadisticasRecaptacion';
 import AdminPageVendedores from './Pages/Vendedores/AdminPageVendedores';
+import VendedoresGet from './Pages/Vendedores/VendedoresGet';
+import VentasPorVendedor from './Pages/Vendedores/VentasPorVendedor';
 
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
@@ -334,6 +336,24 @@ function AppContent() {
               <ProtectedRoute>
                 {' '}
                 <AdminPageVendedores />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/vendedores/listado"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <VendedoresGet />{' '}
+              </ProtectedRoute>
+            }
+          />{' '}
+          <Ruta
+            path="/dashboard/vendedores/masventas"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <VentasPorVendedor />{' '}
               </ProtectedRoute>
             }
           />
