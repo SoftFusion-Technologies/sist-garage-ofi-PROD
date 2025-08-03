@@ -31,8 +31,8 @@ export default function MovimientosGlobal() {
 
     const endpoint =
       userLevel === 'admin'
-        ? 'http://localhost:8080/movimientos_caja'
-        : `http://localhost:8080/movimientos_caja?local_id=${userLocalId}`;
+        ? 'https://vps-5192960-x.dattaweb.com/movimientos_caja'
+        : `https://vps-5192960-x.dattaweb.com/movimientos_caja?local_id=${userLocalId}`;
 
     fetch(endpoint)
       .then((res) => res.json())

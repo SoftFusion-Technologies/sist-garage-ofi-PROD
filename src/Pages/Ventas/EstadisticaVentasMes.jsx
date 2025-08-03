@@ -9,7 +9,7 @@ export default function EstadisticaVentasMes({ apiUrl }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch(apiUrl || 'http://localhost:8080/ventas-mes')
+    fetch(apiUrl || 'https://vps-5192960-x.dattaweb.com/ventas-mes')
       .then((res) => {
         if (!res.ok) throw new Error('Error al cargar los datos');
         return res.json();

@@ -66,7 +66,7 @@ const LoginForm = () => {
       setLoading(true);
 
       axios
-        .post('http://localhost:8080/login', {
+        .post('https://vps-5192960-x.dattaweb.com/login', {
           email: values.email,
           password: values.password
         })

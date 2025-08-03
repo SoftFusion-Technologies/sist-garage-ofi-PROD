@@ -21,7 +21,7 @@ const EstadosGet = () => {
 
   const fetchEstados = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/estados');
+      const res = await axios.get('https://vps-5192960-x.dattaweb.com/estados');
       setEstados(res.data);
     } catch (error) {
       console.error('Error al obtener estados:', error);
@@ -46,11 +46,11 @@ const EstadosGet = () => {
     e.preventDefault();
     try {
       if (editId) {
-        await axios.put(`http://localhost:8080/estados/${editId}`, {
+        await axios.put(`https://vps-5192960-x.dattaweb.com/estados/${editId}`, {
           nombre: formNombre
         });
       } else {
-        await axios.post('http://localhost:8080/estados', {
+        await axios.post('https://vps-5192960-x.dattaweb.com/estados', {
           nombre: formNombre
         });
       }
@@ -63,7 +63,7 @@ const EstadosGet = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:8080/estados/${id}`);
+      await axios.delete(`https://vps-5192960-x.dattaweb.com/estados/${id}`);
       fetchEstados();
     } catch (err) {
       if (err.response?.status === 409) {
@@ -168,7 +168,7 @@ const EstadosGet = () => {
               onClick={async () => {
                 try {
                   await axios.delete(
-                    `http://localhost:8080/estados/${confirmDelete}?forzar=true`
+                    `https://vps-5192960-x.dattaweb.com/estados/${confirmDelete}?forzar=true`
                   );
                   setConfirmDelete(null);
                   fetchEstados();

@@ -55,8 +55,8 @@ const ProductosGet = () => {
   const fetchData = async () => {
     try {
       const [resProd, resCat] = await Promise.all([
-        axios.get('http://localhost:8080/productos'),
-        axios.get('http://localhost:8080/categorias')
+        axios.get('https://vps-5192960-x.dattaweb.com/productos'),
+        axios.get('https://vps-5192960-x.dattaweb.com/categorias')
       ]);
       setProductos(resProd.data);
       setCategorias(resCat.data);
@@ -149,11 +149,11 @@ const ProductosGet = () => {
 
       if (editId) {
         await axios.put(
-          `http://localhost:8080/productos/${editId}`,
+          `https://vps-5192960-x.dattaweb.com/productos/${editId}`,
           dataToSend
         );
       } else {
-        await axios.post('http://localhost:8080/productos', dataToSend);
+        await axios.post('https://vps-5192960-x.dattaweb.com/productos', dataToSend);
       }
 
       fetchData();
@@ -165,7 +165,7 @@ const ProductosGet = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:8080/productos/${id}`);
+      await axios.delete(`https://vps-5192960-x.dattaweb.com/productos/${id}`);
       fetchData();
     } catch (err) {
       if (err.response?.status === 409) {
@@ -518,11 +518,11 @@ const ProductosGet = () => {
                 try {
                   // Eliminar stock primero
                   await axios.delete(
-                    `http://localhost:8080/stock/producto/${confirmDelete}`
+                    `https://vps-5192960-x.dattaweb.com/stock/producto/${confirmDelete}`
                   );
                   // Luego eliminar producto
                   await axios.delete(
-                    `http://localhost:8080/productos/${confirmDelete}`
+                    `https://vps-5192960-x.dattaweb.com/productos/${confirmDelete}`
                   );
                   setConfirmDelete(null);
                   fetchData();

@@ -149,7 +149,7 @@ export default function ClientesGet() {
 
   const fetchClientes = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/clientes');
+      const res = await axios.get('https://vps-5192960-x.dattaweb.com/clientes');
       setClientes(res.data);
     } catch (error) {
       console.error('Error al obtener clientes:', error);
@@ -186,11 +186,11 @@ export default function ClientesGet() {
     e.preventDefault();
     try {
       if (editId) {
-        await axios.put(`http://localhost:8080/clientes/${editId}`, formData);
+        await axios.put(`https://vps-5192960-x.dattaweb.com/clientes/${editId}`, formData);
         setModalFeedbackMsg('Cliente actualizado correctamente');
         setModalFeedbackType('success');
       } else {
-        await axios.post('http://localhost:8080/clientes', formData);
+        await axios.post('https://vps-5192960-x.dattaweb.com/clientes', formData);
         setModalFeedbackMsg('Cliente creado correctamente');
         setModalFeedbackType('success');
       }
@@ -213,7 +213,7 @@ export default function ClientesGet() {
     if (!window.confirm('¿Eliminar este cliente?')) return;
 
     try {
-      await axios.delete(`http://localhost:8080/clientes/${id}`);
+      await axios.delete(`https://vps-5192960-x.dattaweb.com/clientes/${id}`);
       fetchClientes();
       setModalFeedbackMsg('Cliente eliminado correctamente');
       setModalFeedbackType('success');
@@ -273,7 +273,7 @@ export default function ClientesGet() {
   const [detalleCliente, setDetalleCliente] = useState(null);
 
   const openDetalleCliente = (cliente) => {
-    fetch(`http://localhost:8080/clientes/${cliente.id}/ventas`)
+    fetch(`https://vps-5192960-x.dattaweb.com/clientes/${cliente.id}/ventas`)
       .then((res) => res.json())
       .then((ventas) => setDetalleCliente({ ...cliente, ventas }))
       .catch(() => setDetalleCliente({ ...cliente, ventas: [] }));
@@ -282,7 +282,7 @@ export default function ClientesGet() {
   const [detalleVenta, setDetalleVenta] = useState(null);
 
   const fetchDetalleVenta = (ventaId) => {
-    fetch(`http://localhost:8080/ventas/${ventaId}/detalle`)
+    fetch(`https://vps-5192960-x.dattaweb.com/ventas/${ventaId}/detalle`)
       .then((res) => res.json())
       .then((data) => setDetalleVenta(data))
       .catch(() => setDetalleVenta(null));

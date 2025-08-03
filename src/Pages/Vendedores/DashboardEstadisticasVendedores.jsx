@@ -67,7 +67,7 @@ const DashboardEstadisticasVendedores = () => {
 
   useEffect(() => {
     axios
-      .get('http://localhost:8080/ventas-estadisticas')
+      .get('https://vps-5192960-x.dattaweb.com/ventas-estadisticas')
       .then((res) => setData(res.data))
       .catch(() => setData(null));
   }, []);

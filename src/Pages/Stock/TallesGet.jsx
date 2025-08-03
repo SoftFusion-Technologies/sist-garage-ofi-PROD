@@ -27,7 +27,7 @@ const TallesGet = () => {
 
   const fetchTalles = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/talles');
+      const res = await axios.get('https://vps-5192960-x.dattaweb.com/talles');
       setTalles(res.data);
     } catch (error) {
       console.error('Error al obtener talles:', error);
@@ -77,9 +77,9 @@ const TallesGet = () => {
     e.preventDefault();
     try {
       if (editId) {
-        await axios.put(`http://localhost:8080/talles/${editId}`, formValues);
+        await axios.put(`https://vps-5192960-x.dattaweb.com/talles/${editId}`, formValues);
       } else {
-        await axios.post('http://localhost:8080/talles', formValues);
+        await axios.post('https://vps-5192960-x.dattaweb.com/talles', formValues);
       }
       fetchTalles();
       setModalOpen(false);
@@ -90,7 +90,7 @@ const TallesGet = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:8080/talles/${id}`);
+      await axios.delete(`https://vps-5192960-x.dattaweb.com/talles/${id}`);
       fetchTalles();
     } catch (err) {
       if (err.response?.status === 409) {
@@ -236,7 +236,7 @@ const TallesGet = () => {
               onClick={async () => {
                 try {
                   await axios.delete(
-                    `http://localhost:8080/talles/${confirmDelete}?forzar=true`
+                    `https://vps-5192960-x.dattaweb.com/talles/${confirmDelete}?forzar=true`
                   );
                   setConfirmDelete(null);
                   fetchTalles();

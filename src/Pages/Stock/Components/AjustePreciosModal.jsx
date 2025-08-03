@@ -48,7 +48,7 @@ export default function AjustePreciosModal({ open, onClose, onSuccess }) {
     if (open) {
       setError('');
       setSuccessMessage('');
-      axios.get('http://localhost:8080/categorias').then((res) => {
+      axios.get('https://vps-5192960-x.dattaweb.com/categorias').then((res) => {
         const options = res.data.map((c) => ({
           value: c.id,
           label: c.nombre
@@ -83,8 +83,8 @@ export default function AjustePreciosModal({ open, onClose, onSuccess }) {
     try {
       const ruta =
         modoAjuste === 'descuento'
-          ? 'http://localhost:8080/aplicar-descuento'
-          : 'http://localhost:8080/productos/aumentar-precio';
+          ? 'https://vps-5192960-x.dattaweb.com/aplicar-descuento'
+          : 'https://vps-5192960-x.dattaweb.com/productos/aumentar-precio';
 
       const payload =
         modoAjuste === 'descuento'
@@ -137,8 +137,8 @@ export default function AjustePreciosModal({ open, onClose, onSuccess }) {
     try {
       const ruta =
         modoAjuste === 'descuento'
-          ? 'http://localhost:8080/deshacer-descuento'
-          : 'http://localhost:8080/productos/deshacer-ajuste';
+          ? 'https://vps-5192960-x.dattaweb.com/deshacer-descuento'
+          : 'https://vps-5192960-x.dattaweb.com/productos/deshacer-ajuste';
 
       await axios.post(ruta, {
         ajuste_id: ajusteId

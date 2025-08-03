@@ -26,8 +26,8 @@ export default function DetalleCaja() {
     const fetchCajaYMovimientos = async () => {
       try {
         const [cajaRes, movimientosRes] = await Promise.all([
-          axios.get(`http://localhost:8080/caja/${id}`),
-          axios.get(`http://localhost:8080/movimientos/caja/${id}`)
+          axios.get(`https://vps-5192960-x.dattaweb.com/caja/${id}`),
+          axios.get(`https://vps-5192960-x.dattaweb.com/movimientos/caja/${id}`)
         ]);
         setCaja(cajaRes.data);
         setMovimientos(movimientosRes.data);

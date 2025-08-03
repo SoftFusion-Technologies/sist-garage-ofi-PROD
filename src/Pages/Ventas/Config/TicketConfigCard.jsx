@@ -11,7 +11,7 @@ import {
 import axios from 'axios';
 import { useAuth } from '../../../AuthContext';
 
-const API_URL = 'http://localhost:8080/ticket-config';
+const API_URL = 'https://vps-5192960-x.dattaweb.com/ticket-config';
 
 const FIELDS = [
   { name: 'nombre_tienda', label: 'Nombre de la tienda', max: 100 },

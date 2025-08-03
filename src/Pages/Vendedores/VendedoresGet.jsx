@@ -32,7 +32,7 @@ const VendedoresGet = () => {
   // Listar vendedores
   const fetchVendedores = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/usuarios');
+      const res = await axios.get('https://vps-5192960-x.dattaweb.com/usuarios');
       setVendedores(res.data.filter((u) => u.rol === 'vendedor'));
     } catch (err) {
       console.error('Error al obtener vendedores:', err);
@@ -55,7 +55,7 @@ const VendedoresGet = () => {
   const eliminarVendedor = async (id) => {
     if (!window.confirm('¿Eliminar este vendedor?')) return;
     try {
-      await axios.delete(`http://localhost:8080/usuarios/${id}`);
+      await axios.delete(`https://vps-5192960-x.dattaweb.com/usuarios/${id}`);
       fetchVendedores();
     } catch (err) {
       alert('Error al eliminar');

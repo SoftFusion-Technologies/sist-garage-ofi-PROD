@@ -48,7 +48,7 @@ function DetalleMovimientoModal({ movimiento, onClose, onUpdate, onDelete }) {
   const handleUpdate = async () => {
     try {
       const res = await fetch(
-        `http://localhost:8080/movimientos_caja/${movimiento.id}`,
+        `https://vps-5192960-x.dattaweb.com/movimientos_caja/${movimiento.id}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -65,7 +65,7 @@ function DetalleMovimientoModal({ movimiento, onClose, onUpdate, onDelete }) {
   // CRUD - Eliminar movimiento
   const handleDelete = async () => {
     if (!window.confirm('¿Seguro que deseas eliminar este movimiento?')) return;
-    await fetch(`http://localhost:8080/movimientos_caja/${movimiento.id}`, {
+    await fetch(`https://vps-5192960-x.dattaweb.com/movimientos_caja/${movimiento.id}`, {
       method: 'DELETE'
     });
     onDelete(movimiento.id);

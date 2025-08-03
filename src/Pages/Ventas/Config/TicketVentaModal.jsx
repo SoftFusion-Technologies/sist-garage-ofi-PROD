@@ -137,7 +137,7 @@ export default function TicketVentaModal({ venta, onClose, mostrarValorTicket })
 
   useEffect(() => {
     axios
-      .get('http://localhost:8080/ticket-config')
+      .get('https://vps-5192960-x.dattaweb.com/ticket-config')
       .then((res) => setConfig(res.data))
       .catch(() => setConfig(null));
   }, []);

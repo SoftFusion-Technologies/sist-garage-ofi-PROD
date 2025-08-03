@@ -9,7 +9,7 @@ const AsignarCampanaModal = ({ cliente, onClose }) => {
 
   const obtenerCampanas = async () => {
     try {
-      const res = await fetch('http://localhost:8080/recaptacion-campanas');
+      const res = await fetch('https://vps-5192960-x.dattaweb.com/recaptacion-campanas');
       const data = await res.json();
       setCampanas(data);
     } catch (error) {
@@ -25,7 +25,7 @@ const AsignarCampanaModal = ({ cliente, onClose }) => {
 
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:8080/recaptacion-clientes', {
+      const res = await fetch('https://vps-5192960-x.dattaweb.com/recaptacion-clientes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

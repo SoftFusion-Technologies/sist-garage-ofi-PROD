@@ -26,7 +26,7 @@ export default function ModalNuevoCliente({ open, onClose, onClienteCreado }) {
     setError('');
     try {
       // Reemplaza la URL por la de tu backend
-      const { data } = await axios.post('http://localhost:8080/clientes', form);
+      const { data } = await axios.post('https://vps-5192960-x.dattaweb.com/clientes', form);
       setCargando(false);
       onClienteCreado?.(data); // Puedes usar esto para refrescar la lista si querés
       onClose();

@@ -36,11 +36,11 @@ export default function AnaliticasCaja() {
           resLocales,
           resDescuentos
         ] = await Promise.all([
-          axios.get('http://localhost:8080/ventas-mensuales'),
-          axios.get('http://localhost:8080/ventas-por-medio-pago'),
-          axios.get('http://localhost:8080/productos-mas-vendidos'),
-          axios.get('http://localhost:8080/ventas-por-local'),
-          axios.get('http://localhost:8080/resumen-descuentos')
+          axios.get('https://vps-5192960-x.dattaweb.com/ventas-mensuales'),
+          axios.get('https://vps-5192960-x.dattaweb.com/ventas-por-medio-pago'),
+          axios.get('https://vps-5192960-x.dattaweb.com/productos-mas-vendidos'),
+          axios.get('https://vps-5192960-x.dattaweb.com/ventas-por-local'),
+          axios.get('https://vps-5192960-x.dattaweb.com/resumen-descuentos')
         ]);
 
         setVentasPorMes(resVentasMes.data);

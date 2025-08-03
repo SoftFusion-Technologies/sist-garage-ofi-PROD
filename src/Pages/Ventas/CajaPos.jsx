@@ -64,7 +64,7 @@ export default function CajaPOS() {
     const fetchCaja = async () => {
       setCargando(true);
       try {
-        const res = await axios.get(`http://localhost:8080/caja`);
+        const res = await axios.get(`https://vps-5192960-x.dattaweb.com/caja`);
         const abierta = res.data.find(
           (c) =>
             c.usuario_id == userId &&
@@ -76,7 +76,7 @@ export default function CajaPOS() {
         if (abierta) {
           // Ahora usa el endpoint RESTful, NO query params
           const mov = await axios.get(
-            `http://localhost:8080/movimientos/caja/${abierta.id}`
+            `https://vps-5192960-x.dattaweb.com/movimientos/caja/${abierta.id}`
           );
           setMovimientos(mov.data);
         }
@@ -91,7 +91,7 @@ export default function CajaPOS() {
   // Cargar historial
   const cargarHistorial = async () => {
     const res = await axios.get(
-      `http://localhost:8080/caja?local_id=${userLocalId}`
+      `https://vps-5192960-x.dattaweb.com/caja?local_id=${userLocalId}`
     );
     setHistorial(res.data.filter((c) => c.fecha_cierre !== null));
     setShowHistorial(true);
@@ -107,7 +107,7 @@ export default function CajaPOS() {
       return;
     }
     try {
-      const res = await axios.post(`http://localhost:8080/caja`, {
+      const res = await axios.post(`https://vps-5192960-x.dattaweb.com/caja`, {
         usuario_id: userId,
         local_id: userLocalId,
         saldo_inicial: parseFloat(saldoInicial)
@@ -132,7 +132,7 @@ export default function CajaPOS() {
     const saldoFinal =
       Number(cajaActual.saldo_inicial) + totalIngresos - totalEgresos;
     try {
-      await axios.put(`http://localhost:8080/caja/${cajaActual.id}`, {
+      await axios.put(`https://vps-5192960-x.dattaweb.com/caja/${cajaActual.id}`, {
         fecha_cierre: new Date(),
         saldo_final: saldoFinal
       });
@@ -154,14 +154,14 @@ export default function CajaPOS() {
       return;
     }
     try {
-      await axios.post(`http://localhost:8080/movimientos_caja`, {
+      await axios.post(`https://vps-5192960-x.dattaweb.com/movimientos_caja`, {
         caja_id: cajaActual.id,
         tipo: nuevoMovimiento.tipo,
         descripcion: nuevoMovimiento.descripcion,
         monto: Number(nuevoMovimiento.monto)
       });
       const mov = await axios.get(
-        `http://localhost:8080/movimientos/caja/${cajaActual.id}`
+        `https://vps-5192960-x.dattaweb.com/movimientos/caja/${cajaActual.id}`
       );
 
       setMovimientos(mov.data);
@@ -185,7 +185,7 @@ export default function CajaPOS() {
   const mostrarDetalleVenta = async (idVenta) => {
     try {
       const res = await fetch(
-        `http://localhost:8080/ventas/${idVenta}/detalle`
+        `https://vps-5192960-x.dattaweb.com/ventas/${idVenta}/detalle`
       );
       if (!res.ok) throw new Error('No se pudo obtener el detalle');
       const data = await res.json();

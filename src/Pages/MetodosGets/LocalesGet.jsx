@@ -19,7 +19,7 @@ const LocalesGet = () => {
   const [editId, setEditId] = useState(null);
 
   const fetchLocales = async () => {
-    const res = await axios.get('http://localhost:8080/locales');
+    const res = await axios.get('https://vps-5192960-x.dattaweb.com/locales');
     setLocales(res.data);
   };
 
@@ -50,16 +50,16 @@ const LocalesGet = () => {
   };
 
   const handleDelete = async (id) => {
-    await axios.delete(`http://localhost:8080/locales/${id}`);
+    await axios.delete(`https://vps-5192960-x.dattaweb.com/locales/${id}`);
     fetchLocales();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (editId) {
-      await axios.put(`http://localhost:8080/locales/${editId}`, formValues);
+      await axios.put(`https://vps-5192960-x.dattaweb.com/locales/${editId}`, formValues);
     } else {
-      await axios.post('http://localhost:8080/locales', formValues);
+      await axios.post('https://vps-5192960-x.dattaweb.com/locales', formValues);
     }
     fetchLocales();
     setModalOpen(false);

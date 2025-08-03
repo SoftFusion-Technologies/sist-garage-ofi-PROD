@@ -26,7 +26,7 @@ const CategoriasGet = () => {
 
   const fetchCategorias = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/categorias');
+      const res = await axios.get('https://vps-5192960-x.dattaweb.com/categorias');
       setCategorias(res.data);
     } catch (error) {
       console.error('Error al obtener categorías:', error);
@@ -60,11 +60,11 @@ const CategoriasGet = () => {
     try {
       if (editId) {
         await axios.put(
-          `http://localhost:8080/categorias/${editId}`,
+          `https://vps-5192960-x.dattaweb.com/categorias/${editId}`,
           formValues
         );
       } else {
-        await axios.post('http://localhost:8080/categorias', formValues);
+        await axios.post('https://vps-5192960-x.dattaweb.com/categorias', formValues);
       }
       fetchCategorias();
       setModalOpen(false);
@@ -75,7 +75,7 @@ const CategoriasGet = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:8080/categorias/${id}`);
+      await axios.delete(`https://vps-5192960-x.dattaweb.com/categorias/${id}`);
       fetchCategorias();
     } catch (err) {
       if (err.response?.status === 409) {
@@ -230,7 +230,7 @@ const CategoriasGet = () => {
               onClick={async () => {
                 try {
                   await axios.delete(
-                    `http://localhost:8080/categorias/${confirmDelete}?forzar=true`
+                    `https://vps-5192960-x.dattaweb.com/categorias/${confirmDelete}?forzar=true`
                   );
                   setConfirmDelete(null);
                   fetchCategorias();

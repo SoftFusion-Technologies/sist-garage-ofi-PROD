@@ -20,7 +20,7 @@ const EstadisticasRecaptacion = () => {
 
   const fetchEstadisticas = async () => {
     try {
-      const res = await fetch('http://localhost:8080/recaptacion-estadisticas');
+      const res = await fetch('https://vps-5192960-x.dattaweb.com/recaptacion-estadisticas');
       const data = await res.json();
       setStats(data);
     } catch (error) {

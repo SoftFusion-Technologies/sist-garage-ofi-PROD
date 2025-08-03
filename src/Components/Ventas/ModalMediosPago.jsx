@@ -43,7 +43,7 @@ export default function ModalMediosPago({
     try {
       if (editando) {
         await axios.put(
-          `http://localhost:8080/medios-pago/${editando.id}`,
+          `https://vps-5192960-x.dattaweb.com/medios-pago/${editando.id}`,
           nuevo
         );
         setMediosPago((prev) =>
@@ -52,7 +52,7 @@ export default function ModalMediosPago({
         setEditando(null);
       } else {
         const res = await axios.post(
-          'http://localhost:8080/medios-pago',
+          'https://vps-5192960-x.dattaweb.com/medios-pago',
           nuevo
         );
         setMediosPago((prev) => [...prev, res.data.medio]);
@@ -67,7 +67,7 @@ export default function ModalMediosPago({
   // Borrar
   const borrar = async (id) => {
     if (!window.confirm('¿Eliminar medio de pago?')) return;
-    await axios.delete(`http://localhost:8080/medios-pago/${id}`);
+    await axios.delete(`https://vps-5192960-x.dattaweb.com/medios-pago/${id}`);
     setMediosPago((prev) => prev.filter((m) => m.id !== id));
   };
 
@@ -445,7 +445,7 @@ function CuotasPorMedio({ medioPago }) {
   useEffect(() => {
     const cargarCuotas = async () => {
       const res = await axios.get(
-        `http://localhost:8080/cuotas-medios-pago/${medioPago.id}`
+        `https://vps-5192960-x.dattaweb.com/cuotas-medios-pago/${medioPago.id}`
       );
       setCuotas(res.data);
     };
@@ -454,30 +454,30 @@ function CuotasPorMedio({ medioPago }) {
 
   const guardarCuota = async () => {
     if (!nuevaCuota.cuotas) return;
-    await axios.post('http://localhost:8080/cuotas-medios-pago', {
+    await axios.post('https://vps-5192960-x.dattaweb.com/cuotas-medios-pago', {
       medio_pago_id: medioPago.id,
       cuotas: nuevaCuota.cuotas,
       porcentaje_recargo: nuevaCuota.porcentaje_recargo || 0
     });
     setNuevaCuota({ cuotas: '', porcentaje_recargo: '' });
     const res = await axios.get(
-      `http://localhost:8080/cuotas-medios-pago/${medioPago.id}`
+      `https://vps-5192960-x.dattaweb.com/cuotas-medios-pago/${medioPago.id}`
     );
     setCuotas(res.data);
   };
 
   const borrarCuota = async (id) => {
     if (!confirm('¿Eliminar esta cuota?')) return;
-    await axios.delete(`http://localhost:8080/cuotas-medios-pago/${id}`);
+    await axios.delete(`https://vps-5192960-x.dattaweb.com/cuotas-medios-pago/${id}`);
     setCuotas((prev) => prev.filter((c) => c.id !== id));
   };
 
   const guardarEdicion = async (id) => {
-    await axios.put(`http://localhost:8080/cuotas-medios-pago/${id}`, {
+    await axios.put(`https://vps-5192960-x.dattaweb.com/cuotas-medios-pago/${id}`, {
       porcentaje_recargo: editandoCuota.porcentaje_recargo
     });
     const res = await axios.get(
-      `http://localhost:8080/cuotas-medios-pago/${medioPago.id}`
+      `https://vps-5192960-x.dattaweb.com/cuotas-medios-pago/${medioPago.id}`
     );
     setCuotas(res.data);
     setEditandoId(null);

@@ -21,7 +21,7 @@ const LugaresGet = () => {
 
   const fetchLugares = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/lugares');
+      const res = await axios.get('https://vps-5192960-x.dattaweb.com/lugares');
       setLugares(res.data);
     } catch (error) {
       console.error('Error al obtener lugares:', error);
@@ -46,11 +46,11 @@ const LugaresGet = () => {
     e.preventDefault();
     try {
       if (editId) {
-        await axios.put(`http://localhost:8080/lugares/${editId}`, {
+        await axios.put(`https://vps-5192960-x.dattaweb.com/lugares/${editId}`, {
           nombre: formNombre
         });
       } else {
-        await axios.post('http://localhost:8080/lugares', {
+        await axios.post('https://vps-5192960-x.dattaweb.com/lugares', {
           nombre: formNombre
         });
       }
@@ -63,7 +63,7 @@ const LugaresGet = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:8080/lugares/${id}`);
+      await axios.delete(`https://vps-5192960-x.dattaweb.com/lugares/${id}`);
       fetchLugares();
     } catch (err) {
       if (err.response?.status === 409) {
@@ -168,7 +168,7 @@ const LugaresGet = () => {
               onClick={async () => {
                 try {
                   await axios.delete(
-                    `http://localhost:8080/lugares/${confirmDelete}?forzar=true`
+                    `https://vps-5192960-x.dattaweb.com/lugares/${confirmDelete}?forzar=true`
                   );
                   setConfirmDelete(null);
                   fetchLugares();

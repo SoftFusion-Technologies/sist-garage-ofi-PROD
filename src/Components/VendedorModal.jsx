@@ -25,7 +25,7 @@ const VendedorModal = ({ vendedor = {}, onClose }) => {
   // Obtener locales al montar el modal
   useEffect(() => {
     axios
-      .get('http://localhost:8080/locales')
+      .get('https://vps-5192960-x.dattaweb.com/locales')
       .then((res) => setLocales(res.data))
       .catch(() => setLocales([]));
   }, []);
@@ -63,12 +63,12 @@ const VendedorModal = ({ vendedor = {}, onClose }) => {
         const payload = { ...form };
         if (!form.password) delete payload.password;
         await axios.put(
-          `http://localhost:8080/usuarios/${vendedor.id}`,
+          `https://vps-5192960-x.dattaweb.com/usuarios/${vendedor.id}`,
           payload
         );
         setMsg('¡Vendedor actualizado correctamente!');
       } else {
-        await axios.post('http://localhost:8080/usuarios', { ...form });
+        await axios.post('https://vps-5192960-x.dattaweb.com/usuarios', { ...form });
         setMsg('¡Vendedor creado exitosamente!');
       }
       setTimeout(onClose, 1000); // Cierra modal tras éxito

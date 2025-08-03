@@ -231,12 +231,12 @@ const StockGet = () => {
     try {
       const [resStock, resProd, resTalles, resLocales, resLugares, resEstados] =
         await Promise.all([
-          axios.get('http://localhost:8080/stock'),
-          axios.get('http://localhost:8080/productos'),
-          axios.get('http://localhost:8080/talles'),
-          axios.get('http://localhost:8080/locales'),
-          axios.get('http://localhost:8080/lugares'),
-          axios.get('http://localhost:8080/estados')
+          axios.get('https://vps-5192960-x.dattaweb.com/stock'),
+          axios.get('https://vps-5192960-x.dattaweb.com/productos'),
+          axios.get('https://vps-5192960-x.dattaweb.com/talles'),
+          axios.get('https://vps-5192960-x.dattaweb.com/locales'),
+          axios.get('https://vps-5192960-x.dattaweb.com/lugares'),
+          axios.get('https://vps-5192960-x.dattaweb.com/estados')
         ]);
       setStock(resStock.data);
       setProductos(resProd.data);
@@ -348,7 +348,7 @@ const StockGet = () => {
       }
 
       try {
-        await axios.put(`http://localhost:8080/stock/${editId}`, formData);
+        await axios.put(`https://vps-5192960-x.dattaweb.com/stock/${editId}`, formData);
         fetchAll();
         setModalOpen(false);
 
@@ -440,7 +440,7 @@ const StockGet = () => {
 
         // --- SOLO llega acá si todo está bien ---
         try {
-          await axios.post('http://localhost:8080/transferir', {
+          await axios.post('https://vps-5192960-x.dattaweb.com/transferir', {
             grupoOriginal,
             nuevoGrupo: {
               producto_id: formData.producto_id,
@@ -478,7 +478,7 @@ const StockGet = () => {
 
     // Si no hubo cambios de grupo, usá el endpoint tradicional
     try {
-      await axios.post('http://localhost:8080/distribuir', {
+      await axios.post('https://vps-5192960-x.dattaweb.com/distribuir', {
         producto_id: formData.producto_id,
         local_id: formData.local_id,
         lugar_id: formData.lugar_id,
@@ -515,7 +515,7 @@ const StockGet = () => {
     if (!confirmado) return;
 
     try {
-      await axios.delete(`http://localhost:8080/stock/${id}`);
+      await axios.delete(`https://vps-5192960-x.dattaweb.com/stock/${id}`);
       setTallesGroupView((prev) => ({
         ...prev,
         items: prev.items.filter((x) => x.id !== id)
@@ -546,7 +546,7 @@ const StockGet = () => {
       productos.find((p) => p.id === grupoAEliminar.producto_id)?.nombre || '';
 
     try {
-      const res = await axios.post('http://localhost:8080/eliminar-grupo', {
+      const res = await axios.post('https://vps-5192960-x.dattaweb.com/eliminar-grupo', {
         producto_id: grupoAEliminar.producto_id,
         local_id: grupoAEliminar.local_id,
         lugar_id: grupoAEliminar.lugar_id,

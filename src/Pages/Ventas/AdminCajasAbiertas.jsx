@@ -19,7 +19,7 @@ export default function AdminCajasAbiertas() {
     if (userLevel !== 'admin') return; // ✅ Evitá hacer la request si no es admin
 
     axios
-      .get('http://localhost:8080/cajas-abiertas')
+      .get('https://vps-5192960-x.dattaweb.com/cajas-abiertas')
       .then((res) => setCajasAbiertas(res.data))
       .catch(console.error);
   }, []);
@@ -30,7 +30,7 @@ export default function AdminCajasAbiertas() {
     try {
       // Traer movimientos para calcular saldo final
       const resMovs = await axios.get(
-        `http://localhost:8080/movimientos/caja/${cajaId}`
+        `https://vps-5192960-x.dattaweb.com/movimientos/caja/${cajaId}`
       );
       const movimientos = resMovs.data;
 
@@ -47,7 +47,7 @@ export default function AdminCajasAbiertas() {
       const saldoFinal = saldoInicial + totalIngresos - totalEgresos;
 
       // Cerrar caja
-      await axios.put(`http://localhost:8080/caja/${cajaId}`, {
+      await axios.put(`https://vps-5192960-x.dattaweb.com/caja/${cajaId}`, {
         fecha_cierre: new Date(),
         saldo_final: saldoFinal
       });
@@ -88,7 +88,7 @@ export default function AdminCajasAbiertas() {
       for (const caja of cajasAbiertas) {
         try {
           const res = await fetch(
-            `http://localhost:8080/caja/${caja.id}/saldo-actual`
+            `https://vps-5192960-x.dattaweb.com/caja/${caja.id}/saldo-actual`
           );
           const data = await res.json();
           nuevosSaldos[caja.id] = data.saldo_actual;

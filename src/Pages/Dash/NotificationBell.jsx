@@ -15,7 +15,7 @@ const NotificationBell = () => {
 
   const navigate = useNavigate();
   const { userName, userLevel } = useAuth();
-  const URL = 'http://localhost:8080/';
+  const URL = 'https://vps-5192960-x.dattaweb.com/';
 
   useEffect(() => {
     const getUserIdByEmail = async () => {

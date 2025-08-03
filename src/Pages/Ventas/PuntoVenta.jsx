@@ -109,7 +109,7 @@ export default function PuntoVenta() {
   useEffect(() => {
     setLoadingMediosPago(true);
     axios
-      .get('http://localhost:8080/medios-pago')
+      .get('https://vps-5192960-x.dattaweb.com/medios-pago')
       .then((res) => setMediosPago(res.data))
       .finally(() => setLoadingMediosPago(false));
   }, []);
@@ -141,7 +141,7 @@ export default function PuntoVenta() {
       if (busqueda.trim() !== '') {
         setLoading(true); // Spinner pro
         fetch(
-          `http://localhost:8080/buscar-productos-detallado?query=${encodeURIComponent(
+          `https://vps-5192960-x.dattaweb.com/buscar-productos-detallado?query=${encodeURIComponent(
             busqueda
           )}`
         )
@@ -284,7 +284,7 @@ export default function PuntoVenta() {
     setModalVerProductosOpen(true);
     try {
       const res = await fetch(
-        'http://localhost:8080/buscar-productos-detallado?query='
+        'https://vps-5192960-x.dattaweb.com/buscar-productos-detallado?query='
       );
       const data = await res.json();
       setProductosModal(data);
@@ -296,7 +296,7 @@ export default function PuntoVenta() {
   const abrirModalVerCombos = async () => {
     setModalVerCombosOpen(true);
     try {
-      const res = await fetch('http://localhost:8080/combos');
+      const res = await fetch('https://vps-5192960-x.dattaweb.com/combos');
       const data = await res.json();
       setCombosModal(data);
     } catch (error) {
@@ -331,7 +331,7 @@ export default function PuntoVenta() {
   const seleccionarCombo = async (combo) => {
     try {
       const res = await fetch(
-        `http://localhost:8080/combo-productos-permitidos/${combo.id}`
+        `https://vps-5192960-x.dattaweb.com/combo-productos-permitidos/${combo.id}`
       );
       const permitidos = await res.json();
 
@@ -343,7 +343,7 @@ export default function PuntoVenta() {
         const producto = item.producto;
 
         const resStock = await fetch(
-          `http://localhost:8080/buscar-productos-detallado?query=${producto.id}`
+          `https://vps-5192960-x.dattaweb.com/buscar-productos-detallado?query=${producto.id}`
         );
         const stockData = await resStock.json();
 
@@ -405,7 +405,7 @@ export default function PuntoVenta() {
     if (e.target.value.length > 2) {
       try {
         const res = await fetch(
-          `http://localhost:8080/clientes/search?query=${encodeURIComponent(
+          `https://vps-5192960-x.dattaweb.com/clientes/search?query=${encodeURIComponent(
             e.target.value
           )}`
         );
@@ -472,7 +472,7 @@ export default function PuntoVenta() {
     const cargarCuotas = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:8080/cuotas-medios-pago/${medioPago}`
+          `https://vps-5192960-x.dattaweb.com/cuotas-medios-pago/${medioPago}`
         );
         setCuotasDisponibles(res.data);
         setCuotasSeleccionadas(1); // reset por defecto
@@ -510,7 +510,7 @@ export default function PuntoVenta() {
 
       try {
         const res = await axios.post(
-          'http://localhost:8080/calcular-total-final',
+          'https://vps-5192960-x.dattaweb.com/calcular-total-final',
           payload
         );
         setTotalCalculado(res.data);
@@ -651,7 +651,7 @@ export default function PuntoVenta() {
     };
 
     try {
-      const response = await fetch('http://localhost:8080/ventas/pos', {
+      const response = await fetch('https://vps-5192960-x.dattaweb.com/ventas/pos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(ventaRequest)
@@ -677,7 +677,7 @@ export default function PuntoVenta() {
       setAplicarDescuento(false);
       if (busqueda.trim() !== '') {
         fetch(
-          `http://localhost:8080/buscar-productos-detallado?query=${encodeURIComponent(
+          `https://vps-5192960-x.dattaweb.com/buscar-productos-detallado?query=${encodeURIComponent(
             busqueda
           )}`
         )
@@ -691,7 +691,7 @@ export default function PuntoVenta() {
       const ventaId = data.venta_id;
 
       const ventaCompleta = await fetch(
-        `http://localhost:8080/ventas/${ventaId}`
+        `https://vps-5192960-x.dattaweb.com/ventas/${ventaId}`
       ).then((r) => r.json());
       setVentaFinalizada(ventaCompleta);
       alert('✅ Venta registrada correctamente');
@@ -715,7 +715,7 @@ export default function PuntoVenta() {
       return false;
     }
     try {
-      const res = await axios.post(`http://localhost:8080/caja`, {
+      const res = await axios.post(`https://vps-5192960-x.dattaweb.com/caja`, {
         usuario_id: userId,
         local_id: userLocalId,
         saldo_inicial: parseFloat(saldoInicial)
@@ -734,7 +734,7 @@ export default function PuntoVenta() {
     if (!codigo) return;
 
     fetch(
-      `http://localhost:8080/buscar-productos-detallado?query=${encodeURIComponent(
+      `https://vps-5192960-x.dattaweb.com/buscar-productos-detallado?query=${encodeURIComponent(
         codigo
       )}`
     )

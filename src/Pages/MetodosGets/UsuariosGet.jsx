@@ -29,7 +29,7 @@ export default function UsuariosGet() {
 
   const fetchUsuarios = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/usuarios');
+      const res = await axios.get('https://vps-5192960-x.dattaweb.com/usuarios');
       setUsuarios(res.data);
     } catch (error) {
       console.error('Error al obtener usuarios:', error);
@@ -38,7 +38,7 @@ export default function UsuariosGet() {
 
   const fetchLocales = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/locales');
+      const res = await axios.get('https://vps-5192960-x.dattaweb.com/locales');
       setLocales(res.data);
     } catch (error) {
       console.error('Error al obtener locales:', error);
@@ -77,9 +77,9 @@ export default function UsuariosGet() {
     e.preventDefault();
     try {
       if (editId) {
-        await axios.put(`http://localhost:8080/usuarios/${editId}`, formData);
+        await axios.put(`https://vps-5192960-x.dattaweb.com/usuarios/${editId}`, formData);
       } else {
-        await axios.post('http://localhost:8080/usuarios', formData);
+        await axios.post('https://vps-5192960-x.dattaweb.com/usuarios', formData);
       }
       fetchUsuarios();
       setModalOpen(false);
@@ -90,7 +90,7 @@ export default function UsuariosGet() {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:8080/usuarios/${id}`);
+      await axios.delete(`https://vps-5192960-x.dattaweb.com/usuarios/${id}`);
       fetchUsuarios();
     } catch (err) {
       console.error('Error al eliminar usuario:', err);

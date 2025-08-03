@@ -23,7 +23,7 @@ const VentasPorVendedor = () => {
 
   useEffect(() => {
     axios
-      .get('http://localhost:8080/ventas-por-vendedor')
+      .get('https://vps-5192960-x.dattaweb.com/ventas-por-vendedor')
       .then((res) => setRanking(res.data))
       .catch(() => setRanking([]));
   }, []);

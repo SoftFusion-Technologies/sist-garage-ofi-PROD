@@ -34,7 +34,7 @@ const CombosGet = () => {
 
   const fetchCombos = async () => {
     try {
-      const res = await axios.get('http://localhost:8080/combos');
+      const res = await axios.get('https://vps-5192960-x.dattaweb.com/combos');
       setCombos(res.data);
     } catch (error) {
       console.error('Error al obtener combos:', error);
@@ -71,9 +71,9 @@ const CombosGet = () => {
 
     try {
       if (editId) {
-        await axios.put(`http://localhost:8080/combos/${editId}`, payload);
+        await axios.put(`https://vps-5192960-x.dattaweb.com/combos/${editId}`, payload);
       } else {
-        await axios.post('http://localhost:8080/combos', payload);
+        await axios.post('https://vps-5192960-x.dattaweb.com/combos', payload);
       }
       fetchCombos();
       setModalOpen(false);
@@ -84,7 +84,7 @@ const CombosGet = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:8080/combos/${id}`);
+      await axios.delete(`https://vps-5192960-x.dattaweb.com/combos/${id}`);
       fetchCombos();
     } catch (err) {
       if (err.response?.status === 409) {
@@ -252,7 +252,7 @@ const CombosGet = () => {
               onClick={async () => {
                 try {
                   await axios.delete(
-                    `http://localhost:8080/combos/${confirmDelete}?forzar=true`
+                    `https://vps-5192960-x.dattaweb.com/combos/${confirmDelete}?forzar=true`
                   );
                   setConfirmDelete(null);
                   fetchCombos();

@@ -23,10 +23,10 @@ const ComboEditarPermitidos = () => {
     try {
       const [comboRes, productosRes, categoriasRes, asignadosRes] =
         await Promise.all([
-          axios.get(`http://localhost:8080/combos/${id}`),
-          axios.get('http://localhost:8080/productos'),
-          axios.get('http://localhost:8080/categorias'),
-          axios.get(`http://localhost:8080/combo-productos-permitidos/${id}`)
+          axios.get(`https://vps-5192960-x.dattaweb.com/combos/${id}`),
+          axios.get('https://vps-5192960-x.dattaweb.com/productos'),
+          axios.get('https://vps-5192960-x.dattaweb.com/categorias'),
+          axios.get(`https://vps-5192960-x.dattaweb.com/combo-productos-permitidos/${id}`)
         ]);
 
       setCombo(comboRes.data);
@@ -47,7 +47,7 @@ const ComboEditarPermitidos = () => {
       return;
     try {
       await axios.delete(
-        `http://localhost:8080/combo-productos-permitidos/${permId}`
+        `https://vps-5192960-x.dattaweb.com/combo-productos-permitidos/${permId}`
       );
       fetchDatos(); // actualizar la lista
     } catch (error) {
@@ -57,7 +57,7 @@ const ComboEditarPermitidos = () => {
 
   const agregarProducto = async (producto_id) => {
     try {
-      await axios.post('http://localhost:8080/combo-productos-permitidos', {
+      await axios.post('https://vps-5192960-x.dattaweb.com/combo-productos-permitidos', {
         combo_id: parseInt(id),
         producto_id
       });
@@ -69,7 +69,7 @@ const ComboEditarPermitidos = () => {
 
   const agregarCategoria = async (categoria_id) => {
     try {
-      await axios.post('http://localhost:8080/combo-productos-permitidos', {
+      await axios.post('https://vps-5192960-x.dattaweb.com/combo-productos-permitidos', {
         combo_id: parseInt(id),
         categoria_id
       });

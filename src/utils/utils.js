@@ -2,13 +2,13 @@
 
 // --- Funciones para obtener datos desde endpoints ---
 export async function fetchLocales() {
-  const res = await fetch('http://localhost:8080/locales');
+  const res = await fetch('https://vps-5192960-x.dattaweb.com/locales');
   if (!res.ok) throw new Error('Error al obtener locales');
   return await res.json();
 }
 
 export async function fetchUsuarios() {
-  const res = await fetch('http://localhost:8080/usuarios');
+  const res = await fetch('https://vps-5192960-x.dattaweb.com/usuarios');
   if (!res.ok) throw new Error('Error al obtener usuarios');
   return await res.json();
 }
