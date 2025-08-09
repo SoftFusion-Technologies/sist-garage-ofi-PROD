@@ -26,6 +26,9 @@ import { ModalFeedback } from '../Ventas/Config/ModalFeedback.jsx';
 import Barcode from 'react-barcode';
 Modal.setAppElement('#root');
 
+const API_BASE =
+  import.meta.env.VITE_API_URL || 'https://vps-5192960-x.dattaweb.com';
+
 const CATEGORIAS_TALLES = {
   calzado: [
     // TIPOS DE CALZADO
@@ -161,6 +164,27 @@ const CATEGORIAS_TALLES = {
   ]
 };
 
+const descargarPdf = async (pathWithQuery, filename, token) => {
+  const url = `${API_BASE}${
+    pathWithQuery.startsWith('/') ? '' : '/'
+  }${pathWithQuery}`;
+
+  console.log(url);
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  });
+  if (!res.ok) throw new Error('No se pudo generar/descargar el PDF');
+  const blob = await res.blob();
+  const link = document.createElement('a');
+  const objectUrl = URL.createObjectURL(blob);
+  link.href = objectUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
+};
 const StockGet = () => {
   function mapCategoriaATipoTalle(nombreCategoria) {
     const cat = nombreCategoria?.toLowerCase() || '';
@@ -227,6 +251,13 @@ const StockGet = () => {
   const [skuParaImprimir, setSkuParaImprimir] = useState(null);
   const titleRef = useRef(document.title);
 
+  const [descargandoPdf, setDescargandoPdf] = useState(false);
+  const [errorImp, setErrorImp] = useState(null);
+
+  const hayImprimiblesEnGrupo = (group) =>
+    Array.isArray(group?.items) &&
+    group.items.some((i) => (i.cantidad ?? 0) > 0);
+  
   const fetchAll = async () => {
     try {
       const [resStock, resProd, resTalles, resLocales, resLugares, resEstados] =
@@ -348,7 +379,10 @@ const StockGet = () => {
       }
 
       try {
-        await axios.put(`https://vps-5192960-x.dattaweb.com/stock/${editId}`, formData);
+        await axios.put(
+          `https://vps-5192960-x.dattaweb.com/stock/${editId}`,
+          formData
+        );
         fetchAll();
         setModalOpen(false);
 
@@ -546,12 +580,15 @@ const StockGet = () => {
       productos.find((p) => p.id === grupoAEliminar.producto_id)?.nombre || '';
 
     try {
-      const res = await axios.post('https://vps-5192960-x.dattaweb.com/eliminar-grupo', {
-        producto_id: grupoAEliminar.producto_id,
-        local_id: grupoAEliminar.local_id,
-        lugar_id: grupoAEliminar.lugar_id,
-        estado_id: grupoAEliminar.estado_id
-      });
+      const res = await axios.post(
+        'https://vps-5192960-x.dattaweb.com/eliminar-grupo',
+        {
+          producto_id: grupoAEliminar.producto_id,
+          local_id: grupoAEliminar.local_id,
+          lugar_id: grupoAEliminar.lugar_id,
+          estado_id: grupoAEliminar.estado_id
+        }
+      );
 
       setModalFeedbackMsg(res.data.message || 'Stock eliminado exitosamente.');
       setModalFeedbackType('success'); // 👈🏼 Mostrá el verde éxito
@@ -711,6 +748,59 @@ const StockGet = () => {
       document.title = titleRef.current;
     };
   }, []);
+
+  const imprimirGrupo = async (group) => {
+    if (!hayImprimiblesEnGrupo(group)) {
+      setModalFeedbackMsg(
+        'Este grupo no tiene stock disponible para imprimir.'
+      );
+      setModalFeedbackType('info');
+      setModalFeedbackOpen(true);
+      return;
+    }
+
+    try {
+      setDescargandoPdf(true);
+
+      const producto = productos.find((p) => p.id === group.producto_id);
+      const nombreProd = producto?.nombre || 'producto';
+
+      const safeNombre = nombreProd
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9_-]/g, '_');
+
+      // Fecha en formato dd-mm-aaaa
+      const fechaObj = new Date();
+      const fecha = [
+        String(fechaObj.getDate()).padStart(2, '0'),
+        String(fechaObj.getMonth() + 1).padStart(2, '0'),
+        fechaObj.getFullYear()
+      ].join('-');
+
+      const qs = new URLSearchParams({
+        mode: 'group',
+        producto_id: group.producto_id,
+        local_id: group.local_id,
+        lugar_id: group.lugar_id,
+        estado_id: group.estado_id,
+        minQty: '1',
+        copies: '1',
+        layout: 'a4'
+      }).toString();
+
+      await descargarPdf(
+        `/stock/labels.pdf?${qs}`,
+        `${safeNombre}_${fecha}.pdf`
+      );
+    } catch (e) {
+      setModalFeedbackMsg('No se pudo generar el PDF del grupo.');
+      setModalFeedbackType('error');
+      setModalFeedbackOpen(true);
+    } finally {
+      setDescargandoPdf(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-10 px-6 text-white">
@@ -926,6 +1016,41 @@ const StockGet = () => {
                   >
                     Ver talles y SKU
                   </button>
+                  {/* Botón Imprimir SKU por grupo */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!hayImprimiblesEnGrupo(group)) {
+                        setModalFeedbackMsg(
+                          'Este grupo no tiene stock disponible para imprimir.'
+                        );
+                        setModalFeedbackType('info');
+                        setModalFeedbackOpen(true);
+                        return;
+                      }
+                      imprimirGrupo(group);
+                    }}
+                    disabled={descargandoPdf || !hayImprimiblesEnGrupo(group)}
+                    className={`mt-2 mb-2 px-3 py-1 rounded-lg text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60
+    ${
+      hayImprimiblesEnGrupo(group)
+        ? 'bg-purple-600 hover:bg-purple-500'
+        : 'bg-white/20 cursor-not-allowed'
+    }`}
+                    title={
+                      hayImprimiblesEnGrupo(group)
+                        ? 'Imprimir SKUs del grupo'
+                        : 'Sin stock para imprimir'
+                    }
+                  >
+                    <FaPrint className="text-purple-300" />
+                    {descargandoPdf ? 'Generando…' : ''}
+                  </button>
+
+                  {errorImp && (
+                    <div className="mt-2 text-sm text-red-300">{errorImp}</div>
+                  )}
+                  
                   {userLevel === 'admin' && (
                     <>
                       <button
