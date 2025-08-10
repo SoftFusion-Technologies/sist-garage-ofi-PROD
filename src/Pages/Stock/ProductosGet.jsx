@@ -426,6 +426,7 @@ const ProductosGet = () => {
               onChange={(e) =>
                 setFormValues({ ...formValues, categoria_id: e.target.value })
               }
+              required
               className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
             >
               <option value="">Seleccionar categoría</option>

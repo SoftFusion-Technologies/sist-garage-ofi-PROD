@@ -16,7 +16,8 @@ import {
   FaCircle,
   FaPrint,
   FaCopy,
-  FaTimes
+  FaTimes,
+  FaChevronDown
 } from 'react-icons/fa';
 import ButtonBack from '../../Components/ButtonBack.jsx';
 import ParticlesBackground from '../../Components/ParticlesBackground.jsx';
@@ -202,20 +203,22 @@ const StockGet = () => {
     // return 'ropa';
     return null;
   }
-  // Estados arriba en tu componente
+
   const { userLevel } = useAuth();
   const UMBRAL_STOCK_BAJO = 5;
   const [stock, setStock] = useState([]);
   const [formData, setFormData] = useState({
     producto_id: '',
     talle_id: '',
-    local_id: '',
+    local_id: '', // ← legacy: un solo local
+    locales: [], // ← nuevo: varios locales
     lugar_id: '',
     estado_id: '',
     cantidad: 0,
     en_perchero: true,
     codigo_sku: ''
   });
+
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTallesOpen, setModalTallesOpen] = useState(false);
   const [tallesGroupView, setTallesGroupView] = useState(null); // El grupo actual
@@ -232,6 +235,9 @@ const StockGet = () => {
   // RELACION AL FILTRADO BENJAMIN ORELLANA 23-04-25
   const [talleFiltro, setTalleFiltro] = useState('todos');
   const [localFiltro, setLocalFiltro] = useState('todos');
+  const [localesFiltro, setLocalesFiltro] = useState([]); // [] = todos
+  const [showLocalesFiltro, setShowLocalesFiltro] = useState(false);
+
   const [lugarFiltro, setLugarFiltro] = useState('todos');
   const [estadoFiltro, setEstadoFiltro] = useState('todos');
   const [enPercheroFiltro, setEnPercheroFiltro] = useState('todos');
@@ -271,6 +277,9 @@ const StockGet = () => {
   const [dupShowPreview, setDupShowPreview] = useState(false);
   const [dupLocalesSel, setDupLocalesSel] = useState([]); // ids de locales seleccionados
   const [dupShowLocales, setDupShowLocales] = useState(false); // dropdown de locales
+
+  const [showLocalesPicker, setShowLocalesPicker] = useState(false);
+  const [localesQuery, setLocalesQuery] = useState('');
 
   // límite real de DB: productos.nombre es varchar(100)
   const MAX_NOMBRE = 100;
@@ -345,20 +354,21 @@ const StockGet = () => {
 
   const openModal = (item = null, group = null) => {
     if (item) {
-      setEditId(item.id); // Edición individual
-      setFormData({ ...item });
+      setEditId(item.id); // edición individual
+      setFormData({ ...item, locales: [] }); // ⬅️ agrega locales
       setCantidadesPorTalle([]);
       setGrupoOriginal(null);
       setGrupoEditando(null);
     } else if (group) {
-      setEditId(null); // 👈 ¡Asegurate de limpiar el editId!
+      setEditId(null);
       setFormData({
         producto_id: group.producto_id,
         local_id: group.local_id,
         lugar_id: group.lugar_id,
         estado_id: group.estado_id,
         en_perchero: group.en_perchero,
-        codigo_sku: ''
+        codigo_sku: '',
+        locales: [] // ⬅️ agrega locales
       });
       setGrupoOriginal({
         producto_id: group.producto_id,
@@ -367,7 +377,7 @@ const StockGet = () => {
         estado_id: group.estado_id,
         en_perchero: group.en_perchero
       });
-      setGrupoEditando(group); // <- Guardá el grupo actual
+      setGrupoEditando(group);
       setCantidadesPorTalle(
         group.items.map((i) => ({
           talle_id: i.talle_id,
@@ -382,7 +392,8 @@ const StockGet = () => {
         lugar_id: '',
         estado_id: '',
         en_perchero: true,
-        codigo_sku: ''
+        codigo_sku: '',
+        locales: [] // ⬅️ agrega locales
       });
       setCantidadesPorTalle([]);
       setGrupoOriginal(null);
@@ -414,8 +425,8 @@ const StockGet = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // ----- EDICIÓN PUNTUAL (una fila de stock) -----
     if (editId) {
-      // Edición de registro puntual
       if (
         !formData.producto_id ||
         !formData.local_id ||
@@ -425,16 +436,23 @@ const StockGet = () => {
         formData.cantidad == null
       ) {
         setModalFeedbackMsg('Completa todos los campos.');
-        setModalFeedbackType('info'); // O 'error' si preferís rojo
+        setModalFeedbackType('info');
         setModalFeedbackOpen(true);
         return;
       }
 
       try {
-        await axios.put(`https://vps-5192960-x.dattaweb.com/stock/${editId}`, formData);
+        await axios.put(`https://vps-5192960-x.dattaweb.com/stock/${editId}`, {
+          ...formData,
+          producto_id: Number(formData.producto_id),
+          local_id: Number(formData.local_id),
+          lugar_id: Number(formData.lugar_id),
+          estado_id: Number(formData.estado_id),
+          talle_id: Number(formData.talle_id),
+          cantidad: Number(formData.cantidad)
+        });
         fetchAll();
         setModalOpen(false);
-
         setModalFeedbackMsg('Stock actualizado correctamente.');
         setModalFeedbackType('success');
         setModalFeedbackOpen(true);
@@ -447,29 +465,43 @@ const StockGet = () => {
         );
         setModalFeedbackType('error');
         setModalFeedbackOpen(true);
-
         console.error('Error al editar stock:', err);
       }
       return;
     }
-    // Edición masiva (grupo) o alta múltiple
-    const tallesAEnviar = cantidadesPorTalle
-      .filter((t) => t.talle_id) // filtra sólo si hay talle_id válido
+
+    // ----- ALTA/EDICIÓN DE GRUPO (distribuir) -----
+
+    // Normalizar talles
+    const tallesAEnviar = (cantidadesPorTalle || [])
+      .filter((t) => t?.talle_id != null)
       .map((t) => ({
-        talle_id: t.talle_id,
-        cantidad: Number(t.cantidad) || 0 // siempre número
+        talle_id: Number(t.talle_id),
+        cantidad: Number(t.cantidad) || 0
       }));
+
+    // Unificar local_id (select simple) + locales[] (multiselect)
+    const localesUnicos = [
+      Number(formData.local_id) || null,
+      ...(Array.isArray(formData.locales)
+        ? formData.locales.map((x) => Number(x))
+        : [])
+    ].filter(Boolean); // quita null/0/NaN
+    // dedupe
+    const localesDedupe = [...new Set(localesUnicos)];
+
+    // Validación base
     if (
       !formData.producto_id ||
-      !formData.local_id ||
       !formData.lugar_id ||
-      !formData.estado_id
+      !formData.estado_id ||
+      localesDedupe.length === 0
     ) {
-      alert('Completa todos los campos y asigna cantidad a al menos un talle');
+      alert('Completa producto, lugar, estado y seleccioná al menos un local.');
       return;
     }
 
-    // Si es edición de grupo Y cambiaron los campos clave => transferir/agrupar
+    // Si es edición de grupo y cambió la combinación clave => TRANSFERIR
     if (grupoOriginal) {
       const cambioGrupo =
         grupoOriginal.producto_id !== formData.producto_id ||
@@ -479,7 +511,17 @@ const StockGet = () => {
         grupoOriginal.en_perchero !== formData.en_perchero;
 
       if (cambioGrupo) {
-        // Trae los talles originales (solo los que tienen stock en el grupo origen)
+        // Transferir requiere UN destino (local_id único)
+        if (!formData.local_id) {
+          setModalFeedbackMsg(
+            'Para transferir, elegí un único Local destino (no multiselect).'
+          );
+          setModalFeedbackType('info');
+          setModalFeedbackOpen(true);
+          return;
+        }
+
+        // Validar que los talles existan en origen
         const tallesOriginales = stock
           .filter(
             (s) =>
@@ -488,21 +530,11 @@ const StockGet = () => {
               s.lugar_id === grupoOriginal.lugar_id &&
               s.estado_id === grupoOriginal.estado_id
           )
-          .map((s) => Number(s.talle_id)); // ¡Siempre como número!
+          .map((s) => Number(s.talle_id));
 
-        // Compara talles a enviar contra los del grupo origen (también forzando a número)
         const tallesInvalidos = tallesAEnviar.filter(
           (t) => !tallesOriginales.includes(Number(t.talle_id))
         );
-
-        // LOGS para debug:
-        // console.log('STOCK ACTUAL:', stock);
-        // console.log('TALLES ORIGINALES:', tallesOriginales);
-        // console.log(
-        //   'TALLES A ENVIAR:',
-        //   tallesAEnviar.map((t) => Number(t.talle_id))
-        // );
-        // console.log('TALLES INVALIDOS DETECTADOS:', tallesInvalidos);
 
         if (tallesInvalidos.length > 0) {
           setModalFeedbackMsg(
@@ -514,36 +546,32 @@ const StockGet = () => {
               )
               .join(
                 ', '
-              )}.\n\nPara agregar stock de estos talles en el destino, tenés que dar de alta como nuevo stock.`
+              )}.\n\nPara agregarlos en el destino, creá stock nuevo en vez de transferir.`
           );
           setModalFeedbackType('error');
           setModalFeedbackOpen(true);
           return;
         }
 
-        // --- SOLO llega acá si todo está bien ---
         try {
           await axios.post('https://vps-5192960-x.dattaweb.com/transferir', {
             grupoOriginal,
             nuevoGrupo: {
-              producto_id: formData.producto_id,
-              local_id: formData.local_id,
-              lugar_id: formData.lugar_id,
-              estado_id: formData.estado_id,
-              en_perchero: formData.en_perchero
+              producto_id: Number(formData.producto_id),
+              local_id: Number(formData.local_id), // un único local
+              lugar_id: Number(formData.lugar_id),
+              estado_id: Number(formData.estado_id),
+              en_perchero: !!formData.en_perchero
             },
             talles: tallesAEnviar
           });
           fetchAll();
           setModalOpen(false);
           setGrupoOriginal(null);
-
-          // Modal de éxito opcional
           setModalFeedbackMsg('Stock transferido correctamente.');
           setModalFeedbackType('success');
           setModalFeedbackOpen(true);
         } catch (err) {
-          // Captura y muestra el mensaje que devuelve el backend, o uno genérico
           setModalFeedbackMsg(
             err.response?.data?.mensajeError ||
               err.response?.data?.message ||
@@ -552,24 +580,34 @@ const StockGet = () => {
           );
           setModalFeedbackType('error');
           setModalFeedbackOpen(true);
-
           console.error('Error al transferir stock:', err);
         }
         return;
       }
     }
 
-    // Si no hubo cambios de grupo, usá el endpoint tradicional
+    // DISTRIBUIR (sin cambios de grupo): SIEMPRE enviamos locales[]
     try {
-      await axios.post('https://vps-5192960-x.dattaweb.com/distribuir', {
-        producto_id: formData.producto_id,
-        local_id: formData.local_id,
-        lugar_id: formData.lugar_id,
-        estado_id: formData.estado_id,
-        en_perchero: formData.en_perchero,
+      const body = {
+        producto_id: Number(formData.producto_id),
+        lugar_id: Number(formData.lugar_id),
+        estado_id: Number(formData.estado_id),
+        en_perchero: !!formData.en_perchero,
         talles: tallesAEnviar,
-        reemplazar: true
-      });
+        reemplazar: true,
+        locales: localesDedupe
+      };
+
+      if (body.locales.length === 0) {
+        alert(
+          'Seleccioná al menos un local (en el select o en el multiselect).'
+        );
+        return;
+      }
+
+      // console.log('>> POST /distribuir', body);
+      await axios.post('https://vps-5192960-x.dattaweb.com/distribuir', body);
+
       fetchAll();
       setModalOpen(false);
       setGrupoOriginal(null);
@@ -586,7 +624,6 @@ const StockGet = () => {
       );
       setModalFeedbackType('error');
       setModalFeedbackOpen(true);
-
       console.error('Error al guardar stock:', err);
     }
   };
@@ -671,10 +708,10 @@ const StockGet = () => {
         talleFiltro === 'todos' ||
         item.talle_id === Number.parseInt(talleFiltro)
     )
+    // ⬇️ aquí el cambio: multi-local
     .filter(
       (item) =>
-        localFiltro === 'todos' ||
-        item.local_id === Number.parseInt(localFiltro)
+        localesFiltro.length === 0 || localesFiltro.includes(item.local_id)
     )
     .filter(
       (item) =>
@@ -697,10 +734,10 @@ const StockGet = () => {
       const max = Number.isNaN(Number.parseInt(cantidadMax))
         ? Infinity
         : Number.parseInt(cantidadMax);
-      return item.cantidad >= min && item.cantidad <= max; // <- NO excluye cantidad 0 por defecto
+      return item.cantidad >= min && item.cantidad <= max;
     })
     .filter((item) => {
-      const sku = (item.codigo_sku || '').toLowerCase(); // <- null-safe
+      const sku = (item.codigo_sku || '').toLowerCase(); // null-safe
       const qSku = (skuFiltro || '').toLowerCase().trim();
       return sku.includes(qSku);
     })
@@ -1078,17 +1115,53 @@ const StockGet = () => {
               0
             );
 
+            // locales (además del actual) donde este producto tiene stock > 0
+            const otrosLocalesConStock = (() => {
+              const tot = new Map(); // local_id -> total
+              for (const s of stock) {
+                if (s.producto_id === group.producto_id) {
+                  tot.set(
+                    s.local_id,
+                    (tot.get(s.local_id) || 0) + (Number(s.cantidad) || 0)
+                  );
+                }
+              }
+              const idsConStock = [...tot.entries()]
+                .filter(([, q]) => q > 0)
+                .map(([id]) => id);
+
+              // mapeamos a objetos de "locales", excluyendo el local actual del grupo
+              return locales.filter(
+                (l) => idsConStock.includes(l.id) && l.id !== group.local_id
+              );
+            })();
+
             return (
               <motion.div
                 key={group.key}
                 layout
-                className="bg-white/10 p-6 rounded-2xl shadow-md border border-white/10 hover:scale-[1.02] transition-all"
+                className="bg-white/10 p-6 rounded-2xl shadow-md border border-white/10 hover:scale-[1.02]"
               >
                 <h2 className="text-xl font-bold text-cyan-300 mb-1 uppercase">
                   {producto?.nombre}
                 </h2>
                 <p className="text-sm">ID: {producto?.id}</p>
                 <p className="text-sm">Local: {local?.nombre}</p>
+
+                {otrosLocalesConStock.length > 0 && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                    <span className="text-white/70">También en:</span>
+                    {otrosLocalesConStock.map((l) => (
+                      <span
+                        key={l.id}
+                        className="px-2 py-1 rounded-full bg-white/10 border border-white/10"
+                      >
+                        {l.nombre}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 <p className="text-sm">Lugar: {lugar?.nombre || 'Sin lugar'}</p>
                 <p className="text-sm">
                   Estado: {estado?.nombre || 'Sin Estado'}
@@ -1217,11 +1290,7 @@ const StockGet = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4 text-gray-800">
             {[
-              {
-                label: 'Producto',
-                name: 'producto_id',
-                options: productos
-              },
+              { label: 'Producto', name: 'producto_id', options: productos },
               ...(editId
                 ? [{ label: 'Talle', name: 'talle_id', options: talles }]
                 : []),
@@ -1237,7 +1306,10 @@ const StockGet = () => {
                     setFormData({ ...formData, [name]: Number(e.target.value) })
                   }
                   className="w-full px-4 py-2 rounded-lg border border-gray-300"
-                  required
+                  // 🔸 si eligen locales múltiples, el select de "Local" deja de ser requerido
+                  required={
+                    name === 'local_id' ? !(formData.locales?.length > 0) : true
+                  }
                 >
                   <option value="">Seleccione {label}</option>
                   {options.map((opt) => (
@@ -1249,6 +1321,175 @@ const StockGet = () => {
               </div>
             ))}
 
+            {/* 🔹 NUEVO: selección múltiple de locales (solo en alta/edición de grupo) */}
+            {!editId && (
+              <div className="relative">
+                <label className="block font-semibold mb-1">
+                  Locales (múltiple)
+                </label>
+
+                {/* Botón que abre el picker */}
+                <button
+                  type="button"
+                  onClick={() => setShowLocalesPicker((v) => !v)}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 bg-white flex items-center justify-between"
+                >
+                  <span className="text-left truncate">
+                    {formData.locales?.length
+                      ? `Seleccionados: ${formData.locales.length}`
+                      : 'Seleccionar uno o más…'}
+                  </span>
+                  {/* <FaChevronDown className="opacity-60" /> */}
+                </button>
+
+                {/* Chips de selección actual */}
+                {formData.locales?.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {formData.locales
+                      .map((id) => locales.find((l) => l.id === id))
+                      .filter(Boolean)
+                      .map((l) => (
+                        <span
+                          key={l.id}
+                          className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-cyan-50 text-cyan-700 border border-cyan-200 text-xs"
+                        >
+                          {l.nombre}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFormData((fd) => ({
+                                ...fd,
+                                locales: fd.locales.filter((x) => x !== l.id)
+                              }))
+                            }
+                            className="hover:text-cyan-900"
+                            title="Quitar"
+                          >
+                            {/* <FaTimes /> */}×
+                          </button>
+                        </span>
+                      ))}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((fd) => ({ ...fd, locales: [] }))
+                      }
+                      className="text-xs text-gray-600 underline"
+                    >
+                      Limpiar
+                    </button>
+                  </div>
+                )}
+
+                {/* Popover */}
+                {showLocalesPicker && (
+                  <div className="absolute z-50 mt-2 w-full max-h-72 overflow-auto bg-white border border-gray-200 rounded-xl shadow-xl p-2">
+                    {/* Buscador + acciones rápidas */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="flex-1 relative">
+                        {/* <FaSearch className="absolute left-2 top-2.5 text-gray-400" /> */}
+                        <input
+                          type="text"
+                          value={localesQuery}
+                          onChange={(e) => setLocalesQuery(e.target.value)}
+                          placeholder="Buscar local…"
+                          className="w-full pl-3 pr-3 py-2 rounded-lg border border-gray-300"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((fd) => ({
+                            ...fd,
+                            locales: locales
+                              .filter((l) =>
+                                l.nombre
+                                  .toLowerCase()
+                                  .includes(localesQuery.toLowerCase())
+                              )
+                              .map((l) => l.id)
+                          }))
+                        }
+                        className="text-xs px-2 py-1 rounded-md border border-gray-300 hover:bg-gray-50"
+                        title="Seleccionar todos (filtrados)"
+                      >
+                        Seleccionar todos
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((fd) => ({ ...fd, locales: [] }))
+                        }
+                        className="text-xs px-2 py-1 rounded-md border border-gray-300 hover:bg-gray-50"
+                      >
+                        Limpiar
+                      </button>
+                    </div>
+
+                    {/* Lista con checkboxes */}
+                    <div className="space-y-1">
+                      {locales
+                        .filter((l) =>
+                          l.nombre
+                            .toLowerCase()
+                            .includes(localesQuery.toLowerCase())
+                        )
+                        .map((l) => {
+                          const checked = formData.locales.includes(l.id);
+                          return (
+                            <label
+                              key={l.id}
+                              className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+                            >
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4"
+                                checked={checked}
+                                onChange={(e) => {
+                                  setFormData((fd) => ({
+                                    ...fd,
+                                    locales: e.target.checked
+                                      ? [...new Set([...fd.locales, l.id])]
+                                      : fd.locales.filter((id) => id !== l.id)
+                                  }));
+                                }}
+                              />
+                              <span className="text-sm">{l.nombre}</span>
+                              {checked && (
+                                <span className="ml-auto text-xs text-cyan-700">
+                                  ✓
+                                </span>
+                              )}
+                            </label>
+                          );
+                        })}
+                    </div>
+
+                    <div className="mt-2 flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowLocalesPicker(false)}
+                        className="px-3 py-1 text-sm rounded-md border border-gray-300 hover:bg-gray-50"
+                      >
+                        Cerrar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowLocalesPicker(false)}
+                        className="px-3 py-1 text-sm rounded-md bg-cyan-600 text-white hover:bg-cyan-500"
+                      >
+                        Aplicar
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-gray-500 mt-1">
+                  Si seleccionás al menos un local acá, ignoramos el campo
+                  “Local” de arriba.
+                </p>
+              </div>
+            )}
             {editId && (
               <div>
                 <label className="block text-sm font-semibold text-gray-600">
@@ -1265,18 +1506,16 @@ const StockGet = () => {
 
             {formData.producto_id && !editId && (
               <div>
-                {/* Solo muestra el label si hay talles filtrados */}
                 {tallesFiltrados.length > 0 && (
                   <label className="block font-semibold mb-3 text-gray-700 text-lg">
                     Asignar stock por talle
                   </label>
                 )}
 
-                {/* Si hay talles filtrados, grid de inputs */}
                 {tallesFiltrados.length > 0 ? (
                   <div className="overflow-x-auto">
                     <div className="flex gap-4 pb-2" style={{ minWidth: 340 }}>
-                      {tallesFiltrados.map((t, i) => {
+                      {tallesFiltrados.map((t) => {
                         const idx = cantidadesPorTalle.findIndex(
                           (tt) => tt.talle_id === t.id
                         );
@@ -1301,14 +1540,12 @@ const StockGet = () => {
                                   const exist = next.findIndex(
                                     (tt) => tt.talle_id === t.id
                                   );
-                                  if (exist !== -1) {
-                                    next[exist].cantidad = val;
-                                  } else {
+                                  if (exist !== -1) next[exist].cantidad = val;
+                                  else
                                     next.push({
                                       talle_id: t.id,
                                       cantidad: val
                                     });
-                                  }
                                   return next;
                                 });
                               }}
@@ -1321,7 +1558,6 @@ const StockGet = () => {
                     </div>
                   </div>
                 ) : (
-                  // Si NO hay talles filtrados, solo el select
                   <div className="mt-2">
                     <label className="block font-semibold mb-1">Talle</label>
                     <select
@@ -1345,12 +1581,10 @@ const StockGet = () => {
             )}
 
             {editId && (
-              // Edición: Solo editar cantidad para el talle seleccionado
               <div className="mb-4">
                 <label className="block font-semibold mb-2 text-gray-700">
                   Editar cantidad para talle:
                   <span className="text-cyan-600 ml-2 font-bold">
-                    {/* Si el usuario cambia el select de talle, esto se actualiza */}
                     {talles.find((t) => t.id === Number(formData.talle_id))
                       ?.nombre || '-'}
                   </span>

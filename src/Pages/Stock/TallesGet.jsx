@@ -77,9 +77,15 @@ const TallesGet = () => {
     e.preventDefault();
     try {
       if (editId) {
-        await axios.put(`https://vps-5192960-x.dattaweb.com/talles/${editId}`, formValues);
+        await axios.put(
+          `https://vps-5192960-x.dattaweb.com/talles/${editId}`,
+          formValues
+        );
       } else {
-        await axios.post('https://vps-5192960-x.dattaweb.com/talles', formValues);
+        await axios.post(
+          'https://vps-5192960-x.dattaweb.com/talles',
+          formValues
+        );
       }
       fetchTalles();
       setModalOpen(false);
@@ -142,7 +148,7 @@ const TallesGet = () => {
             <motion.div
               key={talle.id}
               layout
-              className="bg-white/10 p-6 rounded-2xl shadow-md backdrop-blur-md border border-white/10 hover:scale-[1.02] transition-all"
+              className="bg-white/10 p-6 rounded-2xl shadow-md backdrop-blur-md border border-white/10 hover:scale-[1.02]"
             >
               <h2 className="text-xl font-bold text-white">ID: {talle.id}</h2>
               <h2 className="text-xl font-bold text-pink-300">
