@@ -53,16 +53,19 @@ const CategoriasGet = () => {
 
   const fetchCategorias = async () => {
     try {
-      const res = await axios.get('https://vps-5192960-x.dattaweb.com/categorias', {
-        params: {
-          page,
-          per_page: perPage,
-          q: (search || '').trim() || undefined,
-          sort,
-          dir,
-          estado: estadoFiltro !== 'todos' ? estadoFiltro : undefined
+      const res = await axios.get(
+        'https://vps-5192960-x.dattaweb.com/categorias',
+        {
+          params: {
+            page,
+            per_page: perPage,
+            q: (search || '').trim() || undefined,
+            sort,
+            dir,
+            estado: estadoFiltro !== 'todos' ? estadoFiltro : undefined
+          }
         }
-      });
+      );
       setCategorias(res.data.data || []);
       setMeta(res.data.meta || { page: 1, per_page: perPage, total: 0 });
     } catch (error) {
@@ -108,7 +111,10 @@ const CategoriasGet = () => {
           formValues
         );
       } else {
-        await axios.post('https://vps-5192960-x.dattaweb.com/categorias', formValues);
+        await axios.post(
+          'https://vps-5192960-x.dattaweb.com/categorias',
+          formValues
+        );
       }
       // tras guardar, refrescar y volver a la primera página si estás creando
       if (!editId) setPage(1);
@@ -138,13 +144,17 @@ const CategoriasGet = () => {
     }
   };
 
-  // helpers de paginación para el footer
+  // Helpers de paginación (derivados del meta)
   const total = Number(meta?.total ?? 0);
   const curPage = Number(meta?.page ?? page);
   const per = Number(meta?.per_page ?? perPage);
-  const start = total === 0 ? 0 : (curPage - 1) * per + 1;
-  const end = total === 0 ? 0 : Math.min(curPage * per, total);
-  const totalPages = Math.max(1, Math.ceil(total / Math.max(1, per)));
+  const pageCount = Math.max(1, Math.ceil(total / Math.max(1, per)));
+
+  const hasPrev = curPage > 1;
+  const hasNext = curPage < pageCount;
+
+  const from = total === 0 ? 0 : (curPage - 1) * per + 1;
+  const to = total === 0 ? 0 : Math.min(curPage * per, total);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-10 px-6 text-white">
@@ -276,24 +286,15 @@ const CategoriasGet = () => {
         {/* Pagination footer */}
         <div className="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="text-sm text-white/80">
-            {(() => {
-              const total = Number(meta?.total ?? 0);
-              const page = Number(meta?.page ?? 1);
-              const per = Number(meta?.per_page ?? perPage ?? 12);
-              const from = total === 0 ? 0 : (page - 1) * per + 1;
-              const to = total === 0 ? 0 : Math.min(page * per, total);
-              return `${from}–${to} de ${total}`;
-            })()}
+            {from}–{to} de {total}
           </div>
 
           <div className="flex items-center gap-2">
             <button
-              disabled={!meta?.has_prev}
-              onClick={() =>
-                meta?.has_prev && setPage((p) => Math.max(1, p - 1))
-              }
+              disabled={!hasPrev}
+              onClick={() => hasPrev && setPage((p) => Math.max(1, p - 1))}
               className={`px-3 py-2 rounded-lg border ${
-                meta?.has_prev
+                hasPrev
                   ? 'bg-white/10 hover:bg-white/20 border-white/10'
                   : 'bg-white/5 border-white/5 opacity-50 cursor-not-allowed'
               }`}
@@ -303,32 +304,16 @@ const CategoriasGet = () => {
             </button>
 
             <span className="text-sm px-2">
-              {(() => {
-                const total = Number(meta?.total ?? 0);
-                const per = Number(meta?.per_page ?? perPage ?? 12);
-                const pageCount =
-                  Number(meta?.page_count) ||
-                  Math.max(1, Math.ceil(total / Math.max(1, per)));
-                const page = Number(meta?.page ?? 1);
-                return `Página ${page} / ${pageCount}`;
-              })()}
+              Página {curPage} / {pageCount}
             </span>
 
             <button
-              disabled={!meta?.has_next}
+              disabled={!hasNext}
               onClick={() =>
-                meta?.has_next &&
-                setPage((p) => {
-                  const total = Number(meta?.total ?? 0);
-                  const per = Number(meta?.per_page ?? perPage ?? 12);
-                  const pageCount =
-                    Number(meta?.page_count) ||
-                    Math.max(1, Math.ceil(total / Math.max(1, per)));
-                  return Math.min(pageCount, p + 1);
-                })
+                hasNext && setPage((p) => Math.min(pageCount, p + 1))
               }
               className={`px-3 py-2 rounded-lg border ${
-                meta?.has_next
+                hasNext
                   ? 'bg-white/10 hover:bg-white/20 border-white/10'
                   : 'bg-white/5 border-white/5 opacity-50 cursor-not-allowed'
               }`}

@@ -17,6 +17,7 @@ import * as XLSX from 'xlsx';
 import AdminActions from '../../Components/AdminActions';
 import AjustePreciosModal from './Components/AjustePreciosModal.jsx';
 import { useAuth } from '../../AuthContext.jsx';
+import SearchableSelect from './Components/SearchableSelect.jsx';
 
 Modal.setAppElement('#root');
 
@@ -153,7 +154,10 @@ const ProductosGet = () => {
           dataToSend
         );
       } else {
-        await axios.post('https://vps-5192960-x.dattaweb.com/productos', dataToSend);
+        await axios.post(
+          'https://vps-5192960-x.dattaweb.com/productos',
+          dataToSend
+        );
       }
 
       fetchData();
@@ -421,22 +425,18 @@ const ProductosGet = () => {
               className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
               rows="3"
             />
-            <select
-              value={formValues.categoria_id}
-              onChange={(e) =>
-                setFormValues({ ...formValues, categoria_id: e.target.value })
+            <SearchableSelect
+              label="Categoría"
+              items={categorias} // [{ id, nombre, ... }]
+              value={formValues.categoria_id} // id actual
+              onChange={(id) =>
+                setFormValues((f) => ({ ...f, categoria_id: Number(id) || '' }))
               }
               required
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-rose-400"
-            >
-              <option value="">Seleccionar categoría</option>
-              {categorias.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.nombre}
-                </option>
-              ))}
-            </select>
-
+              // (opcionales; por defecto ya usa id/nombre, los dejo explícitos)
+              getOptionLabel={(c) => c.nombre}
+              getOptionValue={(c) => c.id}
+            />
             <input
               type="number"
               placeholder="Precio"

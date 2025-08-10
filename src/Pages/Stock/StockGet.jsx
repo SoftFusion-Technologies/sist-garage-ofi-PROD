@@ -27,10 +27,13 @@ import { useAuth } from '../../AuthContext.jsx';
 import { toast, ToastContainer } from 'react-toastify';
 import { ModalFeedback } from '../Ventas/Config/ModalFeedback.jsx';
 import Barcode from 'react-barcode';
+import SearchableSelect from './Components/SearchableSelect.jsx';
+
 Modal.setAppElement('#root');
 
 // R1- que se puedan imprimir todas las etiquetas del mismo producto BENJAMIN ORELLANA 9/8/25 ✅
-const API_BASE = import.meta.env.VITE_API_URL || 'https://vps-5192960-x.dattaweb.com';
+const API_BASE =
+  import.meta.env.VITE_API_URL || 'https://vps-5192960-x.dattaweb.com';
 
 const CATEGORIAS_TALLES = {
   calzado: [
@@ -666,12 +669,15 @@ const StockGet = () => {
       productos.find((p) => p.id === grupoAEliminar.producto_id)?.nombre || '';
 
     try {
-      const res = await axios.post('https://vps-5192960-x.dattaweb.com/eliminar-grupo', {
-        producto_id: grupoAEliminar.producto_id,
-        local_id: grupoAEliminar.local_id,
-        lugar_id: grupoAEliminar.lugar_id,
-        estado_id: grupoAEliminar.estado_id
-      });
+      const res = await axios.post(
+        'https://vps-5192960-x.dattaweb.com/eliminar-grupo',
+        {
+          producto_id: grupoAEliminar.producto_id,
+          local_id: grupoAEliminar.local_id,
+          lugar_id: grupoAEliminar.lugar_id,
+          estado_id: grupoAEliminar.estado_id
+        }
+      );
 
       setModalFeedbackMsg(res.data.message || 'Stock eliminado exitosamente.');
       setModalFeedbackType('success'); // 👈🏼 Mostrá el verde éxito
@@ -1289,37 +1295,67 @@ const StockGet = () => {
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4 text-gray-800">
-            {[
-              { label: 'Producto', name: 'producto_id', options: productos },
-              ...(editId
-                ? [{ label: 'Talle', name: 'talle_id', options: talles }]
-                : []),
-              { label: 'Local', name: 'local_id', options: locales },
-              { label: 'Lugar', name: 'lugar_id', options: lugares },
-              { label: 'Estado', name: 'estado_id', options: estados }
-            ].map(({ label, name, options }) => (
-              <div key={name}>
-                <label className="block font-semibold mb-1">{label}</label>
-                <select
-                  value={formData[name]}
-                  onChange={(e) =>
-                    setFormData({ ...formData, [name]: Number(e.target.value) })
-                  }
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300"
-                  // 🔸 si eligen locales múltiples, el select de "Local" deja de ser requerido
-                  required={
-                    name === 'local_id' ? !(formData.locales?.length > 0) : true
-                  }
-                >
-                  <option value="">Seleccione {label}</option>
-                  {options.map((opt) => (
-                    <option key={opt.id} value={opt.id}>
-                      {opt.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ))}
+            {/* Producto */}
+            <SearchableSelect
+              label="Producto"
+              items={productos}
+              value={formData.producto_id}
+              onChange={(id) =>
+                setFormData((fd) => ({ ...fd, producto_id: Number(id) || '' }))
+              }
+              required
+              placeholder="Buscar o seleccionar producto…"
+            />
+
+            {/* Talle (solo en edición puntual) */}
+            {editId && (
+              <SearchableSelect
+                label="Talle"
+                items={talles}
+                value={formData.talle_id}
+                onChange={(id) =>
+                  setFormData((fd) => ({ ...fd, talle_id: Number(id) || '' }))
+                }
+                required
+                placeholder="Buscar talle…"
+              />
+            )}
+
+            {/* Local (single). Si eligen multi-locales más abajo, este deja de ser requerido */}
+            <SearchableSelect
+              label="Local"
+              items={locales}
+              value={formData.local_id}
+              onChange={(id) =>
+                setFormData((fd) => ({ ...fd, local_id: Number(id) || '' }))
+              }
+              required={!(formData.locales?.length > 0)}
+              placeholder="Buscar local…"
+            />
+
+            {/* Lugar */}
+            <SearchableSelect
+              label="Lugar"
+              items={lugares}
+              value={formData.lugar_id}
+              onChange={(id) =>
+                setFormData((fd) => ({ ...fd, lugar_id: Number(id) || '' }))
+              }
+              required
+              placeholder="Buscar lugar…"
+            />
+
+            {/* Estado */}
+            <SearchableSelect
+              label="Estado"
+              items={estados}
+              value={formData.estado_id}
+              onChange={(id) =>
+                setFormData((fd) => ({ ...fd, estado_id: Number(id) || '' }))
+              }
+              required
+              placeholder="Buscar estado…"
+            />
 
             {/* 🔹 NUEVO: selección múltiple de locales (solo en alta/edición de grupo) */}
             {!editId && (
