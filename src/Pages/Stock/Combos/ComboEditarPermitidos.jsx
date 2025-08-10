@@ -25,7 +25,7 @@ const ComboEditarPermitidos = () => {
         await Promise.all([
           axios.get(`https://vps-5192960-x.dattaweb.com/combos/${id}`),
           axios.get('https://vps-5192960-x.dattaweb.com/productos'),
-          axios.get('https://vps-5192960-x.dattaweb.com/categorias'),
+          axios.get('https://vps-5192960-x.dattaweb.com/categorias/all'),
           axios.get(`https://vps-5192960-x.dattaweb.com/combo-productos-permitidos/${id}`)
         ]);
 

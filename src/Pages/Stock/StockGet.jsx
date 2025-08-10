@@ -325,7 +325,7 @@ const StockGet = () => {
         await Promise.all([
           axios.get('https://vps-5192960-x.dattaweb.com/stock'),
           axios.get('https://vps-5192960-x.dattaweb.com/productos'),
-          axios.get('https://vps-5192960-x.dattaweb.com/talles'),
+          axios.get('https://vps-5192960-x.dattaweb.com/talles/all'),
           axios.get('https://vps-5192960-x.dattaweb.com/locales'),
           axios.get('https://vps-5192960-x.dattaweb.com/lugares'),
           axios.get('https://vps-5192960-x.dattaweb.com/estados')

@@ -1,8 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import Modal from 'react-modal';
 import { motion } from 'framer-motion';
-import { FaFolderOpen, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
+import {
+  FaFolderOpen,
+  FaPlus,
+  FaEdit,
+  FaTrash,
+  FaChevronLeft,
+  FaChevronRight,
+  FaSortAlphaDown,
+  FaSortAlphaUp
+} from 'react-icons/fa';
 import ButtonBack from '../../Components/ButtonBack.jsx';
 import ParticlesBackground from '../../Components/ParticlesBackground.jsx';
 import BulkUploadButton from '../../Components/BulkUploadButton.jsx';
@@ -11,8 +20,19 @@ import AdminActions from '../../Components/AdminActions';
 Modal.setAppElement('#root');
 
 const CategoriasGet = () => {
+  // data
+  // estados nuevos
   const [categorias, setCategorias] = useState([]);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(12);
+  const [sort, setSort] = useState('nombre');
+  const [dir, setDir] = useState('asc');
+  const [meta, setMeta] = useState({ page: 1, per_page: 12, total: 0 });
+  // opcional: filtro estado
+  const [estadoFiltro, setEstadoFiltro] = useState('todos');
   const [search, setSearch] = useState('');
+
+  // modales / forms
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState(null);
   const [formValues, setFormValues] = useState({
@@ -21,34 +41,58 @@ const CategoriasGet = () => {
     estado: 'activo'
   });
 
-  const [confirmDelete, setConfirmDelete] = useState(null); // objeto con ID a eliminar
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const [warningMessage, setWarningMessage] = useState('');
+
+  // calcular rango mostrado
+  const rango = useMemo(() => {
+    const from = meta.total > 0 ? (meta.page - 1) * meta.per_page + 1 : 0;
+    const to = meta.total > 0 ? from + (categorias?.length || 0) - 1 : 0;
+    return { from, to };
+  }, [meta, categorias]);
 
   const fetchCategorias = async () => {
     try {
-      const res = await axios.get('https://vps-5192960-x.dattaweb.com/categorias');
-      setCategorias(res.data);
+      const res = await axios.get('https://vps-5192960-x.dattaweb.com/categorias', {
+        params: {
+          page,
+          per_page: perPage,
+          q: (search || '').trim() || undefined,
+          sort,
+          dir,
+          estado: estadoFiltro !== 'todos' ? estadoFiltro : undefined
+        }
+      });
+      setCategorias(res.data.data || []);
+      setMeta(res.data.meta || { page: 1, per_page: perPage, total: 0 });
     } catch (error) {
       console.error('Error al obtener categorías:', error);
     }
   };
 
+  // fetch cuando cambian los criterios
   useEffect(() => {
     fetchCategorias();
-  }, []);
+  }, [page, perPage, sort, dir, estadoFiltro]); // y también cuando toques search con un botón “buscar” o debounce
 
-  const filteredCategorias = categorias.filter((c) =>
-    c.nombre.toLowerCase().includes(search.toLowerCase())
-  );
+  // búsqueda: resetea a página 1
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setPage(1);
+      fetchCategorias();
+    }, 1); // pequeño debounce
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   const openModal = (categoria = null) => {
     setEditId(categoria ? categoria.id : null);
     setFormValues(
       categoria
         ? {
-            nombre: categoria.nombre,
-            descripcion: categoria.descripcion || '',
-            estado: categoria.estado || 'activo'
+            nombre: categoria.nombre ?? '',
+            descripcion: categoria.descripcion ?? '',
+            estado: categoria.estado ?? 'activo'
           }
         : { nombre: '', descripcion: '', estado: 'activo' }
     );
@@ -66,7 +110,9 @@ const CategoriasGet = () => {
       } else {
         await axios.post('https://vps-5192960-x.dattaweb.com/categorias', formValues);
       }
-      fetchCategorias();
+      // tras guardar, refrescar y volver a la primera página si estás creando
+      if (!editId) setPage(1);
+      await fetchCategorias();
       setModalOpen(false);
     } catch (error) {
       console.error('Error al guardar categoría:', error);
@@ -76,36 +122,44 @@ const CategoriasGet = () => {
   const handleDelete = async (id) => {
     try {
       await axios.delete(`https://vps-5192960-x.dattaweb.com/categorias/${id}`);
-      fetchCategorias();
+      // si borramos el último de la página, retrocedemos una página
+      if (categorias.length === 1 && meta.page > 1) {
+        setPage((p) => p - 1);
+      } else {
+        fetchCategorias();
+      }
     } catch (err) {
       if (err.response?.status === 409) {
         setConfirmDelete(id);
         setWarningMessage(err.response.data.mensajeError);
       } else {
-        console.error('Error al eliminar lugar:', err);
+        console.error('Error al eliminar categoría:', err);
       }
     }
   };
 
+  // helpers de paginación para el footer
+  const total = Number(meta?.total ?? 0);
+  const curPage = Number(meta?.page ?? page);
+  const per = Number(meta?.per_page ?? perPage);
+  const start = total === 0 ? 0 : (curPage - 1) * per + 1;
+  const end = total === 0 ? 0 : Math.min(curPage * per, total);
+  const totalPages = Math.max(1, Math.ceil(total / Math.max(1, per)));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-10 px-6 text-white">
       <ButtonBack />
       <ParticlesBackground />
-      <div className="max-w-4xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
-          {/* Título */}
+
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
           <h1 className="text-3xl font-bold text-blue-400 flex items-center gap-2 uppercase">
             <FaFolderOpen /> Categorías
           </h1>
 
-          {/* Botones */}
           <div className="flex flex-col sm:flex-row gap-3">
-            <BulkUploadButton
-              tabla="categorias"
-              onSuccess={() => fetchCategorias()} // refrescar lista
-            />
-
+            <BulkUploadButton tabla="categorias" onSuccess={fetchCategorias} />
             <button
               onClick={() => openModal()}
               className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg font-semibold flex items-center gap-2"
@@ -115,16 +169,74 @@ const CategoriasGet = () => {
           </div>
         </div>
 
-        <input
-          type="text"
-          placeholder="Buscar categoría..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full mb-6 px-4 py-2 rounded-lg border border-gray-600 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        {/* Toolbar */}
+        {/* Buscador + (opcional) filtro estado */}
+        <div className="flex flex-col md:flex-row gap-3 mb-6">
+          <input
+            type="text"
+            placeholder="Buscar categoría..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full md:max-w-sm px-4 py-2 rounded-lg border border-gray-600 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            onClick={() => {
+              setPage(1);
+              fetchCategorias();
+            }}
+            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 font-semibold"
+          >
+            Buscar
+          </button>
 
+          <select
+            value={estadoFiltro}
+            onChange={(e) => {
+              setEstadoFiltro(e.target.value);
+              setPage(1);
+            }}
+            className="px-4 py-2 rounded-lg border border-gray-600 bg-gray-800 text-white"
+          >
+            <option value="todos">Todos</option>
+            <option value="activo">Activo</option>
+            <option value="inactivo">Inactivo</option>
+          </select>
+
+          <select
+            value={`${sort}:${dir}`}
+            onChange={(e) => {
+              const [s, d] = e.target.value.split(':');
+              setSort(s);
+              setDir(d);
+              setPage(1);
+            }}
+            className="px-4 py-2 rounded-lg border border-gray-600 bg-gray-800 text-white"
+          >
+            <option value="nombre:asc">Nombre ↑</option>
+            <option value="nombre:desc">Nombre ↓</option>
+            <option value="cantidadProductos:desc"># Productos ↓</option>
+            <option value="cantidadProductos:asc"># Productos ↑</option>
+          </select>
+
+          <select
+            value={perPage}
+            onChange={(e) => {
+              setPerPage(Number(e.target.value));
+              setPage(1);
+            }}
+            className="px-4 py-2 rounded-lg border border-gray-600 bg-gray-800 text-white"
+          >
+            {[6, 12, 24, 48, 100].map((n) => (
+              <option key={n} value={n}>
+                {n} / pág
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Grid */}
         <motion.div layout className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredCategorias.map((cat) => (
+          {categorias.map((cat) => (
             <motion.div
               key={cat.id}
               layout
@@ -132,25 +244,27 @@ const CategoriasGet = () => {
             >
               <h2 className="text-xl font-bold text-white">ID: {cat.id}</h2>
               <h2 className="text-xl font-bold text-blue-300">{cat.nombre}</h2>
+
               {cat.descripcion && (
                 <p className="text-sm text-gray-300 mt-1">{cat.descripcion}</p>
               )}
-              {/* Contador de productos */}
+
               <p className="text-sm mt-2">
                 <span className="font-semibold text-blue-400">
-                  {cat.cantidadProductos}
+                  {cat.cantidadProductos ?? 0}
                 </span>{' '}
-                producto{cat.cantidadProductos !== 1 && 's'} asignado
-                {cat.cantidadProductos !== 1 && 's'}
-              </p>{' '}
-              {/* 🆕 */}
+                producto{(cat.cantidadProductos ?? 0) !== 1 && 's'} asignado
+                {(cat.cantidadProductos ?? 0) !== 1 && 's'}
+              </p>
+
               <p
                 className={`text-sm mt-2 font-semibold ${
-                  cat.estado === 'activo' ? 'text-green-400' : 'text-red-400'
+                  cat.estado === 'inactivo' ? 'text-red-400' : 'text-green-400'
                 }`}
               >
-                Estado: {cat.estado}
+                Estado: {cat.estado ?? 'activo'}
               </p>
+
               <AdminActions
                 onEdit={() => openModal(cat)}
                 onDelete={() => handleDelete(cat.id)}
@@ -159,7 +273,73 @@ const CategoriasGet = () => {
           ))}
         </motion.div>
 
-        {/* Modal */}
+        {/* Pagination footer */}
+        <div className="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div className="text-sm text-white/80">
+            {(() => {
+              const total = Number(meta?.total ?? 0);
+              const page = Number(meta?.page ?? 1);
+              const per = Number(meta?.per_page ?? perPage ?? 12);
+              const from = total === 0 ? 0 : (page - 1) * per + 1;
+              const to = total === 0 ? 0 : Math.min(page * per, total);
+              return `${from}–${to} de ${total}`;
+            })()}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              disabled={!meta?.has_prev}
+              onClick={() =>
+                meta?.has_prev && setPage((p) => Math.max(1, p - 1))
+              }
+              className={`px-3 py-2 rounded-lg border ${
+                meta?.has_prev
+                  ? 'bg-white/10 hover:bg-white/20 border-white/10'
+                  : 'bg-white/5 border-white/5 opacity-50 cursor-not-allowed'
+              }`}
+              title="Anterior"
+            >
+              <FaChevronLeft />
+            </button>
+
+            <span className="text-sm px-2">
+              {(() => {
+                const total = Number(meta?.total ?? 0);
+                const per = Number(meta?.per_page ?? perPage ?? 12);
+                const pageCount =
+                  Number(meta?.page_count) ||
+                  Math.max(1, Math.ceil(total / Math.max(1, per)));
+                const page = Number(meta?.page ?? 1);
+                return `Página ${page} / ${pageCount}`;
+              })()}
+            </span>
+
+            <button
+              disabled={!meta?.has_next}
+              onClick={() =>
+                meta?.has_next &&
+                setPage((p) => {
+                  const total = Number(meta?.total ?? 0);
+                  const per = Number(meta?.per_page ?? perPage ?? 12);
+                  const pageCount =
+                    Number(meta?.page_count) ||
+                    Math.max(1, Math.ceil(total / Math.max(1, per)));
+                  return Math.min(pageCount, p + 1);
+                })
+              }
+              className={`px-3 py-2 rounded-lg border ${
+                meta?.has_next
+                  ? 'bg-white/10 hover:bg-white/20 border-white/10'
+                  : 'bg-white/5 border-white/5 opacity-50 cursor-not-allowed'
+              }`}
+              title="Siguiente"
+            >
+              <FaChevronRight />
+            </button>
+          </div>
+        </div>
+
+        {/* Modal Crear/Editar */}
         <Modal
           isOpen={modalOpen}
           onRequestClose={() => setModalOpen(false)}
@@ -187,7 +367,7 @@ const CategoriasGet = () => {
                 setFormValues({ ...formValues, descripcion: e.target.value })
               }
               className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            ></textarea>
+            />
             <select
               value={formValues.estado}
               onChange={(e) =>
@@ -209,6 +389,7 @@ const CategoriasGet = () => {
           </form>
         </Modal>
 
+        {/* Modal confirm delete */}
         <Modal
           isOpen={!!confirmDelete}
           onRequestClose={() => setConfirmDelete(null)}
@@ -233,7 +414,12 @@ const CategoriasGet = () => {
                     `https://vps-5192960-x.dattaweb.com/categorias/${confirmDelete}?forzar=true`
                   );
                   setConfirmDelete(null);
-                  fetchCategorias();
+                  // ajustar página si corresponde
+                  if (categorias.length === 1 && meta.page > 1) {
+                    setPage((p) => p - 1);
+                  } else {
+                    fetchCategorias();
+                  }
                 } catch (error) {
                   console.error('Error al eliminar con forzado:', error);
                 }

@@ -21,7 +21,7 @@ import { useAuth } from '../../AuthContext.jsx';
 Modal.setAppElement('#root');
 
 const ProductosGet = () => {
-    const { userLevel } = useAuth();
+  const { userLevel } = useAuth();
   const [productos, setProductos] = useState([]);
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -56,7 +56,7 @@ const ProductosGet = () => {
     try {
       const [resProd, resCat] = await Promise.all([
         axios.get('https://vps-5192960-x.dattaweb.com/productos'),
-        axios.get('https://vps-5192960-x.dattaweb.com/categorias')
+        axios.get('https://vps-5192960-x.dattaweb.com/categorias/all')
       ]);
       setProductos(resProd.data);
       setCategorias(resCat.data);

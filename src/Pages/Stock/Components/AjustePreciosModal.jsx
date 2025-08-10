@@ -48,7 +48,7 @@ export default function AjustePreciosModal({ open, onClose, onSuccess }) {
     if (open) {
       setError('');
       setSuccessMessage('');
-      axios.get('https://vps-5192960-x.dattaweb.com/categorias').then((res) => {
+      axios.get('https://vps-5192960-x.dattaweb.com/categorias/all').then((res) => {
         const options = res.data.map((c) => ({
           value: c.id,
           label: c.nombre
