@@ -17,7 +17,8 @@ import {
   FaPrint,
   FaCopy,
   FaTimes,
-  FaChevronDown
+  FaChevronDown,
+  FaTicketAlt
 } from 'react-icons/fa';
 import ButtonBack from '../../Components/ButtonBack.jsx';
 import ParticlesBackground from '../../Components/ParticlesBackground.jsx';
@@ -32,8 +33,7 @@ import SearchableSelect from './Components/SearchableSelect.jsx';
 Modal.setAppElement('#root');
 
 // R1- que se puedan imprimir todas las etiquetas del mismo producto BENJAMIN ORELLANA 9/8/25 ✅
-const API_BASE =
-  import.meta.env.VITE_API_URL || 'https://vps-5192960-x.dattaweb.com';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://vps-5192960-x.dattaweb.com';
 
 const CATEGORIAS_TALLES = {
   calzado: [
@@ -286,6 +286,8 @@ const StockGet = () => {
 
   // límite real de DB: productos.nombre es varchar(100)
   const MAX_NOMBRE = 100;
+
+  const [descargandoTicket, setDescargandoTicket] = useState(false);
 
   // helpers para preview SKU (coincide con el back)
   const slugify = (v = '') =>
@@ -669,15 +671,12 @@ const StockGet = () => {
       productos.find((p) => p.id === grupoAEliminar.producto_id)?.nombre || '';
 
     try {
-      const res = await axios.post(
-        'https://vps-5192960-x.dattaweb.com/eliminar-grupo',
-        {
-          producto_id: grupoAEliminar.producto_id,
-          local_id: grupoAEliminar.local_id,
-          lugar_id: grupoAEliminar.lugar_id,
-          estado_id: grupoAEliminar.estado_id
-        }
-      );
+      const res = await axios.post('https://vps-5192960-x.dattaweb.com/eliminar-grupo', {
+        producto_id: grupoAEliminar.producto_id,
+        local_id: grupoAEliminar.local_id,
+        lugar_id: grupoAEliminar.lugar_id,
+        estado_id: grupoAEliminar.estado_id
+      });
 
       setModalFeedbackMsg(res.data.message || 'Stock eliminado exitosamente.');
       setModalFeedbackType('success'); // 👈🏼 Mostrá el verde éxito
@@ -899,6 +898,75 @@ const StockGet = () => {
       setModalFeedbackOpen(true);
     } finally {
       setDescargandoPdf(false);
+    }
+  };
+
+  const imprimirTicketGrupo = async (group, opts = {}) => {
+    if (!hayImprimiblesEnGrupo(group)) {
+      setModalFeedbackMsg(
+        'Este grupo no tiene stock disponible para imprimir.'
+      );
+      setModalFeedbackType('info');
+      setModalFeedbackOpen(true);
+      return;
+    }
+
+    try {
+      setDescargandoTicket(true);
+
+      const producto = productos.find((p) => p.id === group.producto_id);
+      const nombreProd = producto?.nombre || 'producto';
+
+      const safeNombre = nombreProd
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9_-]/g, '_');
+
+      // Fecha dd-mm-aaaa
+      const fechaObj = new Date();
+      const fecha = [
+        String(fechaObj.getDate()).padStart(2, '0'),
+        String(fechaObj.getMonth() + 1).padStart(2, '0'),
+        fechaObj.getFullYear()
+      ].join('-');
+
+      // Parámetros recomendados para ticketera 30x15
+      const params = new URLSearchParams({
+        mode: 'group',
+        producto_id: String(group.producto_id),
+        local_id: String(group.local_id),
+        lugar_id: String(group.lugar_id),
+        estado_id: String(group.estado_id),
+
+        // Comportamiento: 1 etiqueta por item (igual que A4 actual).
+        // Si querés 1 por unidad en stock, cambiá a copies: 'qty'
+        copies: '1',
+        minQty: '1',
+
+        // Opciones de render del ticket
+        showText: '1',
+        text_mode: 'full', // muestra el SKU completo
+        min_barcode_mm: '6', // barras mínimas (mm)
+        min_font_pt: '3.5',
+        font_pt: '6',
+        quiet_mm: '2',
+        dpi: '203', // poné 300 si tu ticketera es 300dpi
+
+        // Permite override desde opts si querés
+        ...opts
+      });
+
+      await descargarPdf(
+        `/stock/etiquetas/ticket?${params.toString()}`,
+        `${safeNombre}_${fecha}_ticket.pdf`
+      );
+    } catch (e) {
+      console.error(e);
+      setModalFeedbackMsg('No se pudo generar el PDF de ticket.');
+      setModalFeedbackType('error');
+      setModalFeedbackOpen(true);
+    } finally {
+      setDescargandoTicket(false);
     }
   };
 
@@ -1211,7 +1279,6 @@ const StockGet = () => {
                   >
                     Ver talles y SKU
                   </button>
-
                   {/* Botón Imprimir SKU por grupo */}
                   <button
                     type="button"
@@ -1240,7 +1307,30 @@ const StockGet = () => {
                     }
                   >
                     <FaPrint className="text-purple-300" />
-                    {descargandoPdf ? 'Generando…' : ''}
+                    {descargandoPdf ? '' : ''}
+                  </button>
+
+                  {/* Botón Imprimir TICKET por grupo (30×15) */}
+                  <button
+                    type="button"
+                    onClick={() => imprimirTicketGrupo(group)}
+                    disabled={
+                      descargandoTicket || !hayImprimiblesEnGrupo(group)
+                    }
+                    className={`mt-2 mb-2 px-3 py-1 rounded-lg text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60
+    ${
+      hayImprimiblesEnGrupo(group)
+        ? 'bg-orange-500 hover:bg-orange-400'
+        : 'bg-white/20 cursor-not-allowed'
+    }`}
+                    title={
+                      hayImprimiblesEnGrupo(group)
+                        ? 'Imprimir TICKET 30×15 del grupo'
+                        : 'Sin stock para imprimir'
+                    }
+                  >
+                    <FaTicketAlt className="text-orange-200" />
+                    {descargandoTicket ? '' : ''}
                   </button>
 
                   <button

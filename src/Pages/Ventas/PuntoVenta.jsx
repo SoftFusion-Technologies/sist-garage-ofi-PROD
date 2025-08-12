@@ -90,6 +90,12 @@ export default function PuntoVenta() {
   const [comboSeleccionado, setComboSeleccionado] = useState(null);
   const [combosSeleccionados, setCombosSeleccionados] = useState([]);
 
+  const MAX_INTERVAL_MS = 50; // <=50ms entre teclas = escáner
+  const IDLE_FLUSH_MS = 120; // sin teclas => finalizar
+  const bufferRef = useRef('');
+  const lastKeyTsRef = useRef(0);
+  const idleTimerRef = useRef(null);
+
   useEffect(() => {
     if (modoEscaner) {
       inputRef.current && inputRef.current.focus();
@@ -730,7 +736,16 @@ export default function PuntoVenta() {
 
   const abrirModalNuevoCliente = () => setModalNuevoClienteOpen(true);
 
+  const normalizarCodigo = (s) =>
+    String(s)
+      // convierte guiones “raros” a guion ASCII
+      .replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, '-')
+      // elimina espacios accidentales
+      .replace(/\s+/g, '')
+      .trim();
+
   const buscarProductoPorCodigo = (codigo) => {
+    codigo = normalizarCodigo(codigo);
     if (!codigo) return;
 
     fetch(
@@ -738,28 +753,30 @@ export default function PuntoVenta() {
         codigo
       )}`
     )
-      .then((res) => res.json())
+      .then((r) => r.json())
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          // Elegimos el primer resultado (el código debe ser único)
-          const prod = data[0];
-          // Llamamos a tu función para sumar al carrito, con la info correcta
-          agregarAlCarrito(
-            {
-              producto_id: prod.producto_id,
-              nombre: prod.nombre,
-              precio: prod.precio
-            },
-            {
-              stock_id: prod.stock_id,
-              id: prod.talle_id,
-              nombre: prod.talle_nombre,
-              cantidad: prod.cantidad_disponible
-            }
-          );
-        } else {
+        if (!Array.isArray(data) || data.length === 0) {
           alert('Producto no encontrado o sin stock');
+          return;
         }
+        const exact =
+          data.find(
+            (d) => normalizarCodigo(d.codigo_sku || d.sku || '') === codigo
+          ) || data[0];
+
+        agregarAlCarrito(
+          {
+            producto_id: exact.producto_id,
+            nombre: exact.nombre,
+            precio: exact.precio
+          },
+          {
+            stock_id: exact.stock_id,
+            id: exact.talle_id,
+            nombre: exact.talle_nombre,
+            cantidad: exact.cantidad_disponible
+          }
+        );
       })
       .catch((err) => {
         console.error('Error al buscar producto por código:', err);
@@ -786,6 +803,47 @@ export default function PuntoVenta() {
     }
   };
 
+  const finalizarEscaneo = (valor) => {
+    const raw = (valor ?? bufferRef.current) || '';
+    bufferRef.current = '';
+    const code = raw.replace(/[\r\n]+/g, '').trim();
+    if (!code) return;
+
+    // 👉 tu función actual
+    buscarProductoPorCodigo(code);
+
+    // si querés volver a modo manual después de cada escaneo, descomentá:
+    // setModoEscaner(false);
+  };
+
+  const onKeyDownScan = (e) => {
+    // evitar submit/navegación
+    if (e.key === 'Enter' || e.key === 'Tab' || e.key === 'Escape')
+      e.preventDefault();
+
+    const now = Date.now();
+    const delta = now - lastKeyTsRef.current;
+    lastKeyTsRef.current = now;
+
+    // si pasó mucho tiempo entre teclas, arrancá nuevo buffer
+    if (delta > MAX_INTERVAL_MS) bufferRef.current = '';
+
+    if (e.key === 'Enter') {
+      finalizarEscaneo(e.target.value);
+      e.target.value = '';
+      return;
+    }
+
+    // solo agregamos caracteres visibles
+    if (e.key.length === 1) bufferRef.current += e.key;
+
+    // rearma timer de cierre por silencio
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      finalizarEscaneo(); // usa bufferRef
+      if (inputRef.current) inputRef.current.value = '';
+    }, IDLE_FLUSH_MS);
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-4 sm:p-6 text-white">
       <ParticlesBackground />
@@ -866,11 +924,26 @@ export default function PuntoVenta() {
           )}
         </div>
       </div>
-      {/* lector de codigo de barras invicible */}
+      {/* Lector de código de barras (invisible) */}
       <div>
         <input
           ref={inputRef}
           type="text"
+          inputMode="none"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          onKeyDown={onKeyDownScan}
+          // Mantener el foco si seguís en modo escáner:
+          onBlur={() => {
+            // si querés volver a modo manual cuando pierde foco, dejá tu línea:
+            // setModoEscaner(false);
+
+            // si preferís mantener escaneo continuo, re-enfocá:
+            setTimeout(() => {
+              if (modoEscaner) inputRef.current?.focus();
+            }, 0);
+          }}
           style={{
             opacity: 0,
             position: 'absolute',
@@ -880,8 +953,8 @@ export default function PuntoVenta() {
             height: 1,
             pointerEvents: 'none'
           }}
-          onBlur={() => setModoEscaner(false)} // Si el input invisible pierde foco, vuelve a manual
-          onKeyDown={handleKeyDown}
+          aria-hidden="true"
+          tabIndex={-1}
         />
       </div>
 
