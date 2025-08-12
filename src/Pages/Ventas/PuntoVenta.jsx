@@ -90,11 +90,51 @@ export default function PuntoVenta() {
   const [comboSeleccionado, setComboSeleccionado] = useState(null);
   const [combosSeleccionados, setCombosSeleccionados] = useState([]);
 
-  const MAX_INTERVAL_MS = 50; // <=50ms entre teclas = escáner
-  const IDLE_FLUSH_MS = 120; // sin teclas => finalizar
-  const bufferRef = useRef('');
+  // Base por si no logramos calibrar (USB clásico)
+  const BASE_MAX_INTERVAL_MS = 50;
+  const BASE_IDLE_FLUSH_MS = 120;
+
+  // límites para clamps (cobertura amplia)
+  const MIN_MAX_INTERVAL = 40;
+  const MAX_MAX_INTERVAL = 120;
+  const MIN_IDLE_FLUSH = 100;
+  const MAX_IDLE_FLUSH = 350;
+
+  const dynMaxIntervalRef = useRef(BASE_MAX_INTERVAL_MS);
+  const dynIdleFlushRef = useRef(BASE_IDLE_FLUSH_MS);
+  const deltasRef = useRef([]); // guarda deltas de esta sesión
+
   const lastKeyTsRef = useRef(0);
+  const bufferRef = useRef('');
   const idleTimerRef = useRef(null);
+
+  const resetSession = () => {
+    deltasRef.current = [];
+    dynMaxIntervalRef.current = BASE_MAX_INTERVAL_MS;
+    dynIdleFlushRef.current = BASE_IDLE_FLUSH_MS;
+    lastKeyTsRef.current = 0;
+    bufferRef.current = '';
+  };
+
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const median = (arr) => {
+    if (!arr.length) return BASE_MAX_INTERVAL_MS;
+    const s = [...arr].sort((a, b) => a - b);
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  };
+
+  const calibrate = () => {
+    // usar hasta 6 deltas para robustez
+    const sample = deltasRef.current.slice(0, 6);
+    const m = median(sample);
+    dynMaxIntervalRef.current = clamp(
+      m * 1.6,
+      MIN_MAX_INTERVAL,
+      MAX_MAX_INTERVAL
+    );
+    dynIdleFlushRef.current = clamp(m * 3.2, MIN_IDLE_FLUSH, MAX_IDLE_FLUSH);
+  };
 
   useEffect(() => {
     if (modoEscaner) {
@@ -738,15 +778,15 @@ export default function PuntoVenta() {
 
   const normalizarCodigo = (s) =>
     String(s)
-      // convierte guiones “raros” a guion ASCII
-      .replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, '-')
-      // elimina espacios accidentales
-      .replace(/\s+/g, '')
+      .replace(/[\u2010\u2011\u2012\u2013\u2014\u2212]/g, '-') // guiones raros -> '-'
+      .replace(/\s+/g, '') // sin espacios
       .trim();
 
   const buscarProductoPorCodigo = (codigo) => {
     codigo = normalizarCodigo(codigo);
     if (!codigo) return;
+
+    const isNumeric18 = /^\d{18}$/.test(codigo);
 
     fetch(
       `https://vps-5192960-x.dattaweb.com/buscar-productos-detallado?query=${encodeURIComponent(
@@ -759,22 +799,27 @@ export default function PuntoVenta() {
           alert('Producto no encontrado o sin stock');
           return;
         }
-        const exact =
-          data.find(
-            (d) => normalizarCodigo(d.codigo_sku || d.sku || '') === codigo
-          ) || data[0];
+
+        // si vino numérico (18 dígitos), el back ya filtró exacto: tomamos el 1ro
+        const prodSel = isNumeric18
+          ? data[0]
+          : data.find(
+              (d) =>
+                normalizarCodigo(d.codigo_sku || d.sku || '').toLowerCase() ===
+                codigo.toLowerCase()
+            ) || data[0];
 
         agregarAlCarrito(
           {
-            producto_id: exact.producto_id,
-            nombre: exact.nombre,
-            precio: exact.precio
+            producto_id: prodSel.producto_id,
+            nombre: prodSel.nombre,
+            precio: prodSel.precio
           },
           {
-            stock_id: exact.stock_id,
-            id: exact.talle_id,
-            nombre: exact.talle_nombre,
-            cantidad: exact.cantidad_disponible
+            stock_id: prodSel.stock_id,
+            id: prodSel.talle_id,
+            nombre: prodSel.talle_nombre,
+            cantidad: prodSel.cantidad_disponible
           }
         );
       })
@@ -791,29 +836,19 @@ export default function PuntoVenta() {
     }, 100);
   };
 
-  // Cuando se presiona ENTER, procesá el valor escaneado
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && e.target.value.trim() !== '') {
-      buscarProductoPorCodigo(e.target.value.trim());
-      e.target.value = ''; // Limpia el input invisible
-
-      // Si querés volver automáticamente a manual después de escanear:
-      setModoEscaner(false); // Opcional, si el flujo es escanear uno y buscar a mano
-      // O dejá en modo escáner si vas a escanear varios
-    }
-  };
-
   const finalizarEscaneo = (valor) => {
     const raw = (valor ?? bufferRef.current) || '';
     bufferRef.current = '';
-    const code = raw.replace(/[\r\n]+/g, '').trim();
+    // limpia y además si vienen separadores, deja solo dígitos cuando es nuestro código
+    let code = raw.replace(/[\r\n]+/g, '').trim();
+    const digits = code.replace(/\D/g, '');
+    if (digits.length === 18) code = digits;
+
     if (!code) return;
-
-    // 👉 tu función actual
     buscarProductoPorCodigo(code);
-
-    // si querés volver a modo manual después de cada escaneo, descomentá:
-    // setModoEscaner(false);
+    if (inputRef.current) inputRef.current.value = '';
+    // reset de sesión para el próximo escaneo
+    resetSession();
   };
 
   const onKeyDownScan = (e) => {
@@ -822,11 +857,26 @@ export default function PuntoVenta() {
       e.preventDefault();
 
     const now = Date.now();
-    const delta = now - lastKeyTsRef.current;
+    const last = lastKeyTsRef.current;
     lastKeyTsRef.current = now;
 
-    // si pasó mucho tiempo entre teclas, arrancá nuevo buffer
-    if (delta > MAX_INTERVAL_MS) bufferRef.current = '';
+    if (last > 0) {
+      const delta = now - last;
+      // sólo guardamos deltas razonables (<800ms) para calibrar
+      if (delta < 800) deltasRef.current.push(delta);
+      // calibramos cuando tengamos 3 deltas
+      if (deltasRef.current.length === 3) calibrate();
+    }
+
+    // split de sesiones si se pasó del umbral dinámico
+    if (last > 0 && now - last > dynMaxIntervalRef.current) {
+      // terminó “una lectura anterior” por pausa larga: finalizá lo que hubiera
+      if (bufferRef.current.length) finalizarEscaneo();
+      // arranca nueva sesión
+      deltasRef.current = [];
+      dynMaxIntervalRef.current = BASE_MAX_INTERVAL_MS;
+      dynIdleFlushRef.current = BASE_IDLE_FLUSH_MS;
+    }
 
     if (e.key === 'Enter') {
       finalizarEscaneo(e.target.value);
@@ -834,16 +884,16 @@ export default function PuntoVenta() {
       return;
     }
 
-    // solo agregamos caracteres visibles
-    if (e.key.length === 1) bufferRef.current += e.key;
+    if (e.key.length === 1) {
+      bufferRef.current += e.key;
+    }
 
-    // rearma timer de cierre por silencio
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     idleTimerRef.current = setTimeout(() => {
       finalizarEscaneo(); // usa bufferRef
-      if (inputRef.current) inputRef.current.value = '';
-    }, IDLE_FLUSH_MS);
+    }, dynIdleFlushRef.current);
   };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-4 sm:p-6 text-white">
       <ParticlesBackground />

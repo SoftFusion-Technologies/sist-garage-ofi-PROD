@@ -930,7 +930,7 @@ const StockGet = () => {
         fechaObj.getFullYear()
       ].join('-');
 
-      // Parámetros recomendados para ticketera 30x15
+      // Parámetros para ticket 30x15
       const params = new URLSearchParams({
         mode: 'group',
         producto_id: String(group.producto_id),
@@ -938,21 +938,25 @@ const StockGet = () => {
         lugar_id: String(group.lugar_id),
         estado_id: String(group.estado_id),
 
-        // Comportamiento: 1 etiqueta por item (igual que A4 actual).
-        // Si querés 1 por unidad en stock, cambiá a copies: 'qty'
+        // 1 etiqueta por ítem (como A4). Cambia a 'qty' si querés una por unidad en stock.
         copies: '1',
         minQty: '1',
 
-        // Opciones de render del ticket
+        // Render del ticket
         showText: '1',
-        text_mode: 'full', // muestra el SKU completo
-        min_barcode_mm: '6', // barras mínimas (mm)
+        text_mode: 'full',
+        min_barcode_mm: '6',
         min_font_pt: '3.5',
         font_pt: '6',
         quiet_mm: '2',
-        dpi: '203', // poné 300 si tu ticketera es 300dpi
+        dpi: '203',
 
-        // Permite override desde opts si querés
+        // 🔸 NUEVO: barcode numérico + texto con separación
+        barcode_src: 'numeric',
+        text_value: 'auto', // si el barcode es numérico, muestra el numérico; sino, slug
+        text_gap_mm: '2',
+
+        // overrides opcionales
         ...opts
       });
 
