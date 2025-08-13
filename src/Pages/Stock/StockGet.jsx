@@ -33,7 +33,8 @@ import SearchableSelect from './Components/SearchableSelect.jsx';
 Modal.setAppElement('#root');
 
 // R1- que se puedan imprimir todas las etiquetas del mismo producto BENJAMIN ORELLANA 9/8/25 ✅
-const API_BASE = import.meta.env.VITE_API_URL || 'https://vps-5192960-x.dattaweb.com';
+const API_BASE =
+  import.meta.env.VITE_API_URL || 'https://vps-5192960-x.dattaweb.com';
 
 const CATEGORIAS_TALLES = {
   calzado: [
@@ -671,12 +672,15 @@ const StockGet = () => {
       productos.find((p) => p.id === grupoAEliminar.producto_id)?.nombre || '';
 
     try {
-      const res = await axios.post('https://vps-5192960-x.dattaweb.com/eliminar-grupo', {
-        producto_id: grupoAEliminar.producto_id,
-        local_id: grupoAEliminar.local_id,
-        lugar_id: grupoAEliminar.lugar_id,
-        estado_id: grupoAEliminar.estado_id
-      });
+      const res = await axios.post(
+        'https://vps-5192960-x.dattaweb.com/eliminar-grupo',
+        {
+          producto_id: grupoAEliminar.producto_id,
+          local_id: grupoAEliminar.local_id,
+          lugar_id: grupoAEliminar.lugar_id,
+          estado_id: grupoAEliminar.estado_id
+        }
+      );
 
       setModalFeedbackMsg(res.data.message || 'Stock eliminado exitosamente.');
       setModalFeedbackType('success'); // 👈🏼 Mostrá el verde éxito
@@ -923,42 +927,47 @@ const StockGet = () => {
         .replace(/[^a-zA-Z0-9_-]/g, '_');
 
       // Fecha dd-mm-aaaa
-      const fechaObj = new Date();
+      const d = new Date();
       const fecha = [
-        String(fechaObj.getDate()).padStart(2, '0'),
-        String(fechaObj.getMonth() + 1).padStart(2, '0'),
-        fechaObj.getFullYear()
+        String(d.getDate()).padStart(2, '0'),
+        String(d.getMonth() + 1).padStart(2, '0'),
+        d.getFullYear()
       ].join('-');
 
-      // Parámetros para ticket 30x15
-      const params = new URLSearchParams({
+      // Perfil robusto por defecto (Code128 1D)
+      const defaults = {
         mode: 'group',
         producto_id: String(group.producto_id),
         local_id: String(group.local_id),
         lugar_id: String(group.lugar_id),
         estado_id: String(group.estado_id),
 
-        // 1 etiqueta por ítem (como A4). Cambia a 'qty' si querés una por unidad en stock.
         copies: '1',
         minQty: '1',
 
-        // Render del ticket
-        showText: '1',
-        text_mode: 'full',
-        min_barcode_mm: '6',
-        min_font_pt: '3.5',
-        font_pt: '6',
-        quiet_mm: '2',
+        // Impresora 30×15 mm a 203dpi
         dpi: '203',
+        quiet_mm: '3',
 
-        // 🔸 NUEVO: barcode numérico + texto con separación
+        // Código: numérico por IDs
         barcode_src: 'numeric',
-        text_value: 'auto', // si el barcode es numérico, muestra el numérico; sino, slug
-        text_gap_mm: '2',
 
-        // overrides opcionales
-        ...opts
-      });
+        // 1D robusto
+        symb: 'code128', // 'code128' | 'qrcode'
+        showText: '0', // priorizar lectura (sin texto debajo)
+        min_barcode_mm: '12', // altura barras recomendada
+        pad_modules: '6', // quiet-zone interna (≈px) por lado
+
+        // Si mostrás texto (lo podés activar desde opts)
+        text_mode: 'middle',
+        text_gap_mm: '2',
+        text_value: 'auto',
+        font_pt: '6',
+        min_font_pt: '3.5'
+      };
+
+      // Permite overrides rápidos (p.ej. { symb: 'qrcode', showText: '0' })
+      const params = new URLSearchParams({ ...defaults, ...opts });
 
       await descargarPdf(
         `/stock/etiquetas/ticket?${params.toString()}`,
