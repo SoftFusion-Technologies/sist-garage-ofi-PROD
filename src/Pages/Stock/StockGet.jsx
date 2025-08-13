@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import Modal from 'react-modal';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   FaWarehouse,
   FaPlus,
@@ -33,8 +33,7 @@ import SearchableSelect from './Components/SearchableSelect.jsx';
 Modal.setAppElement('#root');
 
 // R1- que se puedan imprimir todas las etiquetas del mismo producto BENJAMIN ORELLANA 9/8/25 ✅
-const API_BASE =
-  import.meta.env.VITE_API_URL || 'https://vps-5192960-x.dattaweb.com';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://vps-5192960-x.dattaweb.com';
 
 const CATEGORIAS_TALLES = {
   calzado: [
@@ -289,6 +288,21 @@ const StockGet = () => {
   const MAX_NOMBRE = 100;
 
   const [descargandoTicket, setDescargandoTicket] = useState(false);
+
+  // arriba, junto a tus otros useState:
+  const [selectedGroups, setSelectedGroups] = useState(new Set());
+  const [descargandoTicketSel, setDescargandoTicketSel] = useState(false);
+
+  const isGroupSelected = (group) => selectedGroups.has(group.key);
+
+  const toggleGroupSelected = (group) => {
+    setSelectedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(group.key)) next.delete(group.key);
+      else next.add(group.key);
+      return next;
+    });
+  };
 
   // helpers para preview SKU (coincide con el back)
   const slugify = (v = '') =>
@@ -672,15 +686,12 @@ const StockGet = () => {
       productos.find((p) => p.id === grupoAEliminar.producto_id)?.nombre || '';
 
     try {
-      const res = await axios.post(
-        'https://vps-5192960-x.dattaweb.com/eliminar-grupo',
-        {
-          producto_id: grupoAEliminar.producto_id,
-          local_id: grupoAEliminar.local_id,
-          lugar_id: grupoAEliminar.lugar_id,
-          estado_id: grupoAEliminar.estado_id
-        }
-      );
+      const res = await axios.post('https://vps-5192960-x.dattaweb.com/eliminar-grupo', {
+        producto_id: grupoAEliminar.producto_id,
+        local_id: grupoAEliminar.local_id,
+        lugar_id: grupoAEliminar.lugar_id,
+        estado_id: grupoAEliminar.estado_id
+      });
 
       setModalFeedbackMsg(res.data.message || 'Stock eliminado exitosamente.');
       setModalFeedbackType('success'); // 👈🏼 Mostrá el verde éxito
@@ -1042,6 +1053,94 @@ const StockGet = () => {
   };
   // R2 - permitir duplicar productos, para poder cambiar nombres BENJAMIN ORELLANA 9/8/25 ✅
 
+  const imprimirTicketSeleccion = async (opts = {}) => {
+    // tomar los groups tildados desde stockAgrupado
+    const seleccionados = stockAgrupado.filter((g) =>
+      selectedGroups.has(g.key)
+    );
+
+    if (seleccionados.length === 0) {
+      setModalFeedbackMsg('No hay grupos seleccionados.');
+      setModalFeedbackType('info');
+      setModalFeedbackOpen(true);
+      return;
+    }
+
+    try {
+      setDescargandoTicketSel(true);
+
+      // payload para mode=multi
+      const groups = seleccionados.map((g) => ({
+        producto_id: g.producto_id,
+        local_id: g.local_id,
+        lugar_id: g.lugar_id,
+        estado_id: g.estado_id
+      }));
+
+      // nombre/fecha para el archivo
+      const fechaObj = new Date();
+      const fecha = [
+        String(fechaObj.getDate()).padStart(2, '0'),
+        String(fechaObj.getMonth() + 1).padStart(2, '0'),
+        fechaObj.getFullYear()
+      ].join('-');
+
+      // perfil robusto + nombre de producto impreso
+      const defaults = {
+        mode: 'multi',
+        groups: JSON.stringify(groups),
+
+        // Impresora 30×15
+        dpi: '203',
+        quiet_mm: '3',
+
+        // Código numérico en el barcode
+        barcode_src: 'numeric',
+
+        // 1D robusto (Code128)
+        symb: 'code128',
+        min_barcode_mm: '12',
+        pad_modules: '6',
+
+        // Mostrar nombre del producto debajo
+        showText: '1',
+        text_value: 'name', // ← usa el nombre del producto como texto
+        text_mode: 'shrink',
+        text_gap_mm: '2',
+
+        // Por si ajustás tipografías
+        font_pt: '6',
+        min_font_pt: '3.5',
+
+        // Si querés 1 etiqueta por item (no por unidad en stock):
+        copies: '1',
+        minQty: '1',
+
+        ...opts
+      };
+
+      const params = new URLSearchParams();
+      Object.entries(defaults).forEach(([k, v]) => params.set(k, String(v)));
+
+      await descargarPdf(
+        `/stock/etiquetas/ticket?${params.toString()}`,
+        `ticket_seleccion_${fecha}.pdf`
+      );
+
+      // opcional: limpiar selección
+      setSelectedGroups(new Set());
+    } catch (e) {
+      console.error(e);
+      setModalFeedbackMsg(
+        'No se pudo generar el PDF de la selección (verificá que haya stock en los seleccionados).'
+      );
+      setModalFeedbackType('error');
+      setModalFeedbackOpen(true);
+    } finally {
+      setDescargandoTicketSel(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-10 px-6 text-white">
       <ParticlesBackground />
@@ -1072,6 +1171,37 @@ const StockGet = () => {
             >
               <FaPlus /> Nuevo
             </button>
+
+            {/* NUEVO: Imprimir selección (solo visible si hay 1+) */}
+            <AnimatePresence>
+              {selectedGroups.size > 0 && (
+                <motion.button
+                  key="fab-ticket"
+                  onClick={() => imprimirTicketSeleccion()}
+                  disabled={descargandoTicketSel}
+                  initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 16, scale: 0.98 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                  className="fixed right-4 bottom-4 sm:right-6 sm:bottom-6 z-50
+                 flex items-center gap-2 rounded-full shadow-lg
+                 bg-orange-600 hover:bg-orange-500 text-white
+                 px-4 py-3 disabled:opacity-60"
+                  style={{
+                    bottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)'
+                  }} // iOS safe-area
+                  title="Imprimir TICKET 30×15 de la selección"
+                >
+                  <FaTicketAlt />
+                  <span className="hidden sm:inline">
+                    Imprimir TICKET (selec)
+                  </span>
+                  <span className="ml-1 px-2 py-0.5 rounded-full bg-white/20 text-xs">
+                    {selectedGroups.size}
+                  </span>
+                </motion.button>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
@@ -1227,8 +1357,21 @@ const StockGet = () => {
               <motion.div
                 key={group.key}
                 layout
-                className="bg-white/10 p-6 rounded-2xl shadow-md border border-white/10 hover:scale-[1.02]"
+                className="relative bg-white/10 p-6 rounded-2xl shadow-md border border-white/10 hover:scale-[1.02]"
               >
+                {/* Checkbox SIEMPRE visible */}
+                <label className="absolute top-3 right-3 z-20 opacity-100 inline-flex items-center gap-2 cursor-pointer select-none pointer-events-auto">
+                  <input
+                    type="checkbox"
+                    // si querés simplificar, podés usar accent-emerald en vez de appearance-none:
+                    // className="w-5 h-5 rounded border border-white/40 bg-white/20 accent-emerald-500 shadow-sm"
+                    className="appearance-none w-5 h-5 rounded border border-white/30 bg-white/10 checked:bg-emerald-500 checked:border-emerald-400 shadow-sm"
+                    checked={isGroupSelected(group)}
+                    onChange={() => toggleGroupSelected(group)}
+                  />
+                  <span className="text-xs text-white/90">Seleccionar</span>
+                </label>
+
                 <h2 className="text-xl font-bold text-cyan-300 mb-1 uppercase">
                   {producto?.nombre}
                 </h2>
