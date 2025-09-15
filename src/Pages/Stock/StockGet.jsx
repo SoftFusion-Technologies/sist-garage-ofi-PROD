@@ -33,7 +33,8 @@ import SearchableSelect from './Components/SearchableSelect.jsx';
 Modal.setAppElement('#root');
 
 // R1- que se puedan imprimir todas las etiquetas del mismo producto BENJAMIN ORELLANA 9/8/25 ✅
-const API_BASE = import.meta.env.VITE_API_URL || 'https://vps-5192960-x.dattaweb.com';
+const API_BASE =
+  import.meta.env.VITE_API_URL || 'https://vps-5192960-x.dattaweb.com';
 const normalizeList = (json) => (Array.isArray(json) ? json : json?.data || []);
 
 const CATEGORIAS_TALLES = {
@@ -223,6 +224,9 @@ const StockGet = () => {
     codigo_sku: ''
   });
 
+  const [gPage, setGPage] = useState(1);
+  const GROUPS_PER_PAGE = 9;
+
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTallesOpen, setModalTallesOpen] = useState(false);
   const [tallesGroupView, setTallesGroupView] = useState(null); // El grupo actual
@@ -345,7 +349,7 @@ const StockGet = () => {
       const [resStock, resProd, resTalles, resLocales, resLugares, resEstados] =
         await Promise.all([
           axios.get('https://vps-5192960-x.dattaweb.com/stock', {
-            params: { page: 1, limit: 200 }
+            params: { page: 1, limit: 'all' }
           }), // opcional
           axios.get('https://vps-5192960-x.dattaweb.com/productos', {
             params: { page: 1, limit: 1000, estado: 'activo' }
@@ -356,8 +360,13 @@ const StockGet = () => {
           axios.get('https://vps-5192960-x.dattaweb.com/estados')
         ]);
 
-      setStock(normalizeList(resStock.data));
-      setProductos(normalizeList(resProd.data)); // 👈 siempre array
+      setStock(
+        Array.isArray(resStock.data?.data)
+          ? resStock.data.data
+          : normalizeList(resStock.data)
+      );
+
+      setProductos(normalizeList(resProd.data));
       setTalles(normalizeList(resTalles.data));
       setLocales(normalizeList(resLocales.data));
       setLugares(normalizeList(resLugares.data));
@@ -691,12 +700,15 @@ const StockGet = () => {
       productos.find((p) => p.id === grupoAEliminar.producto_id)?.nombre || '';
 
     try {
-      const res = await axios.post('https://vps-5192960-x.dattaweb.com/eliminar-grupo', {
-        producto_id: grupoAEliminar.producto_id,
-        local_id: grupoAEliminar.local_id,
-        lugar_id: grupoAEliminar.lugar_id,
-        estado_id: grupoAEliminar.estado_id
-      });
+      const res = await axios.post(
+        'https://vps-5192960-x.dattaweb.com/eliminar-grupo',
+        {
+          producto_id: grupoAEliminar.producto_id,
+          local_id: grupoAEliminar.local_id,
+          lugar_id: grupoAEliminar.lugar_id,
+          estado_id: grupoAEliminar.estado_id
+        }
+      );
 
       setModalFeedbackMsg(res.data.message || 'Stock eliminado exitosamente.');
       setModalFeedbackType('success'); // 👈🏼 Mostrá el verde éxito
@@ -842,6 +854,16 @@ const StockGet = () => {
     }
     group.items.push(item);
   });
+
+  // ⬇️ NUEVO: paginar grupos
+  const groupsTotal = stockAgrupado.length;
+  const groupsTotalPages = Math.max(
+    1,
+    Math.ceil(groupsTotal / GROUPS_PER_PAGE)
+  );
+  const gStart = (gPage - 1) * GROUPS_PER_PAGE;
+  const gEnd = gStart + GROUPS_PER_PAGE;
+  const pageGroups = stockAgrupado.slice(gStart, gEnd);
 
   const handleImprimirCodigoBarra = (item) => {
     setSkuParaImprimir(item);
@@ -1146,6 +1168,77 @@ const StockGet = () => {
     }
   };
 
+  useEffect(() => {
+    setGPage(1);
+  }, [
+    search,
+    talleFiltro,
+    estadoFiltro,
+    enPercheroFiltro,
+    lugarFiltro,
+    skuFiltro,
+    verSoloStockBajo,
+    stock
+  ]);
+
+  const MAX_WINDOW = 2; // cuántas páginas a cada lado del current
+
+  function buildPageButtons(current, total, window = MAX_WINDOW) {
+    const out = [];
+    const pushPage = (p) => out.push({ type: 'page', value: p });
+    const pushDots = (key) => out.push({ type: 'dots', key });
+
+    if (total <= 7) {
+      for (let p = 1; p <= total; p++) pushPage(p);
+      return out;
+    }
+
+    // siempre mostrar 1
+    pushPage(1);
+
+    // elipsis izquierda
+    if (current > 2 + window) pushDots('left');
+    else {
+      for (let p = 2; p < Math.min(current, 2 + window); p++) pushPage(p);
+    }
+
+    // ventana central
+    const start = Math.max(2, current - window);
+    const end = Math.min(total - 1, current + window);
+    for (let p = start; p <= end; p++) {
+      if (p !== 1 && p !== total) pushPage(p);
+    }
+
+    // elipsis derecha
+    if (current < total - (1 + window)) pushDots('right');
+    else {
+      for (let p = Math.max(end + 1, total - 1 - window); p < total; p++)
+        pushPage(p);
+    }
+
+    // siempre mostrar última
+    pushPage(total);
+
+    return out;
+  }
+
+
+  const MAX_BTNS = 12; // 12 botones visibles por hoja
+  const curr = gPage;
+  const totalPages = Math.max(1, Math.ceil(groupsTotal / GROUPS_PER_PAGE));
+
+  const currentBlock = Math.ceil(curr / MAX_BTNS);
+  const totalBlocks = Math.ceil(totalPages / MAX_BTNS);
+  const startBtn = (currentBlock - 1) * MAX_BTNS + 1;
+  const endBtn = Math.min(startBtn + MAX_BTNS - 1, totalPages);
+  const btns = Array.from(
+    { length: endBtn - startBtn + 1 },
+    (_, i) => startBtn + i
+  );
+
+    const btnModel = buildPageButtons(curr, totalPages);
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-10 px-6 text-white">
       <ParticlesBackground />
@@ -1236,7 +1329,11 @@ const StockGet = () => {
           {/* Filtro por Local */}
           <select
             value={localFiltro}
-            onChange={(e) => setLocalFiltro(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setLocalFiltro(v);
+              setLocalesFiltro(v === 'todos' ? [] : [Number(v)]); // ← clave
+            }}
             className="p-2 rounded bg-gray-800 text-white"
           >
             <option value="todos">Todos los locales</option>
@@ -1327,7 +1424,7 @@ const StockGet = () => {
           layout
           className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
         >
-          {stockAgrupado.map((group, idx) => {
+          {pageGroups.map((group, idx) => {
             const producto = productos.find((p) => p.id === group.producto_id);
             const local = locales.find((l) => l.id === group.local_id);
             const lugar = lugares.find((l) => l.id === group.lugar_id);
@@ -1533,6 +1630,101 @@ const StockGet = () => {
             );
           })}
         </motion.div>
+        
+        <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          {/* Info */}
+          <div className="text-white/80 text-xs sm:text-sm leading-tight">
+            Total: <b>{groupsTotal}</b> · Página <b>{curr}</b> de{' '}
+            <b>{totalPages}</b>
+          </div>
+
+          {/* Controles */}
+          <div className="-mx-2 sm:mx-0">
+            <div className="px-2 sm:px-0">
+              <div className="flex items-center gap-2">
+                {/* En XS: solo Prev/Next */}
+                <div className="flex items-center gap-2 sm:hidden">
+                  <button
+                    className="px-3 py-2 rounded-lg bg-gray-700 text-white disabled:opacity-40"
+                    onClick={() => setGPage(Math.max(1, curr - 1))}
+                    disabled={curr <= 1}
+                  >
+                    ‹ Anterior
+                  </button>
+                  <button
+                    className="px-3 py-2 rounded-lg bg-gray-700 text-white disabled:opacity-40"
+                    onClick={() => setGPage(Math.min(totalPages, curr + 1))}
+                    disabled={curr >= totalPages}
+                  >
+                    Siguiente ›
+                  </button>
+                </div>
+
+                {/* En ≥SM: numéricos con elipses */}
+                <div className="hidden sm:inline-flex items-center whitespace-nowrap gap-2">
+                  <button
+                    className="px-3 py-2 rounded-lg bg-gray-700 text-white disabled:opacity-40"
+                    onClick={() => setGPage(1)}
+                    disabled={curr <= 1}
+                    aria-label="Primera página"
+                  >
+                    «
+                  </button>
+                  <button
+                    className="px-3 py-2 rounded-lg bg-gray-700 text-white disabled:opacity-40"
+                    onClick={() => setGPage(Math.max(1, curr - 1))}
+                    disabled={curr <= 1}
+                    aria-label="Página anterior"
+                  >
+                    ‹
+                  </button>
+
+                  {btnModel.map((b, i) =>
+                    b.type === 'dots' ? (
+                      <span
+                        key={`${b.key}-${i}`}
+                        className="px-2 text-white/70 select-none"
+                      >
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={b.value}
+                        onClick={() => setGPage(b.value)}
+                        className={`px-3 py-2 rounded-lg border text-sm ${
+                          b.value === curr
+                            ? 'bg-cyan-600 text-white border-cyan-500'
+                            : 'bg-gray-800 text-white border-white/10 hover:bg-gray-700'
+                        }`}
+                        aria-current={b.value === curr ? 'page' : undefined}
+                        aria-label={`Página ${b.value}`}
+                      >
+                        {b.value}
+                      </button>
+                    )
+                  )}
+
+                  <button
+                    className="px-3 py-2 rounded-lg bg-gray-700 text-white disabled:opacity-40"
+                    onClick={() => setGPage(Math.min(totalPages, curr + 1))}
+                    disabled={curr >= totalPages}
+                    aria-label="Página siguiente"
+                  >
+                    ›
+                  </button>
+                  <button
+                    className="px-3 py-2 rounded-lg bg-gray-700 text-white disabled:opacity-40"
+                    onClick={() => setGPage(totalPages)}
+                    disabled={curr >= totalPages}
+                    aria-label="Última página"
+                  >
+                    »
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <Modal
           isOpen={modalOpen}
