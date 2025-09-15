@@ -34,6 +34,7 @@ Modal.setAppElement('#root');
 
 // R1- que se puedan imprimir todas las etiquetas del mismo producto BENJAMIN ORELLANA 9/8/25 ✅
 const API_BASE = import.meta.env.VITE_API_URL || 'https://vps-5192960-x.dattaweb.com';
+const normalizeList = (json) => (Array.isArray(json) ? json : json?.data || []);
 
 const CATEGORIAS_TALLES = {
   calzado: [
@@ -343,19 +344,24 @@ const StockGet = () => {
     try {
       const [resStock, resProd, resTalles, resLocales, resLugares, resEstados] =
         await Promise.all([
-          axios.get('https://vps-5192960-x.dattaweb.com/stock'),
-          axios.get('https://vps-5192960-x.dattaweb.com/productos'),
+          axios.get('https://vps-5192960-x.dattaweb.com/stock', {
+            params: { page: 1, limit: 200 }
+          }), // opcional
+          axios.get('https://vps-5192960-x.dattaweb.com/productos', {
+            params: { page: 1, limit: 1000, estado: 'activo' }
+          }),
           axios.get('https://vps-5192960-x.dattaweb.com/talles/all'),
           axios.get('https://vps-5192960-x.dattaweb.com/locales'),
           axios.get('https://vps-5192960-x.dattaweb.com/lugares'),
           axios.get('https://vps-5192960-x.dattaweb.com/estados')
         ]);
-      setStock(resStock.data);
-      setProductos(resProd.data);
-      setTalles(resTalles.data);
-      setLocales(resLocales.data);
-      setLugares(resLugares.data);
-      setEstados(resEstados.data);
+
+      setStock(normalizeList(resStock.data));
+      setProductos(normalizeList(resProd.data)); // 👈 siempre array
+      setTalles(normalizeList(resTalles.data));
+      setLocales(normalizeList(resLocales.data));
+      setLugares(normalizeList(resLugares.data));
+      setEstados(normalizeList(resEstados.data));
     } catch (err) {
       setModalFeedbackMsg(
         'Ocurrió un error al cargar los datos.\n' +
@@ -367,7 +373,6 @@ const StockGet = () => {
       setModalFeedbackOpen(true);
     }
   };
-
   useEffect(() => {
     fetchAll();
   }, []);

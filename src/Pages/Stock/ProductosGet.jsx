@@ -51,59 +51,66 @@ const ProductosGet = () => {
 
   const [showAjustePrecios, setShowAjustePrecios] = useState(false);
 
+  const [meta, setMeta] = useState({
+    total: 0,
+    page: 1,
+    pageSize: 9,
+    totalPages: 1,
+    offset: 0
+  });
+  const [loading, setLoading] = useState(false);
+  const pageSize = 9;
+
   // RELACION AL FILTRADO BENJAMIN ORELLANA 23-04-25
 
-  const fetchData = async () => {
+  const fetchData = async (next = { page: 1 }) => {
+    setLoading(true);
     try {
+      const params = {
+        page: next.page ?? meta.page,
+        limit: pageSize,
+        q: search || undefined,
+        estado: estadoFiltro !== 'todos' ? estadoFiltro : undefined,
+        categoria_id: categoriaFiltro || undefined,
+        precio_min: precioMin || undefined,
+        precio_max: precioMax || undefined,
+        orden: ordenCampo // 'nombre' | 'precio'
+      };
       const [resProd, resCat] = await Promise.all([
-        axios.get('https://vps-5192960-x.dattaweb.com/productos'),
+        axios.get('https://vps-5192960-x.dattaweb.com/productos', { params }),
         axios.get('https://vps-5192960-x.dattaweb.com/categorias/all')
       ]);
-      setProductos(resProd.data);
+
+      const json = resProd.data;
+      setProductos(Array.isArray(json) ? json : json.data || []);
+      setMeta(
+        json.meta
+          ? json.meta
+          : {
+              total: (json.data || []).length,
+              page: 1,
+              pageSize,
+              totalPages: 1,
+              offset: 0
+            }
+      );
       setCategorias(resCat.data);
     } catch (error) {
       console.error('Error al cargar productos o categorías:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData({ page: 1 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const filtered = productos
-    .filter((p) => {
-      const searchLower = search.toLowerCase();
-
-      // Campos a buscar (solo strings)
-      const campos = [
-        p.nombre,
-        p.descripcion,
-        p.categoria?.nombre // <- extraemos nombre de la categoría
-      ];
-
-      return campos.some(
-        (campo) =>
-          typeof campo === 'string' && campo.toLowerCase().includes(searchLower)
-      );
-    })
-    .filter((p) =>
-      estadoFiltro === 'todos' ? true : p.estado === estadoFiltro
-    )
-    .filter((p) =>
-      categoriaFiltro === null
-        ? true
-        : p.categoria_id === parseInt(categoriaFiltro)
-    )
-    .filter((p) => {
-      const precio = parseFloat(p.precio);
-      const min = parseFloat(precioMin) || 0;
-      const max = parseFloat(precioMax) || Infinity;
-      return precio >= min && precio <= max;
-    })
-    .sort((a, b) => {
-      if (ordenCampo === 'precio') return a.precio - b.precio;
-      return a.nombre.localeCompare(b.nombre);
-    });
+  useEffect(() => {
+    const t = setTimeout(() => fetchData({ page: 1 }), 100); // debounce simple
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, estadoFiltro, categoriaFiltro, precioMin, precioMax, ordenCampo]);
 
   const openModal = (producto = null) => {
     if (producto) {
@@ -154,14 +161,12 @@ const ProductosGet = () => {
           dataToSend
         );
       } else {
-        await axios.post(
-          'https://vps-5192960-x.dattaweb.com/productos',
-          dataToSend
-        );
+        await axios.post('https://vps-5192960-x.dattaweb.com/productos', dataToSend);
       }
 
       fetchData();
       setModalOpen(false);
+      fetchData({ page: 1 }); // o { page: meta.page } si querés quedarte
     } catch (err) {
       console.error('Error al guardar producto:', err);
     }
@@ -170,7 +175,9 @@ const ProductosGet = () => {
   const handleDelete = async (id) => {
     try {
       await axios.delete(`https://vps-5192960-x.dattaweb.com/productos/${id}`);
-      fetchData();
+      const isLastOnPage = productos.length === 1 && meta.page > 1;
+      const nextPage = isLastOnPage ? meta.page - 1 : meta.page;
+      fetchData({ page: nextPage });
     } catch (err) {
       if (err.response?.status === 409) {
         setConfirmDelete(id);
@@ -244,7 +251,7 @@ const ProductosGet = () => {
               />
 
               <button
-                onClick={() => exportarProductosAExcel(filtered)}
+                onClick={() => exportarProductosAExcel(productos)}
                 className="w-full sm:w-auto bg-cyan-600 hover:bg-cyan-700 px-4 py-2 rounded-xl font-semibold flex items-center gap-2 text-white"
               >
                 <FaDownload /> Exportar Excel
@@ -317,7 +324,7 @@ const ProductosGet = () => {
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filtered.map((p) => (
+          {productos.map((p) => (
             <motion.div
               key={p.id}
               layout
@@ -394,6 +401,33 @@ const ProductosGet = () => {
               />
             </motion.div>
           ))}
+        </div>
+
+        <div className="mt-8 flex items-center justify-between gap-3">
+          <div className="text-sm text-gray-400">
+            Página <strong>{meta.page}</strong> de{' '}
+            {/* <strong>{meta.totalPages}</strong> • Offset{' '} */}
+            <strong>{meta.offset}</strong> • Tamaño{' '}
+            <strong>{meta.pageSize}</strong>
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => fetchData({ page: Math.max(1, meta.page - 1) })}
+              disabled={meta.page <= 1}
+              className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 disabled:opacity-50"
+            >
+              ← Anterior
+            </button>
+            <button
+              onClick={() =>
+                fetchData({ page: Math.min(meta.totalPages, meta.page + 1) })
+              }
+              disabled={meta.page >= meta.totalPages}
+              className="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 disabled:opacity-50"
+            >
+              Siguiente →
+            </button>
+          </div>
         </div>
 
         <Modal

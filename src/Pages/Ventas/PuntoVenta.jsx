@@ -60,6 +60,30 @@ function agruparProductosConTalles(stockItems) {
   return Array.from(map.values());
 }
 
+// Helper: elegir stock por talle (o el primero disponible)
+const pickStockForTalle = (stockData, talleId) => {
+  if (Array.isArray(stockData) && stockData.length > 0) {
+    if (talleId) {
+      // buscar el que coincida con talle_id y tenga disponibilidad
+      const exact = stockData.find(
+        (s) =>
+          Number(s.talle_id) === Number(talleId) &&
+          (Number(s.cantidad_disponible) || 0) > 0
+      );
+      if (exact) return exact;
+    }
+    // fallback: primer item con stock
+    const withStock = stockData.find(
+      (s) => (Number(s.cantidad_disponible) || 0) > 0
+    );
+    if (withStock) return withStock;
+
+    // último fallback: primer item
+    return stockData[0];
+  }
+  return null;
+};
+
 export default function PuntoVenta() {
   const navigate = useNavigate();
   const [mediosPago, setMediosPago] = useState([]);
@@ -107,6 +131,8 @@ export default function PuntoVenta() {
   const lastKeyTsRef = useRef(0);
   const bufferRef = useRef('');
   const idleTimerRef = useRef(null);
+
+  const API_URL = 'https://vps-5192960-x.dattaweb.com';
 
   const resetSession = () => {
     deltasRef.current = [];
@@ -342,16 +368,23 @@ export default function PuntoVenta() {
   const abrirModalVerCombos = async () => {
     setModalVerCombosOpen(true);
     try {
-      const res = await fetch('https://vps-5192960-x.dattaweb.com/combos');
-      const data = await res.json();
-      setCombosModal(data);
+      const res = await fetch('https://vps-5192960-x.dattaweb.com/combos?page=1&limit=50'); // o el tamaño que prefieras
+      const json = await res.json();
+      // Soporta ambas formas: viejo (array) o nuevo ({data, meta})
+      const list = Array.isArray(json) ? json : json.data || [];
+      setCombosModal(list);
     } catch (error) {
       console.error('Error al cargar combos para el modal:', error);
+      setCombosModal([]); // fail-safe
     }
   };
 
-  const filteredCombosModal = combosModal.filter((combo) =>
-    combo.nombre.toLowerCase().includes(modalComboSearch.toLowerCase())
+  const filteredCombosModal = (
+    Array.isArray(combosModal) ? combosModal : []
+  ).filter((combo) =>
+    (combo?.nombre || '')
+      .toLowerCase()
+      .includes((modalComboSearch || '').toLowerCase())
   );
 
   const seleccionarProductoModal = (productoConTalle) => {
@@ -374,52 +407,65 @@ export default function PuntoVenta() {
     agregarAlCarrito(producto, talle);
     setModalVerProductosOpen(false);
   };
+
   const seleccionarCombo = async (combo) => {
     try {
+      // 1) Traigo los permitidos del combo (incluye producto y talle si lo definiste en el include del backend)
       const res = await fetch(
-        `https://vps-5192960-x.dattaweb.com/combo-productos-permitidos/${combo.id}`
+        `${API_URL}/combo-productos-permitidos/${combo.id}`
       );
       const permitidos = await res.json();
 
+      // Tomo solo los que son producto (las categorías no se materializan aquí)
       const productosDirectos = permitidos.filter((p) => p.producto);
 
       const productosSeleccionados = [];
 
       for (const item of productosDirectos) {
         const producto = item.producto;
+        const tallePermitidoId = item.talle?.id ?? null; // 👈 talle seleccionado en el combo (si lo hay)
 
+        // 2) Traigo el stock detallado del producto
         const resStock = await fetch(
-          `https://vps-5192960-x.dattaweb.com/buscar-productos-detallado?query=${producto.id}`
+          `${API_URL}/buscar-productos-detallado?query=${producto.id}`
         );
         const stockData = await resStock.json();
 
-        if (stockData.length > 0) {
-          const talleDisponible = stockData[0];
-
-          const productoData = {
-            producto_id: producto.id,
-            nombre: producto.nombre,
-            precio: parseFloat(combo.precio_fijo) / combo.cantidad_items // Reparto proporcional
-          };
-
-          const talle = {
-            id: talleDisponible.talle_id,
-            nombre: talleDisponible.talle_nombre,
-            cantidad: talleDisponible.cantidad_disponible,
-            stock_id: talleDisponible.stock_id
-          };
-
-          // 👇 Agregar al carrito
-          agregarAlCarrito(productoData, talle, false);
-
-          // 👇 Agregar al listado para combosSeleccionados
-          productosSeleccionados.push({
-            stock_id: talleDisponible.stock_id
-          });
+        // 3) Elijo el stock correcto según el talle del combo
+        const seleccionado = pickStockForTalle(stockData, tallePermitidoId);
+        if (!seleccionado) {
+          console.warn(
+            'Sin stock para producto',
+            producto.id,
+            'talle',
+            tallePermitidoId
+          );
+          continue; // pasamos al siguiente producto del combo
         }
+
+        // 4) Construyo el "producto" y "talle" que espera agregarAlCarrito
+        const productoData = {
+          producto_id: producto.id,
+          nombre: producto.nombre,
+          // Precio prorrateado (como ya tenías). Si luego querés precio fijo del combo, se ajusta en cierre.
+          precio: parseFloat(combo.precio_fijo) / combo.cantidad_items
+        };
+
+        const talle = {
+          id: seleccionado.talle_id ?? null,
+          nombre: seleccionado.talle_nombre ?? 'Sin talle',
+          cantidad: seleccionado.cantidad_disponible ?? 0,
+          stock_id: seleccionado.stock_id
+        };
+
+        // 5) Agrego al carrito respetando el talle del combo
+        agregarAlCarrito(productoData, talle, false);
+
+        // 6) Registro stock usado para tu tracking de combos
+        productosSeleccionados.push({ stock_id: seleccionado.stock_id });
       }
 
-      // 🔥 Guardar combo seleccionado con sus productos usados
+      // 7) Guardar combo seleccionado con sus productos (para auditoría del combo)
       if (productosSeleccionados.length > 0) {
         setCombosSeleccionados((prev) => [
           ...prev,
