@@ -21,6 +21,7 @@ import '../../Styles/login.css';
 import { useAuth } from '../../AuthContext';
 import { motion } from 'framer-motion';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import ServicePausedModal from '../Security/ServicePausedModal';
 
 Modal.setAppElement('#root');
 
@@ -103,6 +104,12 @@ const LoginForm = () => {
 
   return (
     <div className="h-screen w-full loginbg flex items-center justify-center bg-cover bg-center relative">
+      <ServicePausedModal
+        active={true}
+        whatsappNumber="5493815430503"
+        phone="+54 9 3815 43-0503"
+        brand={{ name: 'SoftFusion', color: 'from-orange-500 to-pink-500' }}
+      />
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}

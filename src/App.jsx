@@ -65,12 +65,19 @@ import DashboardEstadisticasVendedores from './Pages/Vendedores/DashboardEstadis
 import CombosGet from './Pages/Stock/Combos/CombosGet';
 import ComboEditarPermitidos from './Pages/Stock/Combos/ComboEditarPermitidos';
 import Home from './Pages/Home';
+import ServicePausedModal from './Components/Security/ServicePausedModal';
 
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
 
   return (
     <>
+      <ServicePausedModal
+        active={true} // poner en true según flag de tu API
+        whatsappNumber="5493815430503" // sin '+'
+        phone="+54 9 3815 43-0503"
+        brand={{ name: 'SoftFusion', color: 'from-orange-500 to-pink-500' }}
+      />
       <div className="w-full min-h-screen overflow-x-hidden bg-[#1f3636]">
         {/* {!hideLayoutNav && <NavBar />} */}
         <Rutas>
