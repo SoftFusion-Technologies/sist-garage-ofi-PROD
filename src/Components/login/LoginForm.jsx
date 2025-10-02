@@ -105,7 +105,7 @@ const LoginForm = () => {
   return (
     <div className="h-screen w-full loginbg flex items-center justify-center bg-cover bg-center relative">
       <ServicePausedModal
-        active={true}
+        active={false}
         whatsappNumber="5493815430503"
         phone="+54 9 3815 43-0503"
         brand={{ name: 'SoftFusion', color: 'from-orange-500 to-pink-500' }}
