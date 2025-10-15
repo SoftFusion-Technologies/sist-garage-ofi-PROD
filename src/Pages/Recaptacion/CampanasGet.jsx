@@ -12,11 +12,15 @@ import ParticlesBackground from '../../Components/ParticlesBackground';
 import NavbarStaff from '../Dash/NavbarStaff';
 import CampanaModal from '../../Components/Recaptacion/CampanaModal';
 import { useLocation } from 'react-router-dom';
+import CampanaSendModal from '../../Components/Recaptacion/CampanaSendModal'; // nuevo modal
+import { useAuth } from '../../AuthContext';
 
 const CampanasGet = () => {
   const [campanas, setCampanas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalData, setModalData] = useState(null);
+  const [modalEnviar, setModalEnviar] = useState(null);
+  const { userId } = useAuth();
 
   const location = useLocation();
 
@@ -70,6 +74,9 @@ const CampanasGet = () => {
   useEffect(() => {
     obtenerCampanas();
   }, []);
+
+  const abrirModalEnviar = (campana) => setModalEnviar(campana);
+  const cerrarModalEnviar = () => setModalEnviar(null);
 
   return (
     <>
@@ -132,6 +139,13 @@ const CampanasGet = () => {
                       <FaEdit /> Editar
                     </button>
                     <button
+                      onClick={() => abrirModalEnviar(campana)}
+                      className="flex items-center gap-2 px-3 py-1 text-sm bg-green-600 hover:bg-green-700 rounded-full text-white"
+                    >
+                      <FaBullhorn /> Enviar
+                    </button>
+
+                    <button
                       onClick={() => eliminarCampana(campana.id)}
                       className="flex items-center gap-2 px-3 py-1 text-sm bg-red-600 hover:bg-red-700 rounded-full text-white"
                     >
@@ -146,6 +160,13 @@ const CampanasGet = () => {
       </section>
 
       {modalData && <CampanaModal campana={modalData} onClose={cerrarModal} />}
+      {modalEnviar && (
+        <CampanaSendModal
+          campana={modalEnviar}
+          userId={userId}
+          onClose={cerrarModalEnviar}
+        />
+      )}
     </>
   );
 };
