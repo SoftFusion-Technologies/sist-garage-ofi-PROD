@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+// ClientesGet.jsx
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import Modal from 'react-modal';
 import {
@@ -12,16 +13,14 @@ import {
   FaIdCard,
   FaHome,
   FaEnvelope,
-  FaStore,
-  FaUserTie,
   FaCalendarAlt,
   FaCreditCard,
-  FaCheckCircle,
   FaMoneyBillWave,
-  FaRegCopy
+  FaRegCopy,
+  FaSearch
 } from 'react-icons/fa';
-
 import { motion, AnimatePresence } from 'framer-motion';
+
 import ButtonBack from '../../Components/ButtonBack';
 import AdminActions from '../../Components/AdminActions';
 import { ModalFeedback } from '../../Pages/Ventas/Config/ModalFeedback.jsx';
@@ -35,57 +34,29 @@ import formatearFechaARG from '../../Components/formatearFechaARG';
 
 Modal.setAppElement('#root');
 
-// --- Función para formatear teléfono:
-function formatDisplayPhone(num) {
-  // Saca todo lo que no es número
-  let n = num.replace(/\D/g, '');
+const API_BASE = 'https://vps-5192960-x.dattaweb.com';
 
-  // Si ya empieza con 54, asumimos formato internacional argentino
-  if (n.length === 13 && n.startsWith('54')) {
-    // +54 9 3863 41-4717
-    return `+${n.slice(0, 2)} ${n[2]} ${n.slice(3, 7)} ${n.slice(
-      7,
-      9
-    )}-${n.slice(9, 13)}`;
-  }
-
-  // +549...
-  if (n.length === 12 && n.startsWith('549')) {
-    return `+${n.slice(0, 2)} ${n[2]} ${n.slice(3, 7)} ${n.slice(
-      7,
-      9
-    )}-${n.slice(9, 12)}`;
-  }
-
-  // 11 dígitos típico móvil Arg: 38653488333 → +54 9 3865 34-8833
-  if (n.length === 11) {
-    return `+54 9 ${n.slice(0, 4)} ${n.slice(4, 6)}-${n.slice(6, 10)}`;
-  }
-
-  // 10 dígitos típico fijo Arg: 3816583391 → +54 3816 58-3391
-  if (n.length === 10) {
-    return `+54 ${n.slice(0, 4)} ${n.slice(4, 6)}-${n.slice(6, 10)}`;
-  }
-
-  // 8 ó 7 dígitos, local corto
-  if (n.length === 8) {
-    return `${n.slice(0, 4)}-${n.slice(4, 8)}`;
-  }
-  if (n.length === 7) {
-    return `${n.slice(0, 3)}-${n.slice(3, 7)}`;
-  }
-
-  // Si no, devolvé como está, pero podés agregarle prefijo si querés
-  return num;
+/* ------------------ Utils Teléfono ------------------ */
+function normalizeToE164AR(num) {
+  let n = String(num || '').replace(/\D/g, '');
+  if (n.startsWith('0')) n = n.slice(1);
+  if (!n.startsWith('54')) n = '54' + n;
+  if (!n.startsWith('549')) n = '549' + n.substring(2);
+  return n;
 }
-
+function formatDisplayPhone(num) {
+  const n = normalizeToE164AR(num); // 549XXXXXXXXXX
+  return `+${n.slice(0, 2)} ${n.slice(2, 3)} ${n.slice(3, 7)} ${n.slice(
+    7,
+    9
+  )}-${n.slice(9)}`;
+}
 function TelCell({ telefono }) {
   const [copied, setCopied] = useState(false);
-
-  // Lógica igual que antes
-  const raw = telefono.replace(/\D/g, '');
-  const link = `https://wa.me/${raw.startsWith('54') ? raw : '54' + raw}`;
-  const display = formatDisplayPhone(telefono);
+  if (!telefono) return <span className="opacity-70">Sin teléfono</span>;
+  const e164 = normalizeToE164AR(telefono);
+  const link = `https://wa.me/${e164}`;
+  const display = formatDisplayPhone(telefono || '');
 
   const copyToClipboard = async () => {
     try {
@@ -96,40 +67,140 @@ function TelCell({ telefono }) {
   };
 
   return (
-    <div className="flex items-center justify-center">
+    <div className="flex items-center gap-2">
       <a
         href={link}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 bg-[#25D366]/10 border border-[#25D366] rounded-full px-4 py-2 font-bold text-emerald-200 hover:bg-[#25D366]/20 hover:text-white shadow-sm transition-all whitespace-nowrap"
+        className="inline-flex items-center gap-2 bg-[#25D366]/10 border border-[#25D366] rounded-full px-3 py-1.5 text-emerald-200 hover:bg-[#25D366]/20 hover:text-white shadow-sm transition-all whitespace-nowrap"
         title="Enviar WhatsApp"
-        style={{ fontSize: '1.1em', letterSpacing: '0.02em' }}
       >
-        <FaWhatsapp className="text-[#25D366] text-xl mr-2" />
-        <span className="font-bold tracking-wider">{display}</span>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            copyToClipboard();
-          }}
-          className="ml-2 text-xs text-gray-400 hover:text-emerald-200 transition"
-          title="Copiar número"
-          tabIndex={-1}
-        >
-          {copied ? (
-            <FaCheckCircle className="text-emerald-400 text-lg" />
-          ) : (
-            <FaRegCopy className="text-lg" />
-          )}
-        </button>
+        <FaWhatsapp className="text-[#25D366]" />
+        <span className="tracking-wide">{display}</span>
       </a>
+      <button
+        type="button"
+        onClick={copyToClipboard}
+        className="text-xs text-gray-300 hover:text-white transition"
+        title="Copiar número"
+      >
+        {copied ? 'Copiado' : <FaRegCopy />}
+      </button>
     </div>
   );
 }
+
+/* ------------------ Skeletons ------------------ */
+function SkeletonCard() {
+  return (
+    <div className="flex w-full min-h-[120px] bg-white/15 shadow rounded-3xl overflow-hidden border border-white/10 animate-pulse">
+      <div className="w-72 bg-white/10" />
+      <div className="flex-1 grid grid-cols-3 gap-6 px-6 py-5" />
+      <div className="w-40 bg-white/10" />
+    </div>
+  );
+}
+
+/* ------------------ Paginación ------------------ */
+function Pagination({ page, totalPages, onPageChange }) {
+  const windowSize = 7;
+  const half = Math.floor(windowSize / 2);
+  let start = Math.max(1, page - half);
+  let end = Math.min(totalPages, start + windowSize - 1);
+  if (end - start + 1 < windowSize) start = Math.max(1, end - windowSize + 1);
+
+  const pages = [];
+  for (let p = start; p <= end; p++) pages.push(p);
+
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+      <button
+        onClick={() => onPageChange(Math.max(1, page - 1))}
+        disabled={page === 1}
+        className="px-3 py-1 rounded-lg bg-white/90 text-emerald-900 border border-emerald-200 disabled:opacity-50"
+      >
+        ‹ Anterior
+      </button>
+
+      {start > 1 && (
+        <>
+          <button
+            onClick={() => onPageChange(1)}
+            className={`px-3 py-1 rounded-lg ${
+              page === 1
+                ? 'bg-emerald-600 text-white'
+                : 'bg-white/90 text-emerald-900 border border-emerald-200'
+            }`}
+          >
+            1
+          </button>
+          <span className="text-white/70 px-1">…</span>
+        </>
+      )}
+
+      {pages.map((p) => (
+        <button
+          key={p}
+          onClick={() => onPageChange(p)}
+          className={`px-3 py-1 rounded-lg ${
+            p === page
+              ? 'bg-emerald-600 text-white'
+              : 'bg-white/90 text-emerald-900 border border-emerald-200 hover:bg-white'
+          }`}
+        >
+          {p}
+        </button>
+      ))}
+
+      {end < totalPages && (
+        <>
+          <span className="text-white/70 px-1">…</span>
+          <button
+            onClick={() => onPageChange(totalPages)}
+            className={`px-3 py-1 rounded-lg ${
+              page === totalPages
+                ? 'bg-emerald-600 text-white'
+                : 'bg-white/90 text-emerald-900 border border-emerald-200'
+            }`}
+          >
+            {totalPages}
+          </button>
+        </>
+      )}
+
+      <button
+        onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+        disabled={page === totalPages}
+        className="px-3 py-1 rounded-lg bg-white/90 text-emerald-900 border border-emerald-200 disabled:opacity-50"
+      >
+        Siguiente ›
+      </button>
+    </div>
+  );
+}
+
+/* ------------------ Componente Principal ------------------ */
 export default function ClientesGet() {
+  // Estado principal
   const [clientes, setClientes] = useState([]);
-  const [search, setSearch] = useState('');
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [limit, setLimit] = useState(20);
+  const [offset, setOffset] = useState(0);
+  const [q, setQ] = useState('');
+  const [qInput, setQInput] = useState('');
+  const [fechaFiltro, setFechaFiltro] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [firstLoadDone, setFirstLoadDone] = useState(false);
+  const [error, setError] = useState('');
+
+  // Derivados para UI
+  const page = Math.floor(offset / limit) + 1;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const rangeFrom = total === 0 ? 0 : offset + 1;
+  const rangeTo = Math.min(offset + clientes.length, total);
+
+  // Modales alta/edición
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState(null);
   const [formData, setFormData] = useState({
@@ -140,26 +211,95 @@ export default function ClientesGet() {
     dni: ''
   });
 
-  const [modalFeedbackOpen, setModalFeedbackOpen] = React.useState(false);
-  const [modalFeedbackMsg, setModalFeedbackMsg] = React.useState('');
-  const [modalFeedbackType, setModalFeedbackType] = React.useState('info'); // 'success', 'error', 'info'
+  // Feedback
+  const [modalFeedbackOpen, setModalFeedbackOpen] = useState(false);
+  const [modalFeedbackMsg, setModalFeedbackMsg] = useState('');
+  const [modalFeedbackType, setModalFeedbackType] = useState('info');
 
-  // Filtro avanzado: por nombre, teléfono, email o fecha de última compra
-  const [fechaFiltro, setFechaFiltro] = useState('');
+  // Catálogos
+  const [locales, setLocales] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
 
-  const fetchClientes = async () => {
-    try {
-      const res = await axios.get('https://vps-5192960-x.dattaweb.com/clientes');
-      setClientes(res.data);
-    } catch (error) {
-      console.error('Error al obtener clientes:', error);
-    }
-  };
+  // Detalles
+  const [detalleCliente, setDetalleCliente] = useState(null);
+  const [detalleVenta, setDetalleVenta] = useState(null);
 
+  // Debounce búsqueda
+  const debounceTimerRef = useRef(null);
   useEffect(() => {
-    fetchClientes();
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      setQ(qInput);
+      setOffset(0); // reset página
+    }, 350);
+    return () => clearTimeout(debounceTimerRef.current);
+  }, [qInput]);
+
+  // Catálogos
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([fetchLocales(), fetchUsuarios()])
+      .then(([loc, usr]) => {
+        setLocales(loc);
+        setUsuarios(usr);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
+  // Query params para v2
+  const buildParams = useMemo(() => {
+    const p = new URLSearchParams();
+    if (q && q.trim().length) p.set('q', q.trim());
+    p.set('limit', String(limit));
+    p.set('offset', String(offset));
+    p.set('sort', 'id');
+    p.set('order', 'DESC');
+    return p.toString();
+  }, [q, limit, offset]);
+
+  // Fetch paginado server-side (v2)
+  const fetchClientes = async (opts = { append: false }) => {
+    const { append } = opts;
+    setLoading(true);
+    setError('');
+    const src = axios.CancelToken.source();
+    try {
+      const res = await axios.get(`${API_BASE}/clientes/v2?${buildParams}`, {
+        cancelToken: src.token
+      });
+      const { data, page: meta } = res.data || {};
+
+      // Filtro client-side por fecha (igualdad YYYY-MM-DD); total server se mantiene para paginación
+      const filtered = fechaFiltro
+        ? (data || []).filter(
+            (c) => (c.fecha_ultima_compra || '').slice(0, 10) === fechaFiltro
+          )
+        : data || [];
+
+      setClientes((prev) => (append ? [...prev, ...filtered] : filtered));
+      const serverTotal = meta?.total ?? 0;
+      setTotal(serverTotal);
+      setHasMore(offset + limit < serverTotal);
+      setFirstLoadDone(true);
+    } catch (err) {
+      if (!axios.isCancel(err)) {
+        setError(
+          err?.response?.data?.mensajeError || 'Error al obtener clientes'
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+    return () => src.cancel();
+  };
+
+  // Cargar cuando cambian q/limit/offset/fechaFiltro
+  useEffect(() => {
+    fetchClientes({ append: offset > 0 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buildParams, fechaFiltro]);
+
+  // CRUD
   const openModal = (cliente = null) => {
     if (cliente) {
       setEditId(cliente.id);
@@ -186,340 +326,336 @@ export default function ClientesGet() {
     e.preventDefault();
     try {
       if (editId) {
-        await axios.put(`https://vps-5192960-x.dattaweb.com/clientes/${editId}`, formData);
+        await axios.put(`${API_BASE}/clientes/${editId}`, formData);
         setModalFeedbackMsg('Cliente actualizado correctamente');
-        setModalFeedbackType('success');
       } else {
-        await axios.post('https://vps-5192960-x.dattaweb.com/clientes', formData);
+        await axios.post(`${API_BASE}/clientes`, formData);
         setModalFeedbackMsg('Cliente creado correctamente');
-        setModalFeedbackType('success');
       }
-      fetchClientes();
+      setModalFeedbackType('success');
       setModalOpen(false);
-      setModalFeedbackOpen(true); // <--- Abrir modal aquí
+      setOffset(0);
+      fetchClientes({ append: false });
     } catch (err) {
-      setModalFeedbackMsg('Error al guardar cliente');
+      setModalFeedbackMsg(
+        err?.response?.data?.mensajeError || 'Error al guardar cliente'
+      );
       setModalFeedbackType('error');
-      setModalFeedbackOpen(true); // <--- Abrir modal aquí también
-      console.error(err);
     }
+    setModalFeedbackOpen(true);
   };
-
   const handleDelete = async (id) => {
-    // Aquí deberías abrir un modal de confirmación en vez de usar window.confirm
-    // Ejemplo: setConfirmDeleteId(id); setConfirmModalOpen(true);
-
-    // Para simplificar (pero aún con alert):
     if (!window.confirm('¿Eliminar este cliente?')) return;
-
     try {
-      await axios.delete(`https://vps-5192960-x.dattaweb.com/clientes/${id}`);
-      fetchClientes();
+      await axios.delete(`${API_BASE}/clientes/${id}`);
       setModalFeedbackMsg('Cliente eliminado correctamente');
       setModalFeedbackType('success');
+      fetchClientes({ append: false });
     } catch (err) {
-      const mensaje =
-        err.response?.data?.mensajeError || 'Error al eliminar cliente';
-
-      setModalFeedbackMsg(mensaje);
+      setModalFeedbackMsg(
+        err?.response?.data?.mensajeError || 'Error al eliminar cliente'
+      );
       setModalFeedbackType('error');
     }
     setModalFeedbackOpen(true);
   };
 
-  const filtered = clientes.filter((c) => {
-    const text = [c.nombre, c.telefono, c.email, c.direccion, c.dni]
-      .join(' ')
-      .toLowerCase();
-    const filtroFecha = fechaFiltro
-      ? (c.fecha_ultima_compra || '').slice(0, 10) === fechaFiltro
-      : true;
-    return text.includes(search.toLowerCase()) && filtroFecha;
-  });
-
-  // Convierte teléfono "3865417665" o similar en "5493865417665" para WhatsApp link (Argentina)
-  function formatWhatsappNumber(phone) {
-    // Elimina cualquier caracter no numérico
-    let num = phone.replace(/\D/g, '');
-
-    // Si empieza con 0, lo quitamos
-    if (num.startsWith('0')) num = num.substring(1);
-
-    // Si empieza con 54, asumimos que ya es nacional
-    if (!num.startsWith('54')) num = '54' + num;
-
-    // Si no tiene el "9" (para WhatsApp móvil Argentina), se lo agregamos luego de "54"
-    if (num.startsWith('549')) return num;
-    if (num.startsWith('54') && num[2] !== '9') return '549' + num.substring(2);
-
-    return num;
-  }
-
-  // Formatea visualmente el teléfono para mostrarlo (+54 9 xxxx xxx xxx)
-  function formatDisplayPhone(phone) {
-    let num = phone.replace(/\D/g, '');
-
-    if (num.startsWith('0')) num = num.substring(1);
-    if (!num.startsWith('54')) num = '54' + num;
-    if (!num.startsWith('549')) num = '549' + num.substring(2);
-
-    // Ejemplo: 5493865417665 → +54 9 3865 41-7665
-    return `+${num.slice(0, 2)} ${num.slice(2, 3)} ${num.slice(
-      3,
-      7
-    )} ${num.slice(7, 9)}-${num.slice(9)}`;
-  }
-
-  const [detalleCliente, setDetalleCliente] = useState(null);
-
+  // Detalle cliente/ventas
   const openDetalleCliente = (cliente) => {
-    fetch(`https://vps-5192960-x.dattaweb.com/clientes/${cliente.id}/ventas`)
+    fetch(`${API_BASE}/clientes/${cliente.id}/ventas`)
       .then((res) => res.json())
       .then((ventas) => setDetalleCliente({ ...cliente, ventas }))
       .catch(() => setDetalleCliente({ ...cliente, ventas: [] }));
   };
-
-  const [detalleVenta, setDetalleVenta] = useState(null);
-
   const fetchDetalleVenta = (ventaId) => {
-    fetch(`https://vps-5192960-x.dattaweb.com/ventas/${ventaId}/detalle`)
+    fetch(`${API_BASE}/ventas/${ventaId}/detalle`)
       .then((res) => res.json())
       .then((data) => setDetalleVenta(data))
       .catch(() => setDetalleVenta(null));
   };
 
-  const [locales, setLocales] = useState([]);
-  const [usuarios, setUsuarios] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Carga ambos catálogos en paralelo
-    setLoading(true);
-    Promise.all([fetchLocales(), fetchUsuarios()])
-      .then(([localesData, usuariosData]) => {
-        setLocales(localesData);
-        setUsuarios(usuariosData);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  // Paginación
+  const goToPage = (p) => {
+    const clamped = Math.min(Math.max(1, p), totalPages);
+    setOffset((clamped - 1) * limit);
+  };
+  const handleLoadMore = () => {
+    if (hasMore && !loading) setOffset((prev) => prev + limit);
+  };
+  const onChangeLimit = (value) => {
+    setLimit(Number(value));
+    setOffset(0);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-800 to-emerald-900 py-10 px-3 md:px-6 relative font-sans">
-      <ParticlesBackground></ParticlesBackground>
+      <ParticlesBackground />
       <ButtonBack />
+
       {/* Header */}
-      <div className="max-w-5xl mx-auto flex flex-col gap-4">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
+      <div className="max-w-6xl mx-auto flex flex-col gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
           <motion.h1
-            className="text-4xl md:text-5xl font-extrabold flex items-center gap-3 drop-shadow-xl text-white uppercase titulo"
-            initial={{ opacity: 0, y: -20 }}
+            className="text-3xl md:text-4xl font-extrabold flex items-center gap-3 text-white uppercase"
+            initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
+            transition={{ duration: 0.3 }}
           >
             <FaUserFriends className="text-emerald-400 drop-shadow-lg" />
             Gestión de Clientes
           </motion.h1>
-          <motion.button
-            onClick={() => openModal()}
-            className="text-white bg-emerald-500 hover:bg-emerald-600 px-6 py-3 rounded-xl font-semibold flex items-center gap-2 shadow-lg transition-colors active:scale-95"
-            whileHover={{ scale: 1.05 }}
-          >
-            <FaPlus /> Nuevo Cliente
-          </motion.button>
+
+          <div className="flex items-center gap-2">
+            <select
+              value={limit}
+              onChange={(e) => onChangeLimit(e.target.value)}
+              className="rounded-lg bg-emerald-950 text-emerald-100 border border-emerald-700 px-3 py-2 text-sm"
+              title="Tamaño de página"
+            >
+              <option value={10}>10 / pág.</option>
+              <option value={20}>20 / pág.</option>
+              <option value={50}>50 / pág.</option>
+              <option value={100}>100 / pág.</option>
+            </select>
+
+            <motion.button
+              onClick={() => openModal()}
+              className="text-white bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-xl font-semibold flex items-center gap-2 shadow-lg transition-colors active:scale-95"
+              whileHover={{ scale: 1.04 }}
+            >
+              <FaPlus /> Nuevo
+            </motion.button>
+          </div>
         </div>
-        {/* Filtros */}
-        <div className="w-full bg-white/10 p-5 rounded-2xl shadow-md mb-6 backdrop-blur-lg">
-          <h2 className="text-emerald-200 text-lg font-semibold mb-4">
-            Filtros
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+        {/* Filtros Sticky en mobile */}
+        <div className="w-full bg-white/10 p-4 md:p-5 rounded-2xl shadow-md backdrop-blur-md sticky top-0 z-20">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
             <div>
-              <label className="block text-sm text-emerald-200 mb-1">
+              <label className="block text-xs text-emerald-200 mb-1">
                 Buscar
               </label>
-              <input
-                type="text"
-                placeholder="Nombre, teléfono, email, dirección, DNI..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-emerald-950 text-white border border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/80"
-              />
+              <div className="relative">
+                <FaSearch className="absolute left-3 top-2.5 text-emerald-300/80" />
+                <input
+                  type="text"
+                  placeholder="Nombre, teléfono, email, DNI..."
+                  value={qInput}
+                  onChange={(e) => setQInput(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 rounded-lg bg-emerald-950 text-white border border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/80"
+                />
+              </div>
             </div>
             <div>
-              <label className="block text-sm text-emerald-200 mb-1">
+              <label className="block text-xs text-emerald-200 mb-1">
                 Fecha última compra
               </label>
               <input
                 type="date"
                 value={fechaFiltro}
-                onChange={(e) => setFechaFiltro(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg bg-emerald-950 text-white border border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/80"
+                onChange={(e) => {
+                  setFechaFiltro(e.target.value);
+                  setOffset(0);
+                }}
+                className="w-full px-3 py-2 rounded-lg bg-emerald-950 text-white border border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/80"
               />
+            </div>
+            <div className="text-sm text-emerald-100/80 md:text-right">
+              {firstLoadDone &&
+                (fechaFiltro ? (
+                  <span>
+                    {clientes.length} filtrados / {total} totales
+                  </span>
+                ) : (
+                  <span>
+                    Mostrando {rangeFrom}–{rangeTo} de {total}
+                  </span>
+                ))}
             </div>
           </div>
         </div>
       </div>
-      {/* Cards-table para desktop */}
+
+      {/* Lista Desktop */}
       <div className="hidden md:block">
         <div className="grid grid-cols-1 gap-4 max-w-6xl mx-auto mt-6">
-          {filtered.length === 0 ? (
+          {loading && clientes.length === 0 && (
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
+          )}
+
+          {!loading && clientes.length === 0 && (
             <div className="text-center text-emerald-200 py-12 rounded-2xl bg-white/5 shadow-xl">
-              No hay clientes para mostrar.
+              {error || 'No hay clientes para mostrar.'}
             </div>
-          ) : (
-            filtered.map((c) => (
-              <motion.div
-                key={c.id}
-                className="flex w-full min-h-[140px] bg-white/70 shadow-xl rounded-3xl border-l-8 transition-all border-emerald-500/80 hover:scale-[1.012] hover:shadow-2xl overflow-hidden"
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.28 }}
-              >
-                {/* Identidad */}
-                <div className="flex flex-col justify-between items-start p-7 w-64 bg-gradient-to-br from-emerald-700/90 to-emerald-900/90 text-white">
-                  <div>
-                    <div className="text-xl font-extrabold flex items-center gap-2 drop-shadow-sm">
-                      {c.nombre}
-                      {c.pagado === 'SI' ? (
-                        <span className="ml-2 flex items-center bg-emerald-200 text-emerald-900 rounded-full px-3 py-0.5 text-xs font-bold shadow animate-pulse">
-                          <svg
-                            className="w-4 h-4 mr-1 inline"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="3"
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                          Pagado
-                        </span>
-                      ) : (
-                        <span className="ml-2 flex items-center bg-rose-500 text-white rounded-full px-3 py-0.5 text-xs font-bold shadow animate-pulse">
-                          <svg
-                            className="w-4 h-4 mr-1 inline"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="15" y1="9" x2="9" y2="15" />
-                            <line x1="9" y1="9" x2="15" y2="15" />
-                          </svg>
-                          Pendiente
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-1 opacity-90 text-base">{c.email}</div>
-                    <div className="flex items-center gap-2 mt-1 text-sm opacity-90">
-                      {c.telefono}
-                    </div>
-                    <div className="text-xs text-emerald-200 mt-2">
-                      <span className="opacity-80">DNI:</span> {c.dni}
-                    </div>
+          )}
+
+          {clientes.map((c) => (
+            <motion.div
+              key={c.id}
+              className="flex w-full min-h-[120px] bg-white/80 shadow-xl rounded-3xl border border-emerald-100 hover:shadow-2xl transition-all overflow-hidden"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.22 }}
+            >
+              {/* Izquierda: identidad */}
+              <div className="flex flex-col justify-center gap-1 p-6 w-72 bg-gradient-to-br from-emerald-700/90 to-emerald-900/90 text-white">
+                <div className="text-xl font-extrabold">{c.nombre}</div>
+                <div className="opacity-90 text-sm">
+                  {c.email || <span className="opacity-70">Sin email</span>}
+                </div>
+                <TelCell telefono={c.telefono} />
+                <div className="text-xs text-emerald-200">
+                  <span className="opacity-80">DNI:</span>{' '}
+                  {c.dni || <span className="opacity-70">—</span>}
+                </div>
+              </div>
+
+              {/* Centro: datos */}
+              <div className="flex-1 grid grid-cols-3 gap-6 px-6 py-5 bg-white/70 text-gray-800 items-center text-sm">
+                <div>
+                  <div className="text-[11px] text-gray-500 font-semibold">
+                    Fecha Alta
+                  </div>
+                  <div className="text-base">
+                    {formatearFechaARG(c.fecha_alta)}
                   </div>
                 </div>
-
-                {/* Detalle */}
-                <div className="flex-1 grid grid-cols-4 gap-6 px-8 py-6 bg-white/80 backdrop-blur-lg text-gray-800 items-center text-sm">
-                  <div>
-                    <div className="text-xs text-gray-500 font-semibold">
-                      Fecha Alta
-                    </div>
-                    <div className="text-base mb-5">
-                      {formatearFechaARG(c.fecha_alta)}
-                    </div>
-                    <div className="text-xs text-gray-500 font-semibold">
-                      Fecha Última Compra
-                    </div>
-                    <div className="text-base">
-                      {formatearFechaARG(c.fecha_ultima_compra)}
-                    </div>
+                <div>
+                  <div className="text-[11px] text-gray-500 font-semibold">
+                    Última Compra
+                  </div>
+                  <div className="text-base">
+                    {formatearFechaARG(c.fecha_ultima_compra) || (
+                      <span className="opacity-60">—</span>
+                    )}
                   </div>
                 </div>
+                <div>
+                  <div className="text-[11px] text-gray-500 font-semibold">
+                    Dirección
+                  </div>
+                  <div
+                    className="text-base truncate max-w-[22ch]"
+                    title={c.direccion || ''}
+                  >
+                    {c.direccion || <span className="opacity-60">—</span>}
+                  </div>
+                </div>
+              </div>
 
+              {/* Derecha: acciones */}
+              <div className="flex flex-col items-center justify-center px-5 gap-3 bg-white/70 backdrop-blur-xl">
                 <button
-                  className="text-red-500 mt-4 text-xs font-semibold hover:text-red-600 transition"
+                  className="text-emerald-700 text-xs font-semibold hover:text-emerald-600 transition"
                   onClick={() => openDetalleCliente(c)}
                   title="Ver detalle del cliente"
                 >
                   Ver detalle
                 </button>
-              
-                {/* Acciones */}
-                <div className="flex flex-col items-center justify-center px-6 gap-3 bg-white/60 backdrop-blur-xl">
-                  <AdminActions
-                    onEdit={() => openModal(c)}
-                    onDelete={() => handleDelete(c.id)}
-                  />
-                </div>
-              </motion.div>
-            ))
+                <AdminActions
+                  onEdit={() => openModal(c)}
+                  onDelete={() => handleDelete(c.id)}
+                />
+              </div>
+            </motion.div>
+          ))}
+
+          {/* Paginación y Cargar más */}
+          {totalPages > 1 && (
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              onPageChange={goToPage}
+            />
+          )}
+
+          {hasMore && (
+            <div className="flex justify-center py-4">
+              <button
+                onClick={handleLoadMore}
+                disabled={loading}
+                className="px-5 py-2 rounded-xl bg-white/90 text-emerald-800 border border-emerald-200 hover:bg-white shadow"
+              >
+                {loading
+                  ? 'Cargando…'
+                  : `Cargar más (mostrando ${rangeTo} de ${total})`}
+              </button>
+            </div>
           )}
         </div>
       </div>
-      {/* Tarjetas para mobile */}
+
+      {/* Lista Mobile */}
       <div className="md:hidden grid grid-cols-1 gap-4 max-w-xl mx-auto mt-8">
-        {filtered.length === 0 && (
-          <div className="text-center text-emerald-200 py-12">
-            No hay clientes para mostrar.
+        {loading && clientes.length === 0 && (
+          <>
+            <div className="h-28 rounded-2xl bg-white/10 animate-pulse" />
+            <div className="h-28 rounded-2xl bg-white/10 animate-pulse" />
+            <div className="h-28 rounded-2xl bg-white/10 animate-pulse" />
+          </>
+        )}
+
+        {!loading && clientes.length === 0 && (
+          <div className="text-center text-emerald-200 py-8">
+            {error || 'No hay clientes para mostrar.'}
           </div>
         )}
-        {filtered.map((c) => (
+
+        {clientes.map((c) => (
           <motion.div
             key={c.id}
-            className="bg-emerald-800/90 rounded-xl p-5 shadow-xl flex flex-col gap-2"
-            initial={{ opacity: 0, scale: 0.97 }}
+            className="bg-emerald-900/70 rounded-2xl p-5 shadow-xl flex flex-col gap-2 border border-emerald-700/40"
+            initial={{ opacity: 0, scale: 0.985 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.22 }}
           >
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold text-emerald-100">{c.nombre}</h3>
+            <div className="flex justify-between items-start gap-3">
+              <div>
+                <h3 className="text-lg font-bold text-emerald-50">
+                  {c.nombre}
+                </h3>
+                <div className="text-sm text-emerald-200/90">
+                  {c.email || 'Sin email'}
+                </div>
+                <div className="text-sm text-emerald-200/90">
+                  {c.dni || 'Sin DNI'}
+                </div>
+                <div
+                  className="text-sm text-emerald-200/90 truncate"
+                  title={c.direccion || ''}
+                >
+                  {c.direccion || 'Sin dirección'}
+                </div>
+              </div>
               <AdminActions
                 onEdit={() => openModal(c)}
                 onDelete={() => handleDelete(c.id)}
               />
-              <button
-                className="text-emerald-400 mt-4 text-xs font-semibold hover:text-emerald-300 transition"
-                onClick={() => openDetalleCliente(c)}
-                title="Ver detalle del cliente"
-              >
-                Ver detalle
-              </button>
-            </div>
-            <div className="text-sm text-emerald-200/90">
-              {c.email || 'Sin Email Agregado'}
             </div>
 
-            <div className="text-sm text-emerald-200/90">
-              {c.dni || 'Sin DNI Agregado'}
-            </div>
-
-            <div className="text-sm text-emerald-200/90">
-              {c.direccion || 'Sin Dirección Agregada'}
-            </div>
             <div className="text-sm text-emerald-300">
               Tel:{' '}
               {c.telefono ? (
                 <a
-                  href={`https://wa.me/${formatWhatsappNumber(c.telefono)}`}
+                  href={`https://wa.me/${normalizeToE164AR(c.telefono)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 font-semibold underline hover:text-emerald-400 transition cursor-pointer"
+                  className="inline-flex items-center gap-1 font-semibold underline hover:text-emerald-200 transition"
                   title="Enviar WhatsApp"
                 >
                   {formatDisplayPhone(c.telefono)}
-                  <FaWhatsapp className="ml-1 text-green-500" />
+                  <FaWhatsapp className="ml-1" />
                 </a>
               ) : (
                 '-'
               )}
             </div>
 
-            <div className="text-xs text-emerald-400 mt-1">
+            <div className="text-xs text-emerald-200/90 mt-1">
               Última compra:{' '}
               {c.fecha_ultima_compra ? (
                 new Date(c.fecha_ultima_compra).toLocaleDateString()
@@ -527,10 +663,41 @@ export default function ClientesGet() {
                 <span className="italic text-emerald-200/60">Nunca</span>
               )}
             </div>
+
+            <button
+              className="self-start mt-1 text-emerald-300 text-xs font-semibold hover:text-emerald-200 transition"
+              onClick={() => openDetalleCliente(c)}
+              title="Ver detalle del cliente"
+            >
+              Ver detalle
+            </button>
           </motion.div>
         ))}
+
+        {totalPages > 1 && (
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={goToPage}
+          />
+        )}
+
+        {hasMore && (
+          <div className="flex justify-center py-3">
+            <button
+              onClick={handleLoadMore}
+              disabled={loading}
+              className="px-4 py-2 rounded-xl bg-emerald-800 text-emerald-100 border border-emerald-600/60 hover:bg-emerald-700/90"
+            >
+              {loading
+                ? 'Cargando…'
+                : `Cargar más (mostrando ${rangeTo} de ${total})`}
+            </button>
+          </div>
+        )}
       </div>
-      {/* Modal */}
+
+      {/* Modal Alta/Edición */}
       <AnimatePresence>
         {modalOpen && (
           <Modal
@@ -538,15 +705,14 @@ export default function ClientesGet() {
             onRequestClose={() => setModalOpen(false)}
             overlayClassName="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50"
             className="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl border-l-4 border-emerald-500"
-            closeTimeoutMS={300}
+            closeTimeoutMS={250}
           >
             <motion.div
-              initial={{ opacity: 0, y: 40 }}
+              initial={{ opacity: 0, y: 28 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 40 }}
-              transition={{ duration: 0.4 }}
+              exit={{ opacity: 0, y: 28 }}
             >
-              <h2 className="text-2xl font-bold mb-4 text-emerald-600">
+              <h2 className="text-2xl font-bold mb-4 text-emerald-700">
                 {editId ? 'Editar Cliente' : 'Nuevo Cliente'}
               </h2>
               <form onSubmit={handleSubmit} className="space-y-4 text-gray-800">
@@ -599,7 +765,7 @@ export default function ClientesGet() {
                 <div className="text-right">
                   <button
                     type="submit"
-                    className="bg-emerald-500 hover:bg-emerald-600 px-6 py-2 text-white font-medium rounded-lg"
+                    className="bg-emerald-600 hover:bg-emerald-700 px-6 py-2 text-white font-medium rounded-lg"
                   >
                     {editId ? 'Actualizar' : 'Guardar'}
                   </button>
@@ -609,7 +775,8 @@ export default function ClientesGet() {
           </Modal>
         )}
       </AnimatePresence>
-      ;
+
+      {/* Detalle Cliente */}
       <AnimatePresence>
         {detalleCliente && (
           <motion.div
@@ -619,35 +786,26 @@ export default function ClientesGet() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              initial={{ y: 40, opacity: 0 }}
+              initial={{ y: 32, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 30, opacity: 0 }}
-              className="bg-gradient-to-br from-[#1e242f]/90 via-[#1a222c] to-[#171b24] rounded-3xl max-w-2xl w-full shadow-2xl p-8 border border-emerald-500 relative ring-emerald-500 ring-1 ring-opacity-20"
+              exit={{ y: 24, opacity: 0 }}
+              className="bg-gradient-to-br from-[#1e242f]/90 via-[#1a222c] to-[#171b24] rounded-3xl max-w-2xl w-full shadow-2xl p-8 border border-emerald-500 relative"
             >
-              {/* Cerrar */}
               <button
                 className="absolute top-4 right-5 text-gray-400 hover:text-emerald-400 text-2xl transition-all"
                 onClick={() => setDetalleCliente(null)}
               >
                 <FaTimes />
               </button>
-
-              {/* Header Cliente */}
               <div className="flex items-center gap-4 mb-4">
                 <div className="bg-emerald-600/30 rounded-full p-3 text-2xl text-emerald-300 shadow-lg">
                   <FaUserAlt />
                 </div>
                 <div>
-                  <div className="text-xl font-black text-emerald-300 tracking-wide flex items-center gap-2">
-                    Cliente:
+                  <div className="text-xl font-black text-emerald-300 tracking-wide">
                     <span className="text-white drop-shadow">
                       {detalleCliente.nombre}
                     </span>
-                    {detalleCliente.vip && (
-                      <span className="ml-2 bg-yellow-400/80 text-gray-900 text-xs px-2 py-0.5 rounded-full font-bold shadow">
-                        VIP
-                      </span>
-                    )}
                   </div>
                   <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-400">
                     {detalleCliente.telefono && (
@@ -675,7 +833,6 @@ export default function ClientesGet() {
               </div>
 
               <div className="flex items-center gap-2 mb-6">
-                <FaCheckCircle className="text-emerald-400" />
                 <span className="text-xs text-gray-200">
                   Última compra:&nbsp;
                   {detalleCliente.fecha_ultima_compra ? (
@@ -690,16 +847,15 @@ export default function ClientesGet() {
                 </span>
               </div>
 
-              {/* Historial de compras */}
               <h3 className="font-bold text-lg text-emerald-400 mb-2 mt-4 flex items-center gap-2">
                 <FaShoppingCart /> Historial de compras
               </h3>
-              <ul className="space-y-2 max-h-52 overflow-y-auto custom-scrollbar mb-2">
-                {detalleCliente.ventas && detalleCliente.ventas.length > 0 ? (
+              <ul className="space-y-2 max-h-56 overflow-y-auto custom-scrollbar mb-2">
+                {detalleCliente.ventas?.length ? (
                   detalleCliente.ventas.map((venta) => (
                     <li
                       key={venta.id}
-                      className="flex flex-col md:flex-row md:justify-between md:items-center gap-1 bg-emerald-950/60 px-4 py-3 rounded-xl shadow group hover:shadow-lg hover:bg-emerald-800/30 transition-all"
+                      className="flex flex-col md:flex-row md:justify-between md:items-center gap-1 bg-emerald-950/60 px-4 py-3 rounded-xl hover:bg-emerald-800/30 transition-all"
                     >
                       <div className="flex items-center gap-3">
                         <span className="font-bold text-emerald-200 tracking-wide">
@@ -719,7 +875,7 @@ export default function ClientesGet() {
                       <div className="flex items-center gap-1 mt-1 md:mt-0">
                         <button
                           onClick={() => fetchDetalleVenta(venta.id)}
-                          className="text-emerald-400 text-xs font-bold px-3 py-1 rounded-lg bg-emerald-900/40 hover:bg-emerald-700/80 transition-all shadow"
+                          className="text-emerald-400 text-xs font-bold px-3 py-1 rounded-lg bg-emerald-900/40 hover:bg-emerald-700/80 transition-all"
                         >
                           Ver detalle
                         </button>
@@ -736,7 +892,7 @@ export default function ClientesGet() {
           </motion.div>
         )}
 
-        {/* MODAL DETALLE VENTA */}
+        {/* Modal Detalle Venta */}
         {detalleVenta && (
           <motion.div
             className="fixed inset-0 bg-black/80 flex items-center justify-center z-[70]"
@@ -745,9 +901,9 @@ export default function ClientesGet() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              initial={{ y: 35, opacity: 0 }}
+              initial={{ y: 28, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 25, opacity: 0 }}
+              exit={{ y: 22, opacity: 0 }}
               className="bg-gradient-to-br from-[#262b39]/90 via-[#232631] to-[#202331]/90 p-8 rounded-3xl max-w-2xl w-full shadow-2xl border border-emerald-500 relative"
             >
               <button
@@ -803,7 +959,7 @@ export default function ClientesGet() {
                   </span>
                 </div>
               </div>
-              <ul className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar mb-3 mt-3">
+              <ul className="space-y-2 max-h-52 overflow-y-auto custom-scrollbar mb-3 mt-3">
                 {detalleVenta.detalles?.map((d) => (
                   <li
                     key={d.id}
@@ -843,6 +999,7 @@ export default function ClientesGet() {
           </motion.div>
         )}
       </AnimatePresence>
+
       <ModalFeedback
         open={modalFeedbackOpen}
         onClose={() => setModalFeedbackOpen(false)}
