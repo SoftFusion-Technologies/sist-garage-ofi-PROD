@@ -66,6 +66,7 @@ import CombosGet from './Pages/Stock/Combos/CombosGet';
 import ComboEditarPermitidos from './Pages/Stock/Combos/ComboEditarPermitidos';
 import Home from './Pages/Home';
 import ClientGateFixed from './Components/Security/ClientGateFixed';
+import SoftFusionIntro from './Pages/Innovation/SoftFusionIntro';
 
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
@@ -75,6 +76,15 @@ function AppContent() {
       <div className="w-full min-h-screen overflow-x-hidden bg-[#1f3636]">
         {/* {!hideLayoutNav && <NavBar />} */}
         <Rutas>
+          <Ruta
+            path="/register-client"
+            element={
+              <SoftFusionIntro
+                // logoSrc={imgLogo}
+                onReady={(nombre) => console.log('Nombre guardado:', nombre)}
+              />
+            }
+          />{' '}
           <Ruta path="/" element={<Home />} />
           {/* componentes del staff y login INICIO */}
           <Ruta path="/login" element={<LoginForm />} />

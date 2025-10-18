@@ -17,7 +17,9 @@ import {
   FaCreditCard,
   FaMoneyBillWave,
   FaRegCopy,
-  FaSearch
+  FaSearch,
+  FaCheckCircle,
+  FaTimesCircle
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -36,6 +38,29 @@ Modal.setAppElement('#root');
 
 const API_BASE = 'https://vps-5192960-x.dattaweb.com';
 
+// Chip de estado "Online: Sí/No"
+function OnlineBadge({ value }) {
+  const on = Boolean(value);
+  return (
+    <span
+      className={[
+        'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ring-1',
+        on
+          ? 'bg-emerald-100 text-emerald-800 ring-emerald-300'
+          : 'bg-rose-100 text-rose-800 ring-rose-300'
+      ].join(' ')}
+      title={on ? 'Cliente online' : 'Cliente no online'}
+      aria-label={on ? 'Online: Sí' : 'Online: No'}
+    >
+      {on ? (
+        <FaCheckCircle className="text-emerald-500 text-[12px]" />
+      ) : (
+        <FaTimesCircle className="text-rose-500 text-[12px]" />
+      )}
+      <span className="tracking-wide">Online: {on ? 'Sí' : 'No'}</span>
+    </span>
+  );
+}
 /* ------------------ Utils Teléfono ------------------ */
 function normalizeToE164AR(num) {
   let n = String(num || '').replace(/\D/g, '');
@@ -208,7 +233,8 @@ export default function ClientesGet() {
     telefono: '',
     email: '',
     direccion: '',
-    dni: ''
+    dni: '',
+    es_online: false
   });
 
   // Feedback
@@ -308,7 +334,8 @@ export default function ClientesGet() {
         telefono: cliente.telefono || '',
         email: cliente.email || '',
         direccion: cliente.direccion || '',
-        dni: cliente.dni || ''
+        dni: cliente.dni || '',
+        es_online: !!cliente.es_online
       });
     } else {
       setEditId(null);
@@ -317,7 +344,8 @@ export default function ClientesGet() {
         telefono: '',
         email: '',
         direccion: '',
-        dni: ''
+        dni: '',
+        es_online: false
       });
     }
     setModalOpen(true);
@@ -326,10 +354,16 @@ export default function ClientesGet() {
     e.preventDefault();
     try {
       if (editId) {
-        await axios.put(`${API_BASE}/clientes/${editId}`, formData);
+        await axios.put(`${API_BASE}/clientes/${editId}`, {
+          ...formData,
+          es_online: formData.es_online ?? false
+        });
         setModalFeedbackMsg('Cliente actualizado correctamente');
       } else {
-        await axios.post(`${API_BASE}/clientes`, formData);
+        await axios.post(`${API_BASE}/clientes`, {
+          ...formData,
+          es_online: formData.es_online ?? false
+        });
         setModalFeedbackMsg('Cliente creado correctamente');
       }
       setModalFeedbackType('success');
@@ -503,7 +537,10 @@ export default function ClientesGet() {
             >
               {/* Izquierda: identidad */}
               <div className="flex flex-col justify-center gap-1 p-6 w-72 bg-gradient-to-br from-emerald-700/90 to-emerald-900/90 text-white">
-                <div className="text-xl font-extrabold">{c.nombre}</div>
+                <div className="text-xl font-extrabold flex items-center gap-2">
+                  {c.nombre}
+                  <OnlineBadge value={c.es_online} />
+                </div>
                 <div className="opacity-90 text-sm">
                   {c.email || <span className="opacity-70">Sin email</span>}
                 </div>
@@ -512,6 +549,11 @@ export default function ClientesGet() {
                   <span className="opacity-80">DNI:</span>{' '}
                   {c.dni || <span className="opacity-70">—</span>}
                 </div>
+                {c.es_online && (
+                  <span className="ml-2 inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900">
+                    ONLINE
+                  </span>
+                )}
               </div>
 
               {/* Centro: datos */}
@@ -615,15 +657,18 @@ export default function ClientesGet() {
           >
             <div className="flex justify-between items-start gap-3">
               <div>
-                <h3 className="text-lg font-bold text-emerald-50">
+                <h3 className="text-lg font-bold text-emerald-50 flex items-center gap-2">
                   {c.nombre}
+                  <OnlineBadge value={c.es_online} />
                 </h3>
+
                 <div className="text-sm text-emerald-200/90">
                   {c.email || 'Sin email'}
                 </div>
                 <div className="text-sm text-emerald-200/90">
                   {c.dni || 'Sin DNI'}
                 </div>
+
                 <div
                   className="text-sm text-emerald-200/90 truncate"
                   title={c.direccion || ''}
@@ -762,6 +807,7 @@ export default function ClientesGet() {
                   }
                   className="w-full px-4 py-2 rounded-lg border border-emerald-200"
                 />
+
                 <div className="text-right">
                   <button
                     type="submit"
@@ -802,11 +848,13 @@ export default function ClientesGet() {
                   <FaUserAlt />
                 </div>
                 <div>
-                  <div className="text-xl font-black text-emerald-300 tracking-wide">
+                  <div className="flex items-center gap-2">
                     <span className="text-white drop-shadow">
                       {detalleCliente.nombre}
                     </span>
+                    <OnlineBadge value={detalleCliente.es_online} />
                   </div>
+
                   <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-400">
                     {detalleCliente.telefono && (
                       <span className="inline-flex items-center gap-1">
@@ -823,6 +871,7 @@ export default function ClientesGet() {
                         <FaIdCard /> {detalleCliente.dni}
                       </span>
                     )}
+
                     {detalleCliente.direccion && (
                       <span className="inline-flex items-center gap-1">
                         <FaHome /> {detalleCliente.direccion}
