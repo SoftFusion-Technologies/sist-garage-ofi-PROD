@@ -67,6 +67,7 @@ import ComboEditarPermitidos from './Pages/Stock/Combos/ComboEditarPermitidos';
 import Home from './Pages/Home';
 import ClientGateFixed from './Components/Security/ClientGateFixed';
 import SoftFusionIntro from './Pages/Innovation/SoftFusionIntro';
+import AdminPageCaja from './Pages/Ventas/AdminPageCaja';
 
 function AppContent() {
   const { hideLayoutFooter, hideLayoutNav } = useLayoutVisibility();
@@ -395,6 +396,15 @@ function AppContent() {
               <ProtectedRoute>
                 {' '}
                 <DashboardEstadisticasVendedores />{' '}
+              </ProtectedRoute>
+            }
+          />
+          <Ruta
+            path="/dashboard/ventas/resumen"
+            element={
+              <ProtectedRoute>
+                {' '}
+                <AdminPageCaja />{' '}
               </ProtectedRoute>
             }
           />
